@@ -550,31 +550,34 @@ img { max-width: 100%; display: block; }
 /* Info button on role card */
 .role-card__info {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 22px;
-  height: 22px;
-  border-radius: var(--radius-full);
-  background: var(--bg-glass-strong);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: 13px;
+  top: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  color: #a1a1aa;
+  font-size: 14px;
   font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all var(--duration) var(--ease);
+  transition: all 0.2s ease;
   line-height: 1;
   padding: 0;
-  z-index: 2;
+  z-index: 5;
+  -webkit-tap-highlight-color: transparent;
 }
 .role-card__info:hover,
 .role-card__info:active {
   background: var(--accent);
   color: white;
   border-color: var(--accent);
-  transform: scale(1.15);
+  transform: scale(1.2);
 }
 .role-card:hover { background: var(--bg-card-hover); }
 .role-card.selected { border-color: var(--accent); background: rgba(220, 38, 38, 0.08); }

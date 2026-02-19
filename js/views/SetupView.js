@@ -149,7 +149,7 @@ export class SetupView extends BaseView {
 
         html += `
           <div class="role-card role-card--${team} ${isSelected ? 'selected' : ''}" data-role="${role.id}">
-            <button class="role-card__info" data-info="${role.id}" title="توضیحات">ⓘ</button>
+            <button class="role-card__info" data-info="${role.id}" title="توضیحات">i</button>
             <div class="role-card__icon">${role.icon}</div>
             <div class="role-card__name">${role.name}</div>
             ${role.unique ? '' : `
