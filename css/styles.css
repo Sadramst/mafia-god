@@ -554,10 +554,10 @@ img { max-width: 100%; display: block; }
   right: 5px;
   width: 24px;
   height: 24px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
-  color: #a1a1aa;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+  color: #a1a1aa !important;
   font-size: 14px;
   font-weight: 700;
   font-style: italic;
@@ -574,9 +574,9 @@ img { max-width: 100%; display: block; }
 }
 .role-card__info:hover,
 .role-card__info:active {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
+  background: var(--accent) !important;
+  color: white !important;
+  border-color: var(--accent) !important;
   transform: scale(1.2);
 }
 .role-card:hover { background: var(--bg-card-hover); }
