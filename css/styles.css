@@ -103,6 +103,7 @@ html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  background: var(--bg-primary);
 }
 
 body {
@@ -110,11 +111,17 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   direction: rtl;
+  min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* iOS: extend content behind safe areas */
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
 }
 
 /* Ambient background effect */
@@ -148,6 +155,7 @@ img { max-width: 100%; display: block; }
   z-index: 1;
   max-width: var(--max-w);
   margin: 0 auto;
+  min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -163,7 +171,8 @@ img { max-width: 100%; display: block; }
   align-items: center;
   justify-content: center;
   padding: 0 var(--space-md);
-  background: rgba(10, 10, 15, 0.85);
+  padding-top: env(safe-area-inset-top, 0);
+  background: var(--bg-primary);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
@@ -220,13 +229,11 @@ img { max-width: 100%; display: block; }
   transform: translateX(-50%);
   width: 100%;
   max-width: var(--max-w);
-  height: var(--nav-h);
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0));
   display: flex;
   align-items: center;
   justify-content: space-around;
-  background: rgba(10, 10, 15, 0.9);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: var(--bg-primary);
   border-top: 1px solid var(--border);
   z-index: 100;
   padding-bottom: env(safe-area-inset-bottom, 0);
@@ -1291,9 +1298,16 @@ img { max-width: 100%; display: block; }
 
 /* ---------- Safe Area (Notch) ---------- */
 @supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: 0; /* handled by header */
+    padding-bottom: 0; /* handled by nav */
+  }
   .app-header {
     padding-top: env(safe-area-inset-top);
     height: calc(var(--header-h) + env(safe-area-inset-top));
+  }
+  .app-main {
+    padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0) + var(--space-lg));
   }
   .bottom-nav {
     padding-bottom: env(safe-area-inset-bottom);
