@@ -115,12 +115,25 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
   overflow-x: hidden;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Full-screen background that covers everything including iOS safe areas */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0a0a0f;
+  z-index: -2;
+  /* Extend behind safe areas */
+  top: -50px;
+  bottom: -50px;
 }
 
 /* Ambient background effect */
@@ -155,7 +168,6 @@ img { max-width: 100%; display: block; }
   max-width: var(--max-w);
   margin: 0 auto;
   min-height: 100vh;
-  min-height: -webkit-fill-available;
   display: flex;
   flex-direction: column;
 }
