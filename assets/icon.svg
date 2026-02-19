@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#0a0a0f"/>
+    </linearGradient>
+    <linearGradient id="mask-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+  
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="230" fill="none" stroke="rgba(239,68,68,0.2)" stroke-width="3"/>
+  
+  <!-- Mask icons — theater masks representing Mafia -->
+  <!-- Happy mask (left) -->
+  <g transform="translate(130, 150) scale(0.9)">
+    <path d="M80 20 C30 20, 0 60, 0 110 C0 170, 40 200, 80 200 C120 200, 160 170, 160 110 C160 60, 130 20, 80 20Z" 
+          fill="url(#mask-grad)" opacity="0.9"/>
+    <ellipse cx="50" cy="95" rx="15" ry="18" fill="#0a0a0f"/>
+    <ellipse cx="110" cy="95" rx="15" ry="18" fill="#0a0a0f"/>
+    <path d="M45 140 Q80 175 115 140" fill="none" stroke="#0a0a0f" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Sad mask (right, overlapping) -->
+  <g transform="translate(220, 170) scale(0.9)">
+    <path d="M80 20 C30 20, 0 60, 0 110 C0 170, 40 200, 80 200 C120 200, 160 170, 160 110 C160 60, 130 20, 80 20Z" 
+          fill="#e2e2e8" opacity="0.85"/>
+    <ellipse cx="50" cy="95" rx="15" ry="18" fill="#0a0a0f"/>
+    <ellipse cx="110" cy="95" rx="15" ry="18" fill="#0a0a0f"/>
+    <path d="M45 160 Q80 130 115 160" fill="none" stroke="#0a0a0f" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Eye glow effect -->
+  <circle cx="175" cy="235" r="8" fill="#ef4444" opacity="0.6">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="235" cy="235" r="8" fill="#ef4444" opacity="0.6">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Text "GOD" in Farsi style -->
+  <text x="256" y="440" text-anchor="middle" 
+        font-family="Arial, sans-serif" font-size="42" font-weight="bold" 
+        fill="rgba(255,255,255,0.85)" letter-spacing="8">
+    خدای مافیا
+  </text>
+</svg>

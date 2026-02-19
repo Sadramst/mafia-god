@@ -1,0 +1,593 @@
+/**
+ * Game.js — Core game state machine
+ *
+ * Phases: setup → roleReveal → night ↔ day → ended
+ */
+import { Player } from './Player.js';
+import { Roles } from './Roles.js';
+
+export class Game {
+
+  constructor() {
+    this.reset();
+  }
+
+  /** Reset everything for a new game */
+  reset() {
+    Player.resetIdCounter();
+    this.players = [];
+    this.round = 0;
+    this.phase = 'setup'; // setup | roleReveal | night | day | ended
+    this.winner = null;    // 'mafia' | 'citizen' | 'independent' | null
+    this.history = [];     // Array of round events
+    this.nightActions = {}; // { roleId: { actorId, targetId } }
+    this.votes = {};       // { voterId: targetId }
+    this.selectedRoles = {}; // { roleId: count }
+    this.currentNightStep = 0;
+    this.nightSteps = [];
+    this.dayTimerDuration = 180; // seconds
+    this.defenseTimerDuration = 60;
+    this.constantineUsed = false;
+    this.gunnerUsed = false;
+    this._lastDrWatsonTarget = null;
+    this._lastDrLecterTarget = null;
+  }
+
+  // ──────────────────────────────────
+  //  SETUP PHASE
+  // ──────────────────────────────────
+
+  /** Add a player by name */
+  addPlayer(name) {
+    if (!name || !name.trim()) return null;
+    const player = new Player(name);
+    this.players.push(player);
+    return player;
+  }
+
+  /** Remove a player by ID */
+  removePlayer(playerId) {
+    this.players = this.players.filter(p => p.id !== playerId);
+  }
+
+  /** Set the selected roles with counts: { godfather: 1, simpleMafia: 2, ... } */
+  setSelectedRoles(roles) {
+    this.selectedRoles = { ...roles };
+  }
+
+  /** Get total role count */
+  getTotalRoleCount() {
+    return Object.values(this.selectedRoles).reduce((s, c) => s + c, 0);
+  }
+
+  /** Validate setup before starting */
+  validateSetup() {
+    const errors = [];
+    if (this.players.length < 4) {
+      errors.push('حداقل ۴ بازیکن نیاز است.');
+    }
+    const totalRoles = this.getTotalRoleCount();
+    if (totalRoles !== this.players.length) {
+      errors.push(`تعداد نقش‌ها (${totalRoles}) با تعداد بازیکنان (${this.players.length}) برابر نیست.`);
+    }
+    // Ensure at least one mafia
+    const mafiaCount = Object.entries(this.selectedRoles)
+      .filter(([id]) => Roles.get(id)?.team === 'mafia')
+      .reduce((s, [, c]) => s + c, 0);
+    if (mafiaCount === 0) {
+      errors.push('حداقل یک نقش مافیا باید انتخاب شود.');
+    }
+    return errors;
+  }
+
+  /** Randomly assign roles to players */
+  assignRolesRandomly() {
+    // Build a pool of role IDs
+    const pool = [];
+    for (const [roleId, count] of Object.entries(this.selectedRoles)) {
+      for (let i = 0; i < count; i++) {
+        pool.push(roleId);
+      }
+    }
+    // Shuffle (Fisher-Yates)
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    // Assign
+    this.players.forEach((player, idx) => {
+      player.roleId = pool[idx];
+    });
+    this.phase = 'roleReveal';
+  }
+
+  // ──────────────────────────────────
+  //  NIGHT PHASE
+  // ──────────────────────────────────
+
+  /** Start a new night */
+  startNight() {
+    this.round++;
+    this.phase = 'night';
+    this.nightActions = {};
+    this.votes = {};
+    this.currentNightStep = 0;
+
+    // Reset per-night flags for alive players
+    this.players.forEach(p => {
+      if (p.isAlive) p.resetNightFlags();
+    });
+
+    // Build night steps based on active roles
+    this.nightSteps = this._buildNightSteps();
+
+    this._addHistory('night_start', `🌙 شب ${this.round} آغاز شد.`);
+  }
+
+  /** Build ordered night action steps */
+  _buildNightSteps() {
+    const nightRoles = Roles.getNightRoles();
+    const steps = [];
+
+    for (const role of nightRoles) {
+      // Check if any alive player has this role
+      const actors = this.players.filter(
+        p => p.isAlive && p.roleId === role.id
+      );
+      if (actors.length === 0) continue;
+
+      // Special: skip constantine if already used
+      if (role.id === 'constantine' && this.constantineUsed) continue;
+
+      steps.push({
+        roleId: role.id,
+        roleName: role.name,
+        roleIcon: role.icon,
+        actionType: role.nightAction,
+        actors: actors.map(a => a.id),
+        targetId: null,
+        completed: false,
+      });
+    }
+    return steps;
+  }
+
+  /** Get the current night step */
+  getCurrentNightStep() {
+    return this.nightSteps[this.currentNightStep] || null;
+  }
+
+  /** Record a night action and advance to next step */
+  recordNightAction(targetId) {
+    const step = this.getCurrentNightStep();
+    if (!step) return;
+
+    step.targetId = targetId;
+    step.completed = true;
+    this.nightActions[step.roleId] = {
+      actorIds: step.actors,
+      targetId,
+      actionType: step.actionType,
+    };
+    this.currentNightStep++;
+  }
+
+  /** Skip current night step (no action) */
+  skipNightAction() {
+    const step = this.getCurrentNightStep();
+    if (!step) return;
+    step.completed = true;
+    step.targetId = null;
+    this.currentNightStep++;
+  }
+
+  /** Check if all night steps are done */
+  isNightComplete() {
+    return this.currentNightStep >= this.nightSteps.length;
+  }
+
+  /** Resolve all night actions and determine results */
+  resolveNight() {
+    const results = {
+      killed: [],
+      saved: [],
+      investigated: null,
+      silenced: null,
+      blocked: null,
+      bombed: null,
+      revived: null,
+      protected: null,
+    };
+
+    const actions = this.nightActions;
+
+    // 1. Sorcerer blocks someone's action
+    if (actions.sorcerer?.targetId) {
+      const blockedId = actions.sorcerer.targetId;
+      results.blocked = blockedId;
+      // Find which role the blocked player has and remove their action
+      const blockedPlayer = this.getPlayer(blockedId);
+      if (blockedPlayer) {
+        // Remove the blocked player's action
+        for (const [roleId, action] of Object.entries(actions)) {
+          if (action.actorIds?.includes(blockedId) && roleId !== 'sorcerer') {
+            delete actions[roleId];
+          }
+        }
+      }
+    }
+
+    // 2. Bodyguard protects
+    if (actions.bodyguard?.targetId) {
+      const protectedPlayer = this.getPlayer(actions.bodyguard.targetId);
+      if (protectedPlayer) {
+        protectedPlayer.protected = true;
+        results.protected = actions.bodyguard.targetId;
+      }
+    }
+
+    // 3. Dr Watson heals
+    if (actions.drWatson?.targetId) {
+      const healedPlayer = this.getPlayer(actions.drWatson.targetId);
+      if (healedPlayer) {
+        healedPlayer.healed = true;
+        results.saved.push(actions.drWatson.targetId);
+      }
+      this._lastDrWatsonTarget = actions.drWatson.targetId;
+    }
+
+    // 4. Dr Lecter heals mafia
+    if (actions.drLecter?.targetId) {
+      const target = this.getPlayer(actions.drLecter.targetId);
+      if (target && Roles.get(target.roleId)?.team === 'mafia') {
+        target.healed = true;
+      }
+      this._lastDrLecterTarget = actions.drLecter.targetId;
+    }
+
+    // 5. Mafia kill (godfather / mafia vote)
+    if (actions.godfather?.targetId) {
+      const targetId = actions.godfather.targetId;
+      const target = this.getPlayer(targetId);
+      if (target) {
+        if (target.healed) {
+          results.saved.push(targetId);
+          this._addHistory('save', `⚕️ ${target.name} توسط دکتر نجات یافت.`);
+        } else if (target.protected) {
+          // Bodyguard dies instead
+          const bodyguardId = actions.bodyguard?.actorIds?.[0];
+          if (bodyguardId) {
+            const bodyguard = this.getPlayer(bodyguardId);
+            if (bodyguard) {
+              bodyguard.kill(this.round, 'bodyguard_sacrifice');
+              results.killed.push(bodyguardId);
+              this._addHistory('death', `🛡️ ${bodyguard.name} (محافظ) جان خود را فدا کرد.`);
+            }
+          }
+        } else {
+          target.kill(this.round, 'mafia');
+          results.killed.push(targetId);
+          this._addHistory('death', `🔫 ${target.name} توسط مافیا کشته شد.`);
+        }
+      }
+    }
+
+    // 6. Jack kills
+    if (actions.jack?.targetId) {
+      const targetId = actions.jack.targetId;
+      const target = this.getPlayer(targetId);
+      if (target && target.isAlive) {
+        if (target.healed) {
+          results.saved.push(targetId);
+        } else {
+          target.kill(this.round, 'jack');
+          results.killed.push(targetId);
+          this._addHistory('death', `🔪 ${target.name} توسط جک کشته شد.`);
+        }
+      }
+    }
+
+    // 7. Zodiac kills
+    if (actions.zodiac?.targetId) {
+      const targetId = actions.zodiac.targetId;
+      const target = this.getPlayer(targetId);
+      if (target && target.isAlive) {
+        if (target.healed) {
+          results.saved.push(targetId);
+        } else {
+          target.kill(this.round, 'zodiac');
+          results.killed.push(targetId);
+          this._addHistory('death', `♈ ${target.name} توسط زودیاک کشته شد.`);
+        }
+      }
+    }
+
+    // 8. Sniper
+    if (actions.sniper?.targetId) {
+      const targetId = actions.sniper.targetId;
+      const target = this.getPlayer(targetId);
+      const sniperId = actions.sniper.actorIds[0];
+      const sniperPlayer = this.getPlayer(sniperId);
+
+      if (target && sniperPlayer) {
+        const targetTeam = Roles.get(target.roleId)?.team;
+        if (targetTeam === 'mafia' || targetTeam === 'independent') {
+          // Correct shot
+          target.kill(this.round, 'sniper');
+          results.killed.push(targetId);
+          this._addHistory('death', `🎯 ${target.name} توسط تک‌تیرانداز کشته شد.`);
+        } else {
+          // Wrong shot — sniper dies
+          sniperPlayer.kill(this.round, 'sniper_miss');
+          results.killed.push(sniperId);
+          this._addHistory('death', `🎯 تک‌تیرانداز اشتباه زد و خودش مرد.`);
+        }
+      }
+    }
+
+    // 9. Detective investigates
+    if (actions.detective?.targetId) {
+      const targetId = actions.detective.targetId;
+      const target = this.getPlayer(targetId);
+      if (target) {
+        const role = Roles.get(target.roleId);
+        // Godfather appears as citizen
+        const appearsAs = target.roleId === 'godfather' ? 'citizen' : role?.team;
+        results.investigated = { playerId: targetId, result: appearsAs };
+        this._addHistory('investigate', `🔍 کارآگاه ${target.name} را بررسی کرد: ${Roles.getTeamName(appearsAs)}`);
+      }
+    }
+
+    // 10. Matador silences
+    if (actions.matador?.targetId) {
+      const target = this.getPlayer(actions.matador.targetId);
+      if (target) {
+        target.silenced = true;
+        results.silenced = actions.matador.targetId;
+        this._addHistory('silence', `🤐 ${target.name} توسط ماتادور سکوت شد.`);
+      }
+    }
+
+    // 11. Bomber plants bomb
+    if (actions.bomber?.targetId) {
+      const target = this.getPlayer(actions.bomber.targetId);
+      if (target) {
+        target.bombed = true;
+        results.bombed = actions.bomber.targetId;
+        this._addHistory('bomb', `💣 بمب روی ${target.name} کار گذاشته شد.`);
+      }
+    }
+
+    // 12. Constantine revives
+    if (actions.constantine?.targetId) {
+      const target = this.getPlayer(actions.constantine.targetId);
+      if (target && !target.isAlive) {
+        target.revive();
+        results.revived = actions.constantine.targetId;
+        this.constantineUsed = true;
+        this._addHistory('revive', `✝️ ${target.name} توسط کنستانتین زنده شد.`);
+      }
+    }
+
+    // Check for bomber chain reaction
+    for (const killedId of [...results.killed]) {
+      const killedPlayer = this.getPlayer(killedId);
+      if (killedPlayer?.roleId === 'bomber') {
+        // Bomber died → find bombed player
+        const bombedPlayer = this.players.find(p => p.bombed && p.isAlive);
+        if (bombedPlayer) {
+          bombedPlayer.kill(this.round, 'bomb');
+          results.killed.push(bombedPlayer.id);
+          this._addHistory('death', `💥 ${bombedPlayer.name} با انفجار بمب کشته شد.`);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  // ──────────────────────────────────
+  //  DAY PHASE
+  // ──────────────────────────────────
+
+  /** Start day phase */
+  startDay() {
+    this.phase = 'day';
+    this.votes = {};
+    this._addHistory('day_start', `☀️ روز ${this.round} آغاز شد.`);
+  }
+
+  /** Cast a vote: voter votes to eliminate target */
+  castVote(voterId, targetId) {
+    this.votes[voterId] = targetId;
+  }
+
+  /** Remove a vote */
+  removeVote(voterId) {
+    delete this.votes[voterId];
+  }
+
+  /** Get vote tally: { playerId: voteCount } */
+  getVoteTally() {
+    const tally = {};
+    for (const [voterId, targetId] of Object.entries(this.votes)) {
+      if (!targetId) continue;
+      // Kane's vote counts double
+      const voter = this.getPlayer(Number(voterId));
+      const weight = voter?.roleId === 'kane' ? 2 : 1;
+      tally[targetId] = (tally[targetId] || 0) + weight;
+    }
+    return tally;
+  }
+
+  /** Eliminate a player by vote */
+  eliminateByVote(playerId) {
+    const player = this.getPlayer(playerId);
+    if (!player) return;
+
+    player.kill(this.round, 'vote');
+    this._addHistory('death', `⚖️ ${player.name} با رأی‌گیری اعدام شد. (${Roles.get(player.roleId)?.name})`);
+
+    // Bomber chain
+    if (player.roleId === 'bomber') {
+      const bombedPlayer = this.players.find(p => p.bombed && p.isAlive);
+      if (bombedPlayer) {
+        bombedPlayer.kill(this.round, 'bomb');
+        this._addHistory('death', `💥 ${bombedPlayer.name} با انفجار بمب کشته شد.`);
+      }
+    }
+  }
+
+  /** Gunner shoots during day (one-time ability) */
+  gunnerShoot(targetId) {
+    if (this.gunnerUsed) return false;
+    const target = this.getPlayer(targetId);
+    if (!target || !target.isAlive) return false;
+
+    target.kill(this.round, 'gunner');
+    this.gunnerUsed = true;
+    this._addHistory('death', `🔫 ${target.name} توسط تفنگدار کشته شد.`);
+    return true;
+  }
+
+  // ──────────────────────────────────
+  //  WIN CONDITION
+  // ──────────────────────────────────
+
+  /** Check if someone has won */
+  checkWinCondition() {
+    const alive = this.players.filter(p => p.isAlive);
+    const mafiaAlive = alive.filter(p => Roles.get(p.roleId)?.team === 'mafia');
+    const citizenAlive = alive.filter(p => Roles.get(p.roleId)?.team === 'citizen');
+    const independentAlive = alive.filter(p => Roles.get(p.roleId)?.team === 'independent');
+
+    // All mafia dead and no independent threats
+    if (mafiaAlive.length === 0 && independentAlive.length === 0) {
+      this.winner = 'citizen';
+      this.phase = 'ended';
+      this._addHistory('win', '🏆 تیم شهروند پیروز شد!');
+      return 'citizen';
+    }
+
+    // Mafia >= citizens (mafia wins)
+    if (mafiaAlive.length >= citizenAlive.length + independentAlive.length) {
+      this.winner = 'mafia';
+      this.phase = 'ended';
+      this._addHistory('win', '🏆 تیم مافیا پیروز شد!');
+      return 'mafia';
+    }
+
+    // Independent alone with one other (edge case)
+    if (independentAlive.length > 0 && alive.length <= 2 && mafiaAlive.length === 0) {
+      this.winner = 'independent';
+      this.phase = 'ended';
+      this._addHistory('win', '🏆 بازیکن مستقل پیروز شد!');
+      return 'independent';
+    }
+
+    return null;
+  }
+
+  // ──────────────────────────────────
+  //  HELPERS
+  // ──────────────────────────────────
+
+  /** Get a player by ID */
+  getPlayer(id) {
+    return this.players.find(p => p.id === id);
+  }
+
+  /** Get alive players */
+  getAlivePlayers() {
+    return this.players.filter(p => p.isAlive);
+  }
+
+  /** Get dead players */
+  getDeadPlayers() {
+    return this.players.filter(p => !p.isAlive);
+  }
+
+  /** Get players by team (alive only) */
+  getTeamPlayers(team) {
+    return this.players.filter(p => p.isAlive && Roles.get(p.roleId)?.team === team);
+  }
+
+  /** Get team counts */
+  getTeamCounts() {
+    const alive = this.getAlivePlayers();
+    return {
+      mafia: alive.filter(p => Roles.get(p.roleId)?.team === 'mafia').length,
+      citizen: alive.filter(p => Roles.get(p.roleId)?.team === 'citizen').length,
+      independent: alive.filter(p => Roles.get(p.roleId)?.team === 'independent').length,
+      total: alive.length,
+    };
+  }
+
+  /** Can Dr Watson heal this target? (not same as last night) */
+  canDrWatsonHeal(targetId) {
+    return this._lastDrWatsonTarget !== targetId;
+  }
+
+  /** Can Dr Lecter heal this target? (not same as last night) */
+  canDrLecterHeal(targetId) {
+    return this._lastDrLecterTarget !== targetId;
+  }
+
+  /** Add a history entry */
+  _addHistory(type, text) {
+    this.history.push({
+      round: this.round,
+      phase: this.phase,
+      type,
+      text,
+      timestamp: Date.now(),
+    });
+  }
+
+  /** Get history for a specific round */
+  getHistoryForRound(round) {
+    return this.history.filter(h => h.round === round);
+  }
+
+  // ──────────────────────────────────
+  //  SERIALIZATION
+  // ──────────────────────────────────
+
+  /** Serialize the game state */
+  toJSON() {
+    return {
+      players: this.players.map(p => p.toJSON()),
+      round: this.round,
+      phase: this.phase,
+      winner: this.winner,
+      history: this.history,
+      selectedRoles: this.selectedRoles,
+      constantineUsed: this.constantineUsed,
+      gunnerUsed: this.gunnerUsed,
+      dayTimerDuration: this.dayTimerDuration,
+      defenseTimerDuration: this.defenseTimerDuration,
+      _lastDrWatsonTarget: this._lastDrWatsonTarget,
+      _lastDrLecterTarget: this._lastDrLecterTarget,
+    };
+  }
+
+  /** Load from saved data */
+  loadFromJSON(data) {
+    this.players = data.players.map(p => Player.fromJSON(p));
+    this.round = data.round;
+    this.phase = data.phase;
+    this.winner = data.winner;
+    this.history = data.history || [];
+    this.selectedRoles = data.selectedRoles || {};
+    this.constantineUsed = data.constantineUsed || false;
+    this.gunnerUsed = data.gunnerUsed || false;
+    this.dayTimerDuration = data.dayTimerDuration || 180;
+    this.defenseTimerDuration = data.defenseTimerDuration || 60;
+    this._lastDrWatsonTarget = data._lastDrWatsonTarget || null;
+    this._lastDrLecterTarget = data._lastDrLecterTarget || null;
+
+    // Restore Player ID counter
+    const maxId = Math.max(0, ...this.players.map(p => p.id));
+    Player._nextId = maxId + 1;
+  }
+}

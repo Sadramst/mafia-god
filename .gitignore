@@ -1,0 +1,22 @@
+# Native app build artifacts (not needed for PWA hosting)
+node_modules/
+www/
+dist/
+android/
+ios/
+.gradle/
+*.apk
+*.aab
+*.ipa
+*.app
+build/
+.idea/
+*.xcworkspace
+*.xcuserdata
+Pods/
+resources/
+build.js
+capacitor.config.json
+package.json
+package-lock.json
+BUILD_NATIVE.md
