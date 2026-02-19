@@ -693,7 +693,6 @@ img { max-width: 100%; display: block; }
   from { opacity: 0; }
   to { opacity: 1; }
 }
-}
 
 /* ---------- Phase Indicator ---------- */
 .phase-bar {
