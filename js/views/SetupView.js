@@ -149,6 +149,7 @@ export class SetupView extends BaseView {
 
         html += `
           <div class="role-card role-card--${team} ${isSelected ? 'selected' : ''}" data-role="${role.id}">
+            <button class="role-card__info" data-info="${role.id}" title="توضیحات">ⓘ</button>
             <div class="role-card__icon">${role.icon}</div>
             <div class="role-card__name">${role.name}</div>
             ${role.unique ? '' : `
@@ -167,63 +168,32 @@ export class SetupView extends BaseView {
     html += `</div>`;
     container.innerHTML = html;
 
-    // Toggle unique roles + long press for description
+    // Info buttons — show role description
+    container.querySelectorAll('.role-card__info').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const roleId = btn.dataset.info;
+        const role = Roles.get(roleId);
+        if (role) this._showRoleDescription(role);
+      });
+    });
+
+    // Toggle unique roles
     container.querySelectorAll('.role-card').forEach(card => {
-      let pressTimer = null;
-      let didLongPress = false;
-
-      const startPress = (e) => {
-        didLongPress = false;
-        pressTimer = setTimeout(() => {
-          didLongPress = true;
-          const roleId = card.dataset.role;
-          const role = Roles.get(roleId);
-          if (role) this._showRoleDescription(role);
-        }, 500);
-      };
-
-      const endPress = (e) => {
-        clearTimeout(pressTimer);
-        if (didLongPress) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      };
-
-      const cancelPress = () => {
-        clearTimeout(pressTimer);
-      };
-
-      // Touch events
-      card.addEventListener('touchstart', startPress, { passive: true });
-      card.addEventListener('touchend', endPress);
-      card.addEventListener('touchmove', cancelPress, { passive: true });
-      card.addEventListener('touchcancel', cancelPress);
-
-      // Mouse events (for desktop)
-      card.addEventListener('mousedown', startPress);
-      card.addEventListener('mouseup', endPress);
-      card.addEventListener('mouseleave', cancelPress);
-
-      // Prevent context menu on long press
-      card.addEventListener('contextmenu', (e) => e.preventDefault());
-
       card.addEventListener('click', (e) => {
-        if (didLongPress) return; // Don't toggle if it was a long press
-        if (e.target.closest('.role-card__count-btn')) return; // Don't toggle when clicking +/-
+        if (e.target.closest('.role-card__count-btn')) return;
+        if (e.target.closest('.role-card__info')) return;
         const roleId = card.dataset.role;
         const role = Roles.get(roleId);
         if (!role) return;
 
         if (role.unique) {
-          // Toggle on/off
           if (game.selectedRoles[roleId]) {
             delete game.selectedRoles[roleId];
           } else {
             game.selectedRoles[roleId] = 1;
           }
         } else {
-          // For non-unique, clicking the card toggles 0/1
           if (!game.selectedRoles[roleId]) {
             game.selectedRoles[roleId] = 1;
           } else {
