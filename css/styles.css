@@ -222,17 +222,17 @@ img { max-width: 100%; display: block; }
 .bottom-nav {
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   width: 100%;
-  max-width: var(--max-w);
   display: flex;
   align-items: center;
   justify-content: space-around;
   background: #0a0a0f;
   border-top: 1px solid var(--border);
   z-index: 100;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding: var(--space-sm) 0;
+  padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom, 0));
 }
 
 .nav-item {
@@ -1299,8 +1299,5 @@ img { max-width: 100%; display: block; }
   }
   .app-main {
     padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0) + var(--space-xl));
-  }
-  .bottom-nav {
-    padding-bottom: env(safe-area-inset-bottom);
   }
 }
