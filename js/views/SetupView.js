@@ -167,9 +167,49 @@ export class SetupView extends BaseView {
     html += `</div>`;
     container.innerHTML = html;
 
-    // Toggle unique roles
+    // Toggle unique roles + long press for description
     container.querySelectorAll('.role-card').forEach(card => {
+      let pressTimer = null;
+      let didLongPress = false;
+
+      const startPress = (e) => {
+        didLongPress = false;
+        pressTimer = setTimeout(() => {
+          didLongPress = true;
+          const roleId = card.dataset.role;
+          const role = Roles.get(roleId);
+          if (role) this._showRoleDescription(role);
+        }, 500);
+      };
+
+      const endPress = (e) => {
+        clearTimeout(pressTimer);
+        if (didLongPress) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      };
+
+      const cancelPress = () => {
+        clearTimeout(pressTimer);
+      };
+
+      // Touch events
+      card.addEventListener('touchstart', startPress, { passive: true });
+      card.addEventListener('touchend', endPress);
+      card.addEventListener('touchmove', cancelPress, { passive: true });
+      card.addEventListener('touchcancel', cancelPress);
+
+      // Mouse events (for desktop)
+      card.addEventListener('mousedown', startPress);
+      card.addEventListener('mouseup', endPress);
+      card.addEventListener('mouseleave', cancelPress);
+
+      // Prevent context menu on long press
+      card.addEventListener('contextmenu', (e) => e.preventDefault());
+
       card.addEventListener('click', (e) => {
+        if (didLongPress) return; // Don't toggle if it was a long press
         if (e.target.closest('.role-card__count-btn')) return; // Don't toggle when clicking +/-
         const roleId = card.dataset.role;
         const role = Roles.get(roleId);
@@ -278,5 +318,30 @@ export class SetupView extends BaseView {
     container.querySelector('#btn-back-home-setup')?.addEventListener('click', () => {
       this.app.navigate('home');
     });
+  }
+
+  /** Show role description popup (triggered by long press) */
+  _showRoleDescription(role) {
+    // Haptic feedback if available
+    if (navigator.vibrate) navigator.vibrate(30);
+
+    const teamNames = { mafia: 'تیم مافیا', citizen: 'تیم شهروند', independent: 'مستقل' };
+
+    const overlay = document.createElement('div');
+    overlay.className = 'role-tooltip-overlay';
+    overlay.innerHTML = `
+      <div class="role-tooltip">
+        <div class="role-tooltip__icon">${role.icon}</div>
+        <div class="role-tooltip__name">${role.name}</div>
+        <div class="role-tooltip__team role-tooltip__team--${role.team}">${teamNames[role.team]}</div>
+        <div class="role-tooltip__desc">${role.description}</div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Close on tap anywhere
+    overlay.addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('touchend', () => overlay.remove());
   }
 }
