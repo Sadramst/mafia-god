@@ -123,16 +123,16 @@ export class SetupView extends BaseView {
   _renderRolesTab(container) {
     const game = this.app.game;
     const teams = ['mafia', 'citizen', 'independent'];
-    const teamNames = { mafia: '🔴 تیم مافیا', citizen: '🔵 تیم شهروند', independent: '🟣 مستقل' };
+    const teamNames = { mafia: `🔴 ${t(tr.setup.teamMafia)}`, citizen: `🔵 ${t(tr.setup.teamCitizen)}`, independent: `🧡 ${t(tr.setup.teamIndependent)}` };
 
     let html = `
       <div class="section">
-        <h2 class="section__title">🎭 انتخاب نقش‌ها</h2>
+        <h2 class="section__title">🎭 ${t(tr.setup.selectRolesTitle)}</h2>
         <p class="section__subtitle">
-          بازیکنان: <strong>${game.players.length}</strong> نفر · 
-          نقش‌های انتخاب شده: <strong id="role-count-display">${game.getTotalRoleCount()}</strong>
+          ${t(tr.setup.playersLabel)} <strong>${game.players.length}</strong> ${t(tr.setup.person)} · 
+          ${t(tr.setup.selectedRolesLabel)} <strong id="role-count-display">${game.getTotalRoleCount()}</strong>
           ${game.getTotalRoleCount() !== game.players.length 
-            ? `<span style="color: var(--danger)"> (باید ${game.players.length} باشد)</span>` 
+            ? `<span style="color: var(--danger)"> ${t(tr.setup.shouldBe).replace('%d', game.players.length)}</span>` 
             : '<span style="color: var(--success)"> ✓</span>'}
         </p>
     `;
@@ -150,7 +150,7 @@ export class SetupView extends BaseView {
 
         html += `
           <div class="role-card role-card--${team} ${isSelected ? 'selected' : ''}" data-role="${role.id}">
-            <button class="role-card__info" data-info="${role.id}" title="توضیحات">i</button>
+            <button class="role-card__info" data-info="${role.id}" title="${t(tr.setup.roleInfoTooltip)}">i</button>
             <div class="role-card__icon">${role.icon}</div>
             <div class="role-card__name">${role.getLocalizedName()}</div>
             ${role.unique ? '' : `
@@ -163,13 +163,13 @@ export class SetupView extends BaseView {
             ${role.id === 'gunner' ? `
               <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
                 <div class="flex gap-sm items-center justify-center mb-sm">
-                  <span style="min-width: 50px;">🟡 مشقی:</span>
+                  <span style="min-width: 50px;">${t(tr.setup.gunnerBlankBullets)}</span>
                   <button class="btn btn--ghost btn--sm" data-action="blank-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.gunnerBlankMax}</span>
                   <button class="btn btn--ghost btn--sm" data-action="blank-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
                 </div>
                 <div class="flex gap-sm items-center justify-center">
-                  <span style="min-width: 50px;">🔴 جنگی:</span>
+                  <span style="min-width: 50px;">${t(tr.setup.gunnerLiveBullets)}</span>
                   <button class="btn btn--ghost btn--sm" data-action="live-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.gunnerLiveMax}</span>
                   <button class="btn btn--ghost btn--sm" data-action="live-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
@@ -179,7 +179,7 @@ export class SetupView extends BaseView {
             ${role.id === 'freemason' ? `
               <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
                 <div class="flex gap-sm items-center justify-center">
-                  <span style="min-width: 70px;">👥 متحدان:</span>
+                  <span style="min-width: 70px;">${t(tr.setup.framasonAllies)}</span>
                   <button class="btn btn--ghost btn--sm" data-action="ally-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.framasonMaxMembers}</span>
                   <button class="btn btn--ghost btn--sm" data-action="ally-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
@@ -189,7 +189,7 @@ export class SetupView extends BaseView {
             ${role.id === 'negotiator' ? `
               <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
                 <div class="flex gap-sm items-center justify-center">
-                  <span style="min-width: 80px;">📉 آستانه:</span>
+                  <span style="min-width: 80px;">${t(tr.setup.negotiatorThreshold)}</span>
                   <button class="btn btn--ghost btn--sm" data-action="neg-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.negotiatorThreshold}</span>
                   <button class="btn btn--ghost btn--sm" data-action="neg-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
@@ -199,7 +199,7 @@ export class SetupView extends BaseView {
             ${role.id === 'sniper' ? `
               <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
                 <div class="flex gap-sm items-center justify-center">
-                  <span style="min-width: 70px;">🎯 تیرها:</span>
+                  <span style="min-width: 70px;">${t(tr.setup.sniperShots)}</span>
                   <button class="btn btn--ghost btn--sm" data-action="sniper-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.sniperMaxShots}</span>
                   <button class="btn btn--ghost btn--sm" data-action="sniper-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
@@ -349,52 +349,52 @@ export class SetupView extends BaseView {
 
     container.innerHTML = `
       <div class="section">
-        <h2 class="section__title">🎲 تخصیص نقش‌ها</h2>
+        <h2 class="section__title">🎲 ${t(tr.setup.assignRolesTitle)}</h2>
         
         <!-- Summary -->
         <div class="stats-row">
           <div class="stat-card">
             <div class="stat-card__value">${game.players.length}</div>
-            <div class="stat-card__label">بازیکن</div>
+            <div class="stat-card__label">${t(tr.setup.playerSingular)}</div>
           </div>
           <div class="stat-card">
             <div class="stat-card__value">${game.getTotalRoleCount()}</div>
-            <div class="stat-card__label">نقش</div>
+            <div class="stat-card__label">${t(tr.setup.roleSingular)}</div>
           </div>
           <div class="stat-card ${game.getTotalRoleCount() === game.players.length ? 'stat-card--citizen' : 'stat-card--mafia'}">
             <div class="stat-card__value">${game.getTotalRoleCount() === game.players.length ? '✓' : '✕'}</div>
-            <div class="stat-card__label">تطابق</div>
+            <div class="stat-card__label">${t(tr.setup.matchLabel)}</div>
           </div>
         </div>
 
         <!-- Selected roles summary -->
         <div class="card mb-lg">
-          <div class="font-bold mb-sm">نقش‌های انتخاب‌شده:</div>
+          <div class="font-bold mb-sm">${t(tr.setup.selectedRoles)}:</div>
           <div class="flex" style="flex-wrap: wrap; gap: 6px;">
             ${Object.entries(game.selectedRoles).map(([roleId, count]) => {
               const role = Roles.get(roleId);
               if (!role) return '';
               return `<span class="role-badge role-badge--${role.team}">${role.icon} ${role.getLocalizedName()}${count > 1 ? ` ×${count}` : ''}</span>`;
             }).join('')}
-            ${Object.keys(game.selectedRoles).length === 0 ? '<span class="text-muted">نقشی انتخاب نشده</span>' : ''}
+            ${Object.keys(game.selectedRoles).length === 0 ? `<span class="text-muted">${t(tr.setup.noRoleSelected)}</span>` : ''}
           </div>
         </div>
 
         <!-- Zodiac frequency setting (only if zodiac is selected) -->
         ${game.selectedRoles['zodiac'] ? `
           <div class="card mb-lg" style="border-color: rgba(139,92,246,0.4);">
-            <div class="font-bold mb-sm">♈ تنظیمات زودیاک — دوره شلیک:</div>
+            <div class="font-bold mb-sm">♈ ${t(tr.setup.zodiacSettings)}</div>
             <div class="flex gap-sm">
-              <button class="btn btn--sm ${game.zodiacFrequency === 'every' ? 'btn--primary' : 'btn--ghost'}" data-zodiac-freq="every">هر شب</button>
-              <button class="btn btn--sm ${game.zodiacFrequency === 'odd' ? 'btn--primary' : 'btn--ghost'}" data-zodiac-freq="odd">شب‌های فرد</button>
-              <button class="btn btn--sm ${game.zodiacFrequency === 'even' ? 'btn--primary' : 'btn--ghost'}" data-zodiac-freq="even">شب‌های زوج</button>
+              <button class="btn btn--sm ${game.zodiacFrequency === 'every' ? 'btn--primary' : 'btn--ghost'}" data-zodiac-freq="every">${t(tr.setup.everyNight)}</button>
+              <button class="btn btn--sm ${game.zodiacFrequency === 'odd' ? 'btn--primary' : 'btn--ghost'}" data-zodiac-freq="odd">${t(tr.setup.oddNights)}</button>
+              <button class="btn btn--sm ${game.zodiacFrequency === 'even' ? 'btn--primary' : 'btn--ghost'}" data-zodiac-freq="even">${t(tr.setup.evenNights)}</button>
             </div>
           </div>
         ` : ''}
 
         ${game.selectedRoles['drWatson'] ? `
           <div class="card mb-lg" style="border-color: rgba(16,185,129,0.4);">
-            <div class="font-bold mb-sm">⚕️ دکتر واتسون — حداکثر هیل خود:</div>
+            <div class="font-bold mb-sm">⚕️ ${t(tr.setup.drWatsonSettings)}</div>
             <div class="flex gap-sm items-center">
               <button class="btn btn--sm btn--ghost" id="btn-watson-dec">−</button>
               <span class="font-bold" style="min-width: 30px; text-align: center;">${game.drWatsonSelfHealMax}</span>
@@ -405,7 +405,7 @@ export class SetupView extends BaseView {
 
         ${game.selectedRoles['drLecter'] ? `
           <div class="card mb-lg" style="border-color: rgba(220,38,38,0.4);">
-            <div class="font-bold mb-sm">💉 دکتر لکتر — حداکثر هیل خود:</div>
+            <div class="font-bold mb-sm">💉 ${t(tr.setup.drLecterSettings)}</div>
             <div class="flex gap-sm items-center">
               <button class="btn btn--sm btn--ghost" id="btn-lecter-dec">−</button>
               <span class="font-bold" style="min-width: 30px; text-align: center;">${game.drLecterSelfHealMax}</span>
@@ -416,7 +416,7 @@ export class SetupView extends BaseView {
 
         ${game.selectedRoles['freemason'] ? `
           <div class="card mb-lg" style="border-color: rgba(239,68,68,0.4);">
-            <div class="font-bold mb-sm">🔺 تنظیمات فراماسون — حداکثر تعداد متحدان:</div>
+            <div class="font-bold mb-sm">🔺 ${t(tr.setup.freemasonSettings)}</div>
             <div class="flex gap-sm items-center">
               <button class="btn btn--sm btn--ghost" id="btn-framason-dec">−</button>
               <span class="font-bold" style="min-width: 30px; text-align: center;">${game.framasonMaxMembers}</span>
@@ -427,14 +427,14 @@ export class SetupView extends BaseView {
 
         ${game.selectedRoles['gunner'] ? `
           <div class="card mb-lg" style="border-color: rgba(234,179,8,0.4);">
-            <div class="font-bold mb-sm">🔫 تنظیمات تفنگدار:</div>
-            <div class="font-bold mb-sm" style="font-size: var(--text-sm);">مصونیت از تیر صبحگاهی:</div>
+            <div class="font-bold mb-sm">🔫 ${t(tr.setup.gunnerSettings)}</div>
+            <div class="font-bold mb-sm" style="font-size: var(--text-sm);">${t(tr.setup.morningShotImmunity)}</div>
             <div class="flex gap-sm">
               <button class="btn btn--sm ${game.jackMorningShotImmune ? 'btn--primary' : 'btn--ghost'}" id="btn-jack-immune">
-                🔪 جک ${game.jackMorningShotImmune ? '✓' : ''}
+                ${t(tr.setup.jackImmune)} ${game.jackMorningShotImmune ? '✓' : ''}
               </button>
               <button class="btn btn--sm ${game.zodiacMorningShotImmune ? 'btn--primary' : 'btn--ghost'}" id="btn-zodiac-immune">
-                ♈ زودیاک ${game.zodiacMorningShotImmune ? '✓' : ''}
+                ${t(tr.setup.zodiacImmune)} ${game.zodiacMorningShotImmune ? '✓' : ''}
               </button>
             </div>
           </div>
@@ -449,10 +449,10 @@ export class SetupView extends BaseView {
 
         <!-- Actions -->
         <button class="btn btn--primary btn--lg btn--block mb-md" id="btn-random-assign" ${errors.length > 0 ? 'disabled' : ''}>
-          🎲 تخصیص تصادفی و شروع
+          🎲 ${t(tr.setup.randomAssignAndStart)}
         </button>
         <button class="btn btn--ghost btn--block" id="btn-back-home-setup">
-          ← بازگشت به خانه
+          ← ${t(tr.setup.backHome)}
         </button>
       </div>
     `;
@@ -520,7 +520,7 @@ export class SetupView extends BaseView {
     // Haptic feedback if available
     if (navigator.vibrate) navigator.vibrate(30);
 
-    const teamNames = { mafia: 'تیم مافیا', citizen: 'تیم شهروند', independent: 'مستقل' };
+    const teamNames = { mafia: t(tr.setup.teamMafia), citizen: t(tr.setup.teamCitizen), independent: t(tr.setup.teamIndependent) };
 
     const overlay = document.createElement('div');
     overlay.className = 'role-tooltip-overlay';

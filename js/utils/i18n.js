@@ -92,6 +92,13 @@ export const translations = {
     independent: { fa: 'مستقل', en: 'Independent' },
     warning: { fa: 'هشدار', en: 'Warning' },
     warningMismatch: { fa: 'تعداد نقش‌ها با تعداد بازیکنان یکسان نیست!', en: 'Number of roles doesn\'t match number of players!' },
+    person: { fa: 'نفر', en: 'people' },
+    roleInfoTooltip: { fa: 'توضیحات', en: 'Info' },
+    jackImmune: { fa: '🔪 جک', en: '🔪 Jack' },
+    zodiacImmune: { fa: '♈ زودیاک', en: '♈ Zodiac' },
+    teamMafia: { fa: 'تیم مافیا', en: 'Mafia Team' },
+    teamCitizen: { fa: 'تیم شهروند', en: 'Citizen Team' },
+    teamIndependent: { fa: 'مستقل', en: 'Independent' },
   },
 
   // Role Reveal
