@@ -310,8 +310,9 @@ export class SetupView extends BaseView {
     container.querySelectorAll('[data-action="blank-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        });
+        if (game.gunnerBlankMax < 10) { game.gunnerBlankMax++; this.render(); }
       });
+    });
     container.querySelectorAll('[data-action="live-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
