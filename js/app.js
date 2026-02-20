@@ -11,7 +11,7 @@ import { RoleRevealView } from './views/RoleRevealView.js';
 import { NightView } from './views/NightView.js';
 import { DayView } from './views/DayView.js';
 import { SummaryView } from './views/SummaryView.js';
-import { t, translations as tr } from './utils/i18n.js';
+import { t, translations as tr, setDocumentDirection, toEnDigits } from './utils/i18n.js';
 
 export class App {
 
@@ -38,6 +38,7 @@ export class App {
     };
 
     this._initNavigation();
+    setDocumentDirection(Settings.getLanguage() === 'en' ? 'en' : 'fa');
     this._updateNavLabels();
     this._initWakeLock();
     this.navigate('home');
@@ -82,13 +83,16 @@ export class App {
     const game = this.game;
     const isBlindDay = game.phase === 'blindDay';
     const isBlindNight = game.phase === 'blindNight';
+    const lang = Settings.getLanguage();
+    setDocumentDirection(lang === 'en' ? 'en' : 'fa');
 
+    const toEn = v => toEnDigits(v);
     const titles = {
       home: t(tr.header.home),
       setup: t(tr.header.setup),
       roleReveal: t(tr.header.roleReveal),
-      night: isBlindNight ? t(tr.header.blindNight) : t(tr.header.nightRound).replace('%d', game.round),
-      day: isBlindDay ? t(tr.header.blindDay) : t(tr.header.dayRound).replace('%d', game.round),
+      night: isBlindNight ? t(tr.header.blindNight) : t(tr.header.nightRound).replace('%d', toEn(game.round)),
+      day: isBlindDay ? t(tr.header.blindDay) : t(tr.header.dayRound).replace('%d', toEn(game.round)),
       summary: t(tr.header.summary),
     };
     if (this.headerTitle) {
@@ -98,11 +102,11 @@ export class App {
     // Badge shows phase
     if (this.headerBadge) {
       if (route === 'night') {
-        const nightText = isBlindNight ? t(tr.header.blindNight) : t(tr.header.nightRound).replace('%d', game.round);
+        const nightText = isBlindNight ? t(tr.header.blindNight) : t(tr.header.nightRound).replace('%d', toEn(game.round));
         this.headerBadge.textContent = `🌙 ${nightText}`;
         this.headerBadge.style.display = '';
       } else if (route === 'day') {
-        const dayText = isBlindDay ? t(tr.header.blindDay) : t(tr.header.dayRound).replace('%d', game.round);
+        const dayText = isBlindDay ? t(tr.header.blindDay) : t(tr.header.dayRound).replace('%d', toEn(game.round));
         this.headerBadge.textContent = `☀️ ${dayText}`;
         this.headerBadge.style.display = '';
       } else {

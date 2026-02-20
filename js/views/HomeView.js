@@ -4,7 +4,7 @@
 import { BaseView } from './BaseView.js';
 import { Storage } from '../utils/Storage.js';
 import { Settings, Language } from '../utils/Settings.js';
-import { t, translations as tr } from '../utils/i18n.js';
+import { t, translations as tr, toEnDigits } from '../utils/i18n.js';
 
 export class HomeView extends BaseView {
 
@@ -102,10 +102,10 @@ export class HomeView extends BaseView {
                 <div class="card mb-sm">
                   <div class="flex justify-between items-center mb-sm">
                     <span class="font-bold">${g.winner === 'mafia' ? `🔴 ${t(tr.home.mafiaWon)}` : g.winner === 'citizen' ? `🔵 ${t(tr.home.citizenWon)}` : `🟣 ${t(tr.home.independentWon)}`}</span>
-                    <span class="text-muted text-sm">${new Date(g.date).toLocaleDateString('fa-IR')}</span>
+                    <span class="text-muted text-sm">${new Date(g.date).toLocaleDateString('en-US')}</span>
                   </div>
                   <div class="text-secondary" style="font-size: var(--text-sm)">
-                    ${g.playerCount} ${t(tr.home.players)} · ${g.rounds} ${t(tr.home.rounds)}
+                    ${toEnDigits(g.playerCount)} ${t(tr.home.players)} · ${toEnDigits(g.rounds)} ${t(tr.home.rounds)}
                   </div>
                 </div>
               `).join('')}

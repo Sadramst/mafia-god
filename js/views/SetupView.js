@@ -3,7 +3,7 @@
  */
 import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
-import { t, translations as tr } from '../utils/i18n.js';
+import { t, translations as tr, toEnDigits } from '../utils/i18n.js';
 
 export class SetupView extends BaseView {
 
@@ -75,7 +75,7 @@ export class SetupView extends BaseView {
             </div>
           ` : game.players.map((p, i) => `
             <div class="player-item" style="animation-delay: ${i * 50}ms">
-              <div class="player-item__number">${i + 1}</div>
+              <div class="player-item__number">${toEnDigits(i + 1)}</div>
               <div class="player-item__name">${p.name}</div>
               <button class="player-item__remove" data-id="${p.id}" title="${t(tr.setup.removePlayer)}">✕</button>
             </div>

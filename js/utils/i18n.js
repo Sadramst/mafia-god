@@ -1,4 +1,26 @@
 /**
+ * Convert all digits in a string to English (0-9)
+ */
+export function toEnDigits(str) {
+  return String(str).replace(/[\u06F0-\u06F9\u0660-\u0669\d]/g, d =>
+    String('0123456789'[Number(d)])
+  );
+}
+
+/**
+ * Set <html lang=... dir=...> based on language
+ */
+export function setDocumentDirection(lang) {
+  const html = document.documentElement;
+  if (lang === 'en') {
+    html.setAttribute('lang', 'en');
+    html.setAttribute('dir', 'ltr');
+  } else {
+    html.setAttribute('lang', 'fa');
+    html.setAttribute('dir', 'rtl');
+  }
+}
+/**
  * i18n.js — Internationalization (Bilingual Support)
  * Contains all UI text labels in Farsi and English
  */
