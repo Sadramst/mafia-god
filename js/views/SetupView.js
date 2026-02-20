@@ -163,13 +163,13 @@ export class SetupView extends BaseView {
             ${role.id === 'gunner' ? `
               <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
                 <div class="flex gap-sm items-center justify-center mb-sm">
-                  <span style="min-width: 50px;">${t(tr.setup.gunnerBlankBullets)}</span>
+                  ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.gunnerBlankBullets) + '</span>') : ('<span style="min-width: 50px;">' + t(tr.setup.gunnerBlankBullets) + '</span>')}
                   <button class="btn btn--ghost btn--sm" data-action="blank-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.gunnerBlankMax}</span>
                   <button class="btn btn--ghost btn--sm" data-action="blank-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
                 </div>
                 <div class="flex gap-sm items-center justify-center">
-                  <span style="min-width: 50px;">${t(tr.setup.gunnerLiveBullets)}</span>
+                  ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.gunnerLiveBullets) + '</span>') : ('<span style="min-width: 50px;">' + t(tr.setup.gunnerLiveBullets) + '</span>')}
                   <button class="btn btn--ghost btn--sm" data-action="live-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.gunnerLiveMax}</span>
                   <button class="btn btn--ghost btn--sm" data-action="live-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
@@ -179,7 +179,7 @@ export class SetupView extends BaseView {
             ${role.id === 'freemason' ? `
               <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
                 <div class="flex gap-sm items-center justify-center">
-                  <span style="min-width: 70px;">${t(tr.setup.framasonAllies)}</span>
+                  ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.framasonAllies) + '</span>') : ('<span style="min-width: 70px;">' + t(tr.setup.framasonAllies) + '</span>')}
                   <button class="btn btn--ghost btn--sm" data-action="ally-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.framasonMaxMembers}</span>
                   <button class="btn btn--ghost btn--sm" data-action="ally-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
@@ -189,7 +189,7 @@ export class SetupView extends BaseView {
             ${role.id === 'negotiator' ? `
               <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
                 <div class="flex gap-sm items-center justify-center">
-                  <span style="min-width: 80px;">${t(tr.setup.negotiatorThreshold)}</span>
+                  ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.negotiatorThreshold) + '</span>') : ('<span style="min-width: 80px;">' + t(tr.setup.negotiatorThreshold) + '</span>')}
                   <button class="btn btn--ghost btn--sm" data-action="neg-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.negotiatorThreshold}</span>
                   <button class="btn btn--ghost btn--sm" data-action="neg-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
@@ -199,7 +199,7 @@ export class SetupView extends BaseView {
             ${role.id === 'sniper' ? `
               <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
                 <div class="flex gap-sm items-center justify-center">
-                  <span style="min-width: 70px;">${t(tr.setup.sniperShots)}</span>
+                  ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.sniperShots) + '</span>') : ('<span style="min-width: 70px;">' + t(tr.setup.sniperShots) + '</span>')}
                   <button class="btn btn--ghost btn--sm" data-action="sniper-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.sniperMaxShots}</span>
                   <button class="btn btn--ghost btn--sm" data-action="sniper-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>

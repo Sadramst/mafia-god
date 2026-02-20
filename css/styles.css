@@ -92,6 +92,14 @@
   --max-w: 480px;
 }
 
+/* Small helper to force LTR inline content when app language is English */
+.ltr-inline {
+  direction: ltr;
+  unicode-bidi: embed;
+  display: inline-block;
+  text-align: left;
+}
+
 /* ---------- Reset ---------- */
 *, *::before, *::after {
   margin: 0;
