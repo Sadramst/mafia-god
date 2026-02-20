@@ -12,6 +12,7 @@ import { NightView } from './views/NightView.js';
 import { DayView } from './views/DayView.js';
 import { SummaryView } from './views/SummaryView.js';
 import { t, translations as tr, setDocumentDirection, toEnDigits } from './utils/i18n.js';
+import { Settings } from './utils/Settings.js';
 
 export class App {
 
