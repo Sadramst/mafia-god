@@ -159,6 +159,22 @@ export class SetupView extends BaseView {
                 <button class="role-card__count-btn" data-action="inc" data-role="${role.id}">+</button>
               </div>
             `}
+            ${role.id === 'gunner' && isSelected ? `
+              <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs);">
+                <div class="flex gap-sm items-center mb-xs">
+                  <span style="min-width: 50px;">🟡 مشقی:</span>
+                  <button class="btn btn--ghost btn--sm" data-action="blank-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
+                  <span class="font-bold" style="min-width: 20px; text-align: center;">${game.gunnerBlankMax}</span>
+                  <button class="btn btn--ghost btn--sm" data-action="blank-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
+                </div>
+                <div class="flex gap-sm items-center">
+                  <span style="min-width: 50px;">🔴 جنگی:</span>
+                  <button class="btn btn--ghost btn--sm" data-action="live-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
+                  <span class="font-bold" style="min-width: 20px; text-align: center;">${game.gunnerLiveMax}</span>
+                  <button class="btn btn--ghost btn--sm" data-action="live-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
+                </div>
+              </div>
+            ` : ''}
           </div>
         `;
       }
@@ -221,6 +237,32 @@ export class SetupView extends BaseView {
           if (game.selectedRoles[roleId] === 0) delete game.selectedRoles[roleId];
         }
         this.render();
+      });
+    });
+
+    // Gunner bullet count +/- buttons on role card
+    container.querySelectorAll('[data-action="blank-dec"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (game.gunnerBlankMax > 0) { game.gunnerBlankMax--; this.render(); }
+      });
+    });
+    container.querySelectorAll('[data-action="blank-inc"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (game.gunnerBlankMax < 10) { game.gunnerBlankMax++; this.render(); }
+      });
+    });
+    container.querySelectorAll('[data-action="live-dec"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (game.gunnerLiveMax > 0) { game.gunnerLiveMax--; this.render(); }
+      });
+    });
+    container.querySelectorAll('[data-action="live-inc"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (game.gunnerLiveMax < 10) { game.gunnerLiveMax++; this.render(); }
       });
     });
   }
@@ -308,6 +350,21 @@ export class SetupView extends BaseView {
           </div>
         ` : ''}
 
+        ${game.selectedRoles['gunner'] ? `
+          <div class="card mb-lg" style="border-color: rgba(234,179,8,0.4);">
+            <div class="font-bold mb-sm">🔫 تنظیمات تفنگدار:</div>
+            <div class="font-bold mb-sm" style="font-size: var(--text-sm);">مصونیت از تیر صبحگاهی:</div>
+            <div class="flex gap-sm">
+              <button class="btn btn--sm ${game.jackMorningShotImmune ? 'btn--primary' : 'btn--ghost'}" id="btn-jack-immune">
+                🔪 جک ${game.jackMorningShotImmune ? '✓' : ''}
+              </button>
+              <button class="btn btn--sm ${game.zodiacMorningShotImmune ? 'btn--primary' : 'btn--ghost'}" id="btn-zodiac-immune">
+                ♈ زودیاک ${game.zodiacMorningShotImmune ? '✓' : ''}
+              </button>
+            </div>
+          </div>
+        ` : ''}
+
         <!-- Errors -->
         ${errors.length > 0 ? `
           <div class="card mb-lg" style="border-color: var(--danger);">
@@ -370,6 +427,16 @@ export class SetupView extends BaseView {
     });
     container.querySelector('#btn-lecter-inc')?.addEventListener('click', () => {
       if (game.drLecterSelfHealMax < 10) { game.drLecterSelfHealMax++; this.render(); }
+    });
+
+    // Jack/Zodiac morning shot immunity toggles
+    container.querySelector('#btn-jack-immune')?.addEventListener('click', () => {
+      game.jackMorningShotImmune = !game.jackMorningShotImmune;
+      this.render();
+    });
+    container.querySelector('#btn-zodiac-immune')?.addEventListener('click', () => {
+      game.zodiacMorningShotImmune = !game.zodiacMorningShotImmune;
+      this.render();
     });
   }
 

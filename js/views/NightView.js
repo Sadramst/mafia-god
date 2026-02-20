@@ -13,6 +13,8 @@ export class NightView extends BaseView {
     this.godfatherMode = null;  // null | 'shoot' | 'salakhi'
     this.salakhiGuessRoleId = null; // Guessed role ID for salakhi
     this.bombPassword = null;  // 1–4 password for bomber
+    this.gunnerAssignments = []; // Array of { holderId, type } for multi-bullet
+    this.gunnerCurrentType = null; // 'blank' | 'live' — type being assigned
   }
 
   render() {
@@ -166,7 +168,7 @@ export class NightView extends BaseView {
    * Render the active step body.
    * For godfather: shows mode selection (shoot vs salakhi) + target + optional role guess.
    * For mafiaReveal: shows mafia members to each other.
-   * For jack (telesm): shows telesm target selection.
+   * For jack (curse): shows curse target selection.
    * For other roles: shows standard target selection.
    */
   _renderActiveStep(step, idx, targets, selectedTarget) {
@@ -195,16 +197,16 @@ export class NightView extends BaseView {
       `;
     }
 
-    // ── Jack telesm ──
-    if (step.actionType === 'telesm') {
+    // ── Jack curse ──
+    if (step.actionType === 'curse') {
       // Jack can target any alive player except himself
-      const telesmTargets = game.getAlivePlayers().filter(p => !step.actors.includes(p.id));
+      const curseTargets = game.getAlivePlayers().filter(p => !step.actors.includes(p.id));
       return `
         <div class="card mb-sm" style="background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.3); font-size: var(--text-xs); padding: 8px 12px;">
           🔪 جک طلسم خود را روی یک نفر می‌گذارد. اگر آن فرد کشته شود یا رأی بگیرد، جک هم حذف می‌شود.
         </div>
         <div class="target-grid">
-          ${telesmTargets.map(t => `
+          ${curseTargets.map(t => `
             <button class="target-btn ${selectedTarget === t.id ? 'selected' : ''}" 
                     data-step="${idx}" data-target="${t.id}">
               ${t.name}
@@ -237,6 +239,11 @@ export class NightView extends BaseView {
     // ── Framason special UI (recruit) ──
     if (step.roleId === 'freemason') {
       return this._renderFramasonStep(idx, targets, selectedTarget);
+    }
+
+    // ── Gunner special UI (multi-bullet assignment) ──
+    if (step.roleId === 'gunner') {
+      return this._renderGunnerStep(idx, targets, selectedTarget);
     }
 
     // ── Standard step UI ──
@@ -440,6 +447,97 @@ export class NightView extends BaseView {
     `;
   }
 
+  /**
+   * Render Gunner's special step: multi-bullet assignment.
+   * God can assign as many bullets as available, max one per person.
+   */
+  _renderGunnerStep(idx, targets, selectedTarget) {
+    const game = this.app.game;
+    const bm = game.bulletManager;
+
+    // Calculate remaining after pending assignments
+    const pendingBlank = this.gunnerAssignments.filter(a => a.type === 'blank').length;
+    const pendingLive = this.gunnerAssignments.filter(a => a.type === 'live').length;
+    const blankLeft = bm.blankRemaining - pendingBlank;
+    const liveLeft = bm.liveRemaining - pendingLive;
+    const totalLeft = blankLeft + liveLeft;
+
+    // Exclude self + already assigned players from targets
+    const gunnerActors = game.nightSteps[idx]?.actors || [];
+    const assignedIds = this.gunnerAssignments.map(a => a.holderId);
+    const bulletTargets = game.getAlivePlayers().filter(p =>
+      !gunnerActors.includes(p.id) && !assignedIds.includes(p.id)
+    );
+
+    // Assigned bullets summary
+    const assignedList = this.gunnerAssignments.map((a, i) => {
+      const p = game.getPlayer(a.holderId);
+      return `<div class="flex items-center gap-sm mb-sm" style="font-size: var(--text-sm);">
+        ${a.type === 'live' ? '🔴 جنگی' : '🟡 مشقی'} → <strong>${p?.name || '—'}</strong>
+        <button class="btn btn--ghost btn--sm" data-remove-assignment="${i}" style="padding: 2px 8px; font-size: var(--text-xs);">✕</button>
+      </div>`;
+    }).join('');
+
+    // Type selection for adding a new bullet
+    const typeButtons = totalLeft > 0 && bulletTargets.length > 0 ? `
+      <div class="text-muted mb-sm mt-md" style="font-size: var(--text-sm);">➕ اضافه کردن تیر:</div>
+      <div class="flex gap-sm mb-md">
+        <button class="btn ${this.gunnerCurrentType === 'blank' ? 'btn--primary' : 'btn--ghost'} btn--sm btn--block"
+                data-gunner-type="blank"
+                ${blankLeft <= 0 ? 'disabled' : ''}>
+          🟡 مشقی (${blankLeft})
+        </button>
+        <button class="btn ${this.gunnerCurrentType === 'live' ? 'btn--danger' : 'btn--ghost'} btn--sm btn--block"
+                data-gunner-type="live"
+                ${liveLeft <= 0 ? 'disabled' : ''}>
+          🔴 جنگی (${liveLeft})
+        </button>
+      </div>
+    ` : '';
+
+    // Target grid (only shown when a type is selected)
+    const targetGrid = this.gunnerCurrentType && bulletTargets.length > 0 ? `
+      <div class="target-grid">
+        ${bulletTargets.map(t => `
+          <button class="target-btn" data-gunner-assign="${t.id}">
+            ${t.name}
+          </button>
+        `).join('')}
+      </div>
+    ` : '';
+
+    return `
+      <div class="card mb-sm" style="background: rgba(234,179,8,0.08); border-color: rgba(234,179,8,0.3); font-size: var(--text-xs); padding: 8px 12px;">
+        🔫 تفنگدار تیر به بازیکنان می‌دهد — هر چند تا که دارد ولی حداکثر یک تیر به هر نفر. دارنده صبح می‌تواند شلیک کند.
+      </div>
+
+      <div class="card mb-sm" style="font-size: var(--text-sm); padding: 8px 12px;">
+        📦 موجودی: 🟡 مشقی: <strong>${blankLeft}</strong> · 🔴 جنگی: <strong>${liveLeft}</strong>
+      </div>
+
+      ${this.gunnerAssignments.length > 0 ? `
+        <div class="card mb-sm" style="border-color: rgba(234,179,8,0.4); padding: 8px 12px;">
+          <div class="font-bold mb-sm" style="font-size: var(--text-sm);">📋 تیرهای تخصیص‌داده‌شده:</div>
+          ${assignedList}
+        </div>
+      ` : ''}
+
+      ${typeButtons}
+      ${targetGrid}
+
+      <div class="flex gap-sm mt-md">
+        <button class="btn btn--primary btn--block btn--sm"
+                data-action="confirm-step" data-step="${idx}"
+                ${this.gunnerAssignments.length === 0 ? 'disabled' : ''}>
+          ✓ تأیید تیرها (${this.gunnerAssignments.length})
+        </button>
+        <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
+          رد شدن
+        </button>
+      </div>
+    `;
+  }
+
   _getActionDescription(actionType) {
     const descriptions = {
       kill: 'شلیک یا سلاخی — نوع اقدام را انتخاب کنید',
@@ -454,8 +552,9 @@ export class NightView extends BaseView {
       snipe: 'چه کسی را نشانه بگیرد؟',
       soloKill: 'چه کسی را بکشد؟',
       revive: 'چه کسی را زنده کند؟',
-      telesm: 'طلسم را روی چه کسی بگذارد؟',
+      curse: 'طلسم را روی چه کسی بگذارد؟',
       framasonRecruit: 'چه کسی را به تیم اضافه کند؟',
+      giveBullet: 'نوع تیر و بازیکن هدف را انتخاب کنید',
       mafiaReveal: 'تیم مافیا همدیگر را بشناسند',
     };
     return descriptions[actionType] || 'یک بازیکن انتخاب کنید';
@@ -515,6 +614,35 @@ export class NightView extends BaseView {
       });
     });
 
+    // Gunner bullet type selection
+    this.container.querySelectorAll('[data-gunner-type]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.gunnerCurrentType = btn.dataset.gunnerType;
+        this.render();
+      });
+    });
+
+    // Gunner assign bullet to target
+    this.container.querySelectorAll('[data-gunner-assign]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const holderId = Number(btn.dataset.gunnerAssign);
+        if (this.gunnerCurrentType) {
+          this.gunnerAssignments.push({ holderId, type: this.gunnerCurrentType });
+          this.gunnerCurrentType = null; // Reset type for next assignment
+          this.render();
+        }
+      });
+    });
+
+    // Gunner remove assignment
+    this.container.querySelectorAll('[data-remove-assignment]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.removeAssignment);
+        this.gunnerAssignments.splice(idx, 1);
+        this.render();
+      });
+    });
+
     // Confirm step
     this.container.querySelectorAll('[data-action="confirm-step"]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -529,6 +657,16 @@ export class NightView extends BaseView {
         }
 
         const targetId = this.selectedTargets[stepIdx];
+
+        // Gunner: multi-bullet, no single targetId needed
+        if (step?.roleId === 'gunner' && this.gunnerAssignments.length > 0) {
+          game.recordNightAction(null, { bulletAssignments: [...this.gunnerAssignments] });
+          this.gunnerAssignments = [];
+          this.gunnerCurrentType = null;
+          this.render();
+          return;
+        }
+
         if (targetId) {
           // Pass extra data for godfather (mode + guessed role)
           if (step?.roleId === 'godfather' && this.godfatherMode) {
@@ -564,7 +702,7 @@ export class NightView extends BaseView {
       const isBlind = game.phase === 'blindNight';
 
       if (isBlind) {
-        // Blind night: resolve telesm placement only, then go to day
+        // Blind night: resolve curse placement only, then go to day
         const results = game.resolveNight();
         game.startDay();
         this.app.saveGame();
@@ -595,5 +733,7 @@ export class NightView extends BaseView {
     this.godfatherMode = null;
     this.salakhiGuessRoleId = null;
     this.bombPassword = null;
+    this.gunnerAssignments = [];
+    this.gunnerCurrentType = null;
   }
 }

@@ -9,7 +9,7 @@
  *   - Day voting
  *   - Salakhi (سلاخی)
  *   - Bomb explosion
- *   - Gunner shot (day action)
+ *   - Live bullet explosion (تیر جنگی منفجر شده)
  */
 export class Shield {
 
@@ -36,7 +36,7 @@ export class Shield {
     'vote',
     'salakhi',
     'bomb',
-    'gunner',
+    'live_explosion',
     'sniper_miss',
     'bodyguard_sacrifice',
   ]);

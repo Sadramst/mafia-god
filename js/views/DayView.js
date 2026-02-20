@@ -18,6 +18,11 @@ export class DayView extends BaseView {
     this.siestaStep = 'guardian'; // 'guardian' | 'guardian_guess' | 'target' | 'result'
     this.siestaGuess = null; // 1–4 password guess
     this.siestaResultData = null; // { result, guardianId?, targetId? }
+    // Morning shooting state
+    this.morningShootActive = false;   // Is the shooting panel open?
+    this.morningShooterId = null;      // Which bullet holder is shooting?
+    this.morningShootTargetId = null;  // Selected target
+    this.morningShootResult = null;    // Result of the shot
   }
 
   render() {
@@ -254,7 +259,7 @@ export class DayView extends BaseView {
           </div>
         ` : ''}
 
-        ${results?.jackTelesmTriggered ? `
+        ${results?.jackCurseTriggered ? `
           <div class="card mb-md" style="border-color: rgba(139,92,246,0.6);">
             <div style="font-weight: 600; color: rgb(139,92,246);">
               🔪 طلسم جک فعال شد — جک هم از بازی خارج شد!
@@ -298,8 +303,8 @@ export class DayView extends BaseView {
 
           ${(() => {
             const jackP = game.players.find(p => p.isAlive && p.roleId === 'jack');
-            if (jackP && jackP.telesm.isActive) {
-              const tTarget = game.getPlayer(jackP.telesm.targetId);
+            if (jackP && jackP.curse.isActive) {
+              const tTarget = game.getPlayer(jackP.curse.targetId);
               return `<div class="card mb-sm" style="background: rgba(139,92,246,0.08); font-size: var(--text-sm);">
                 🔪 طلسم جک روی: <strong>${tTarget?.name || '—'}</strong>
               </div>`;
@@ -313,6 +318,17 @@ export class DayView extends BaseView {
               ${game.framason.isContaminated ? '<span style="color: var(--danger);"> ⚠️ آلوده!</span>' : ''}
             </div>
           ` : ''}
+
+          ${(() => {
+            const bullets = game.getActiveBullets();
+            if (bullets.length === 0) return '';
+            return `<div class="card mb-sm" style="background: rgba(234,179,8,0.08); font-size: var(--text-sm);">
+              🔫 تیرهای فعال:
+              ${bullets.map(b => `<div style="font-size: var(--text-xs); margin-top: 2px;">
+                ${b.type === 'live' ? '🔴 جنگی' : '🟡 مشقی'} → <strong>${b.holderName}</strong>
+              </div>`).join('')}
+            </div>`;
+          })()}
         </div>
 
         ${game.hasFramasonContamination() ? `
@@ -387,17 +403,38 @@ export class DayView extends BaseView {
           </div>
         </div>
 
-        <!-- Gunner action -->
-        ${this._hasAliveRole('gunner') && !game.gunnerUsed ? `
-          <div class="card mt-md" style="border-color: var(--warning);">
-            <div class="font-bold mb-sm">🔫 تفنگدار می‌خواهد شلیک کند؟</div>
-            <div class="target-grid">
-              ${game.getAlivePlayers().filter(p => p.roleId !== 'gunner').map(p => `
-                <button class="target-btn" data-gunner-target="${p.id}">${p.name}</button>
-              `).join('')}
+        <!-- Morning Shooting (Gunner bullets) -->
+        ${(() => {
+          const bullets = game.getActiveBullets();
+          if (bullets.length === 0) return '';
+          return `
+            <div class="card mt-md" style="border-color: var(--warning);">
+              <div class="font-bold mb-sm">🔫 تیر صبحگاهی</div>
+              <p class="text-secondary mb-sm" style="font-size: var(--text-xs);">
+                بازیکنان دارای تیر می‌توانند اعلام کنند. تیر جنگی استفاده‌نشده در شروع رأی‌گیری منفجر می‌شود!
+              </p>
+              <div class="god-dashboard mb-md" style="padding: 8px 12px;">
+                <div class="god-dashboard__title" style="margin-bottom: 4px;">👁️ تیرها (فقط خدا)</div>
+                ${bullets.map(b => `
+                  <div style="font-size: var(--text-xs); margin-bottom: 2px;">
+                    ${b.type === 'live' ? '🔴 جنگی' : '🟡 مشقی'} → ${b.holderName}
+                  </div>
+                `).join('')}
+              </div>
+              <div class="target-grid">
+                ${bullets.filter(b => game.getPlayer(b.holderId)?.isAlive).map(b => `
+                  <button class="target-btn" data-morning-shooter="${b.holderId}">
+                    ${b.holderName} اعلام کرد 🔫
+                  </button>
+                `).join('')}
+              </div>
             </div>
-          </div>
-        ` : ''}
+          `;
+        })()}
+
+        ${this.morningShootActive ? this._renderMorningShootPanel() : ''}
+
+        ${this.morningShootResult ? this._renderMorningShootResult() : ''}
 
         <button class="btn btn--primary btn--block mt-lg" id="btn-go-voting">
           🗳️ شروع رأی‌گیری
@@ -406,10 +443,24 @@ export class DayView extends BaseView {
     `;
 
     this._setupTimer(container);
-    this._setupGunner(container);
+    this._setupMorningShooting(container);
 
     container.querySelector('#btn-go-voting')?.addEventListener('click', () => {
       this.timer?.stop();
+
+      // Resolve live bullet expiration before voting
+      const explosions = this.app.game.resolveLiveExpiration();
+      if (explosions.length > 0) {
+        this.app.saveGame();
+        const names = explosions.map(e => e.holderName).join('، ');
+        this.app.showToast(`💥 تیر جنگی منفجر شد: ${names}`, 'error');
+        const winner = this.app.game.checkWinCondition();
+        if (winner) {
+          this.app.navigate('summary');
+          return;
+        }
+      }
+
       if (this.app.game.hasBombToResolve()) {
         this.subView = 'siesta';
       } else {
@@ -529,8 +580,8 @@ export class DayView extends BaseView {
             const extra = game.eliminateByVote(maxVotePlayer);
             this.app.saveGame();
 
-            // Show telesm chain notification
-            if (extra.jackTelesmTriggered) {
+            // Show curse chain notification
+            if (extra.jackCurseTriggered) {
               this.app.showToast('🔪 طلسم جک فعال شد — جک هم حذف شد!', 'info');
             }
 
@@ -651,27 +702,130 @@ export class DayView extends BaseView {
     });
   }
 
-  _setupGunner(container) {
-    container.querySelectorAll('[data-gunner-target]').forEach(btn => {
+  _setupMorningShooting(container) {
+    // Bullet holder announces → open shooting panel
+    container.querySelectorAll('[data-morning-shooter]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const targetId = Number(btn.dataset.gunnerTarget);
-        const target = this.app.game.getPlayer(targetId);
-        this.confirm(
-          'شلیک تفنگدار',
-          `آیا تفنگدار به ${target?.name} شلیک کند؟ (این عمل قابل بازگشت نیست)`,
-          () => {
-            this.app.game.gunnerShoot(targetId);
-            this.app.saveGame();
-            const winner = this.app.game.checkWinCondition();
-            if (winner) {
-              this.app.navigate('summary');
-            } else {
-              this.render();
-            }
-          }
-        );
+        this.morningShooterId = Number(btn.dataset.morningShooter);
+        this.morningShootActive = true;
+        this.morningShootTargetId = null;
+        this.morningShootResult = null;
+        this.render();
       });
     });
+
+    // Target selection in shooting panel
+    container.querySelectorAll('[data-morning-target]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.morningShootTargetId = Number(btn.dataset.morningTarget);
+        this.render();
+      });
+    });
+
+    // Cancel shooting
+    container.querySelector('#btn-morning-cancel')?.addEventListener('click', () => {
+      this.morningShootActive = false;
+      this.morningShooterId = null;
+      this.morningShootTargetId = null;
+      this.render();
+    });
+
+    // Confirm shoot
+    container.querySelector('#btn-morning-confirm')?.addEventListener('click', () => {
+      if (!this.morningShooterId || !this.morningShootTargetId) return;
+
+      const result = this.app.game.resolveMorningShot(this.morningShooterId, this.morningShootTargetId);
+      this.app.saveGame();
+
+      this.morningShootResult = result;
+      this.morningShootActive = false;
+
+      const winner = this.app.game.checkWinCondition();
+      if (winner) {
+        this.app.navigate('summary');
+        return;
+      }
+      this.render();
+    });
+
+    // Dismiss result
+    container.querySelector('#btn-morning-result-dismiss')?.addEventListener('click', () => {
+      this.morningShootResult = null;
+      this.render();
+    });
+  }
+
+  /** Render the shooting panel (target selection + confirm) */
+  _renderMorningShootPanel() {
+    const game = this.app.game;
+    const shooter = game.getPlayer(this.morningShooterId);
+    if (!shooter) return '';
+
+    const targets = game.getAlivePlayers().filter(p => p.id !== this.morningShooterId);
+
+    return `
+      <div class="card mt-md" style="border-color: rgba(234,179,8,0.6);">
+        <div class="font-bold mb-sm" style="color: var(--warning);">🎯 ${shooter.name} به چه کسی شلیک می‌کند؟</div>
+        <p class="text-secondary mb-sm" style="font-size: var(--text-xs);">
+          هدف پس از انتخاب فرصت وصیت دارد. سپس نتیجه اعلام می‌شود.
+        </p>
+        <div class="target-grid">
+          ${targets.map(p => `
+            <button class="target-btn ${this.morningShootTargetId === p.id ? 'selected' : ''}"
+                    data-morning-target="${p.id}">
+              ${p.name}
+            </button>
+          `).join('')}
+        </div>
+        <div class="flex gap-sm mt-md">
+          <button class="btn btn--danger btn--block btn--sm" id="btn-morning-confirm"
+                  ${!this.morningShootTargetId ? 'disabled' : ''}>
+            💥 شلیک (پس از وصیت)
+          </button>
+          <button class="btn btn--ghost btn--sm" id="btn-morning-cancel">لغو</button>
+        </div>
+      </div>
+    `;
+  }
+
+  /** Render the shooting result card */
+  _renderMorningShootResult() {
+    const result = this.morningShootResult;
+    if (!result) return '';
+
+    const teamNames = { mafia: 'مافیا', citizen: 'شهروند', independent: 'مستقل' };
+    const teamName = teamNames[result.targetTeam] || result.targetTeam;
+
+    if (result.killed) {
+      return `
+        <div class="card mt-md" style="border-color: var(--danger);">
+          <div style="font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-sm);">💥</div>
+          <div class="font-bold text-center" style="color: var(--danger); font-size: var(--text-lg);">
+            تیر جنگی بود!
+          </div>
+          <p class="text-center text-secondary mt-sm">
+            ${result.targetName} حذف شد — سمت: <strong>${teamName}</strong>
+          </p>
+          ${result.jackCurseTriggered ? `
+            <p class="text-center mt-sm" style="color: rgb(139,92,246);">
+              🔪 طلسم جک فعال شد — جک هم حذف شد!
+            </p>
+          ` : ''}
+          <button class="btn btn--ghost btn--block btn--sm mt-md" id="btn-morning-result-dismiss">متوجه شدم</button>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="card mt-md" style="border-color: var(--success);">
+          <div style="font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-sm);">🟡</div>
+          <div class="font-bold text-center" style="color: var(--success); font-size: var(--text-lg);">
+            تیر مشقی بود!
+          </div>
+          <p class="text-center text-secondary mt-sm">${result.targetName} زنده ماند.</p>
+          <button class="btn btn--ghost btn--block btn--sm mt-md" id="btn-morning-result-dismiss">متوجه شدم</button>
+        </div>
+      `;
+    }
   }
 
   // ─── Bomb Siesta (خواب نیم‌روزی) ───
@@ -910,5 +1064,9 @@ export class DayView extends BaseView {
     this.siestaStep = 'guardian';
     this.siestaGuess = null;
     this.siestaResultData = null;
+    this.morningShootActive = false;
+    this.morningShooterId = null;
+    this.morningShootTargetId = null;
+    this.morningShootResult = null;
   }
 }

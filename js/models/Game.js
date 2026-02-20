@@ -7,6 +7,7 @@ import { Player } from './Player.js';
 import { Roles } from './Roles.js';
 import { Bomb } from './Bomb.js';
 import { Framason } from './Framason.js';
+import { BulletManager } from './BulletManager.js';
 
 export class Game {
 
@@ -31,7 +32,11 @@ export class Game {
     this.defenseTimerDuration = 60;
     this.blindDayDuration = 60;  // 1 minute for blind day
     this.constantineUsed = false;
-    this.gunnerUsed = false;
+    this.bulletManager = new BulletManager();
+    this.gunnerBlankMax = 2;
+    this.gunnerLiveMax = 2;
+    this.jackMorningShotImmune = false;
+    this.zodiacMorningShotImmune = false;
     this.bomb = new Bomb();          // One-time bomb mechanic
     this.framason = new Framason();   // Freemason alliance mechanic
     this.framasonMaxMembers = 2;     // Configurable in settings
@@ -116,6 +121,12 @@ export class Game {
       this.framason.init(framasonPlayer.id, this.framasonMaxMembers);
     }
 
+    // Initialize gunner if present
+    const gunnerPlayer = this.players.find(p => p.roleId === 'gunner');
+    if (gunnerPlayer) {
+      this.bulletManager.init(this.gunnerBlankMax, this.gunnerLiveMax);
+    }
+
     this.phase = 'roleReveal';
   }
 
@@ -136,15 +147,15 @@ export class Game {
     this.nightActions = {};
     this.currentNightStep = 0;
 
-    // Clear Jack's telesm at the start of every night
-    this._clearJackTelesm();
+    // Clear Jack's curse at the start of every night
+    this._clearJackCurse();
 
-    // Blind night: only mafia recognition + Jack telesm
+    // Blind night: only mafia recognition + Jack curse
     this.nightSteps = this._buildBlindNightSteps();
     this._addHistory('night_start', '🌙 شب کور — فقط تیم مافیا بیدار می‌شوند.');
   }
 
-  /** Build steps for blind night (mafia meet + Jack telesm) */
+  /** Build steps for blind night (mafia meet + Jack curse) */
   _buildBlindNightSteps() {
     const steps = [];
 
@@ -164,14 +175,14 @@ export class Game {
       });
     }
 
-    // Jack places telesm even on blind night
+    // Jack places curse even on blind night
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
     if (jackPlayer) {
       steps.push({
         roleId: 'jack',
         roleName: 'جک',
         roleIcon: '🔪',
-        actionType: 'telesm',
+        actionType: 'curse',
         actors: [jackPlayer.id],
         targetId: null,
         completed: false,
@@ -193,8 +204,8 @@ export class Game {
     this.votes = {};
     this.currentNightStep = 0;
 
-    // Clear Jack's telesm at the start of every night
-    this._clearJackTelesm();
+    // Clear Jack's curse at the start of every night
+    this._clearJackCurse();
 
     // Reset per-night flags for alive players
     this.players.forEach(p => {
@@ -207,11 +218,11 @@ export class Game {
     this._addHistory('night_start', `🌙 شب ${this.round} آغاز شد.`);
   }
 
-  /** Clear Jack's telesm for the new night */
-  _clearJackTelesm() {
+  /** Clear Jack's curse for the new night */
+  _clearJackCurse() {
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
     if (jackPlayer) {
-      jackPlayer.telesm.clear();
+      jackPlayer.curse.clear();
     }
   }
 
@@ -243,6 +254,9 @@ export class Game {
 
       // Special: skip zodiac if not their turn based on frequency
       if (role.id === 'zodiac' && !this._canZodiacShoot()) continue;
+
+      // Special: skip gunner if no bullets remain
+      if (role.id === 'gunner' && !this.bulletManager.hasBullets) continue;
 
       // Special: skip freemason if can't recruit (dead, max reached, or contaminated)
       if (role.id === 'freemason' && !this.framason.canRecruit) continue;
@@ -427,13 +441,13 @@ export class Game {
       }
     }
 
-    // 6. Jack places telesm (no kill — Jack's telesm links his fate to target)
+    // 6. Jack places curse (no kill — Jack's curse links his fate to target)
     if (actions.jack?.targetId) {
       const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
       if (jackPlayer) {
-        jackPlayer.telesm.place(actions.jack.targetId);
-        const telesmTarget = this.getPlayer(actions.jack.targetId);
-        this._addHistory('telesm', `🔪 جک طلسم خود را روی ${telesmTarget?.name || '—'} گذاشت.`);
+        jackPlayer.curse.place(actions.jack.targetId);
+        const curseTarget = this.getPlayer(actions.jack.targetId);
+        this._addHistory('curse', `🔪 جک طلسم خود را روی ${curseTarget?.name || '—'} گذاشت.`);
       }
     }
 
@@ -560,17 +574,33 @@ export class Game {
       }
     }
 
-    // Check Jack's telesm chain reaction — if telesm target died, Jack dies too
-    results.jackTelesmTriggered = false;
+    // 14. Gunner gives bullets (multiple per night, max 1 per person)
+    if (actions.gunner?.bulletAssignments) {
+      const assignments = actions.gunner.bulletAssignments;
+      results.gunnerBullets = [];
+      for (const assignment of assignments) {
+        const res = this.gunnerGiveBullet(assignment.holderId, assignment.type);
+        results.gunnerBullets.push({ holderId: assignment.holderId, type: assignment.type, success: res.success });
+      }
+    } else if (actions.gunner?.targetId) {
+      // Legacy single-bullet fallback
+      const holderId = actions.gunner.targetId;
+      const bulletType = actions.gunner.bulletType || 'blank';
+      const res = this.gunnerGiveBullet(holderId, bulletType);
+      results.gunnerBullets = [{ holderId, type: bulletType, success: res.success }];
+    }
+
+    // Check Jack's curse chain reaction — if curse target died, Jack dies too
+    results.jackCurseTriggered = false;
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
-    if (jackPlayer && jackPlayer.telesm.isActive) {
+    if (jackPlayer && jackPlayer.curse.isActive) {
       for (const killedId of results.killed) {
-        if (jackPlayer.telesm.isTriggeredBy(killedId)) {
-          jackPlayer.kill(this.round, 'telesm');
+        if (jackPlayer.curse.isTriggeredBy(killedId)) {
+          jackPlayer.kill(this.round, 'curse');
           results.killed.push(jackPlayer.id);
-          results.jackTelesmTriggered = true;
-          const telesmTarget = this.getPlayer(killedId);
-          this._addHistory('death', `🔪 ${telesmTarget?.name} کشته شد و به همراه آن جک هم از بازی خارج شد (طلسم).`);
+          results.jackCurseTriggered = true;
+          const curseTarget = this.getPlayer(killedId);
+          this._addHistory('death', `🔪 ${curseTarget?.name} کشته شد و به همراه آن جک هم از بازی خارج شد (طلسم).`);
           break;
         }
       }
@@ -661,7 +691,7 @@ export class Game {
     return role?.voteImmune === true;
   }
 
-  /** Eliminate a player by vote. Returns extra info (e.g. telesm triggered). */
+  /** Eliminate a player by vote. Returns extra info (e.g. curse triggered). */
   eliminateByVote(playerId) {
     const player = this.getPlayer(playerId);
     if (!player) return {};
@@ -682,27 +712,156 @@ export class Game {
 
     const extra = {};
 
-    // Jack telesm chain — if voted-out player was Jack's telesm target
+    // Jack curse chain — if voted-out player was Jack's curse target
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
-    if (jackPlayer && jackPlayer.telesm.isTriggeredBy(playerId)) {
-      jackPlayer.kill(this.round, 'telesm');
-      extra.jackTelesmTriggered = true;
+    if (jackPlayer && jackPlayer.curse.isTriggeredBy(playerId)) {
+      jackPlayer.kill(this.round, 'curse');
+      extra.jackCurseTriggered = true;
       this._addHistory('death', `🔪 ${player.name} اعدام شد و جک هم به همراه او از بازی خارج شد (طلسم).`);
     }
 
     return extra;
   }
 
-  /** Gunner shoots during day (one-time ability) */
-  gunnerShoot(targetId) {
-    if (this.gunnerUsed) return false;
-    const target = this.getPlayer(targetId);
-    if (!target || !target.isAlive) return false;
+  /** Gunner night action: give bullet to a player */
+  gunnerGiveBullet(holderId, type) {
+    const holder = this.getPlayer(holderId);
+    if (!holder || !holder.isAlive) {
+      // Target is dead — return bullet
+      this.bulletManager.returnBullet(type);
+      return { success: false, reason: 'dead' };
+    }
+    const ok = this.bulletManager.giveBullet(holderId, type, this.round);
+    if (!ok) return { success: false, reason: 'no_bullets' };
+    this._addHistory('gunner', `🔫 تفنگدار یک تیر ${type === 'live' ? 'جنگی' : 'مشقی'} به ${holder.name} داد.`);
+    return { success: true };
+  }
 
-    target.kill(this.round, 'gunner');
-    this.gunnerUsed = true;
-    this._addHistory('death', `🔫 ${target.name} توسط تفنگدار کشته شد.`);
-    return true;
+  /** Get active bullets for the current day (God-only info) */
+  getActiveBullets() {
+    return this.bulletManager.activeBullets.map(b => ({
+      ...b,
+      holderName: this.getPlayer(b.holderId)?.name || '—',
+    }));
+  }
+
+  /**
+   * Resolve a morning shot.
+   * @param {number} shooterId — The player who has the bullet
+   * @param {number} targetId — The player being shot
+   * @returns {{ type: string, killed: boolean, targetTeam: string|null, targetName: string }}
+   */
+  resolveMorningShot(shooterId, targetId) {
+    const bulletType = this.bulletManager.useBullet(shooterId);
+    if (!bulletType) return null;
+
+    const target = this.getPlayer(targetId);
+    if (!target || !target.isAlive) return null;
+
+    const targetRole = Roles.get(target.roleId);
+    const targetTeam = targetRole?.team || 'citizen';
+    const result = { type: bulletType, killed: false, targetTeam, targetName: target.name };
+
+    if (bulletType === 'blank') {
+      // Blank bullet — always harmless
+      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند.`);
+      return result;
+    }
+
+    // Jangi bullet — check protections
+    const shooter = this.getPlayer(shooterId);
+
+    // Check if shooter was blocked by sorcerer last night
+    const sorcererAction = this.nightActions?.sorcerer;
+    if (sorcererAction?.targetId === shooterId) {
+      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (شلیک‌کننده بلاک شده)`);
+      return result;
+    }
+
+    // Check if target was healed (heal stays until morning)
+    if (target.healed) {
+      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (هیل فعال)`);
+      return result;
+    }
+
+    // Check if target has active shield (morning_shot cause IS absorbable by shield)
+    if (target.shield?.isActive) {
+      const absorbed = target.shield.absorb('morning_shot');
+      if (absorbed) {
+        this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (سپر)`);
+        return result;
+      }
+    }
+
+    // Check Jack/Zodiac morning shot immunity settings
+    if (target.roleId === 'jack' && this.jackMorningShotImmune) {
+      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (مصونیت جک)`);
+      return result;
+    }
+    if (target.roleId === 'zodiac' && this.zodiacMorningShotImmune) {
+      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (مصونیت زودیاک)`);
+      return result;
+    }
+
+    // Kill the target
+    target.kill(this.round, 'morning_shot');
+    result.killed = true;
+
+    const teamName = Roles.getTeamName(targetTeam);
+    this._addHistory('death', `🔫 تیر جنگی بود — ${target.name} حذف شد. (${teamName})`);
+
+    // Check Jack curse chain
+    const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
+    if (jackPlayer && jackPlayer.curse.isTriggeredBy(targetId)) {
+      jackPlayer.kill(this.round, 'curse');
+      this._addHistory('death', `🔪 طلسم جک فعال شد — جک هم حذف شد!`);
+      result.jackCurseTriggered = true;
+    }
+
+    // Track framason leader death
+    if (this.framason.isActive && targetId === this.framason.leaderId) {
+      this.framason.onLeaderDeath();
+    }
+
+    return result;
+  }
+
+  /**
+   * Resolve live bullet expiration at voting start.
+   * Unused live bullets explode, killing their holders.
+   * @returns {{ holderId: number, holderName: string }[]}
+   */
+  resolveLiveExpiration() {
+    const liveBullets = this.bulletManager.getUnusedLiveBullets();
+    const explosions = [];
+
+    for (const bullet of liveBullets) {
+      const holder = this.getPlayer(bullet.holderId);
+      if (holder && holder.isAlive) {
+        holder.kill(this.round, 'live_explosion');
+        this.bulletManager.removeBullet(bullet.holderId);
+        explosions.push({ holderId: holder.id, holderName: holder.name });
+        this._addHistory('death', `💥 تیر جنگی در دست ${holder.name} منفجر شد!`);
+
+        // Check Jack curse chain
+        const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
+        if (jackPlayer && jackPlayer.curse.isTriggeredBy(holder.id)) {
+          jackPlayer.kill(this.round, 'curse');
+          this._addHistory('death', `🔪 طلسم جک فعال شد — جک هم حذف شد!`);
+          explosions.push({ holderId: jackPlayer.id, holderName: jackPlayer.name, curseChain: true });
+        }
+
+        // Track framason leader death
+        if (this.framason.isActive && holder.id === this.framason.leaderId) {
+          this.framason.onLeaderDeath();
+        }
+      }
+    }
+
+    // Clear remaining blank bullets (harmless, just discard)
+    this.bulletManager.clearDayBullets();
+
+    return explosions;
   }
 
   // ──────────────────────────────────
@@ -897,7 +1056,11 @@ export class Game {
       history: this.history,
       selectedRoles: this.selectedRoles,
       constantineUsed: this.constantineUsed,
-      gunnerUsed: this.gunnerUsed,
+      bulletManager: this.bulletManager.toJSON(),
+      gunnerBlankMax: this.gunnerBlankMax,
+      gunnerLiveMax: this.gunnerLiveMax,
+      jackMorningShotImmune: this.jackMorningShotImmune,
+      zodiacMorningShotImmune: this.zodiacMorningShotImmune,
       bomb: this.bomb.toJSON(),
       framason: this.framason.toJSON(),
       framasonMaxMembers: this.framasonMaxMembers,
@@ -921,7 +1084,11 @@ export class Game {
     this.history = data.history || [];
     this.selectedRoles = data.selectedRoles || {};
     this.constantineUsed = data.constantineUsed || false;
-    this.gunnerUsed = data.gunnerUsed || false;
+    this.bulletManager = BulletManager.fromJSON(data.bulletManager ?? data.tofangdar);
+    this.gunnerBlankMax = data.gunnerBlankMax ?? data.tofangdarMashghiMax ?? 2;
+    this.gunnerLiveMax = data.gunnerLiveMax ?? data.tofangdarJangiMax ?? 2;
+    this.jackMorningShotImmune = data.jackMorningShotImmune ?? false;
+    this.zodiacMorningShotImmune = data.zodiacMorningShotImmune ?? false;
     this.bomb = Bomb.fromJSON(data.bomb);
     this.framason = Framason.fromJSON(data.framason);
     this.framasonMaxMembers = data.framasonMaxMembers ?? 2;
