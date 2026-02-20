@@ -263,6 +263,18 @@ export class SetupView extends BaseView {
           </div>
         </div>
 
+        <!-- Zodiac frequency setting (only if zodiac is selected) -->
+        ${game.selectedRoles['zodiac'] ? `
+          <div class="card mb-lg" style="border-color: rgba(139,92,246,0.4);">
+            <div class="font-bold mb-sm">♈ تنظیمات زودیاک — دوره شلیک:</div>
+            <div class="flex gap-sm">
+              <button class="btn btn--sm ${game.zodiacFrequency === 'every' ? 'btn--primary' : 'btn--ghost'}" data-zodiac-freq="every">هر شب</button>
+              <button class="btn btn--sm ${game.zodiacFrequency === 'odd' ? 'btn--primary' : 'btn--ghost'}" data-zodiac-freq="odd">شب‌های فرد</button>
+              <button class="btn btn--sm ${game.zodiacFrequency === 'even' ? 'btn--primary' : 'btn--ghost'}" data-zodiac-freq="even">شب‌های زوج</button>
+            </div>
+          </div>
+        ` : ''}
+
         <!-- Errors -->
         ${errors.length > 0 ? `
           <div class="card mb-lg" style="border-color: var(--danger);">
@@ -287,6 +299,14 @@ export class SetupView extends BaseView {
 
     container.querySelector('#btn-back-home-setup')?.addEventListener('click', () => {
       this.app.navigate('home');
+    });
+
+    // Zodiac frequency selection
+    container.querySelectorAll('[data-zodiac-freq]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        game.zodiacFrequency = btn.dataset.zodiacFreq;
+        this.render();
+      });
     });
   }
 

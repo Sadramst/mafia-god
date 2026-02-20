@@ -17,13 +17,14 @@ export class NightView extends BaseView {
   render() {
     const game = this.app.game;
     const counts = game.getTeamCounts();
+    const isBlind = game.phase === 'blindNight';
 
     this.container.innerHTML = `
       <div class="view">
         <!-- Phase Bar -->
         <div class="phase-bar phase-bar--night">
           <span class="phase-bar__icon">🌙</span>
-          <span>شب ${game.round}</span>
+          <span>${isBlind ? 'شب کور' : `شب ${game.round}`}</span>
           <span class="phase-bar__round">دور ${game.round}</span>
         </div>
 
@@ -52,7 +53,7 @@ export class NightView extends BaseView {
 
         <!-- Night Steps -->
         <div class="section">
-          <h2 class="section__title">🎬 اقدامات شبانه</h2>
+          <h2 class="section__title">${isBlind ? '🌙 شب کور' : '🎬 اقدامات شبانه'}</h2>
           <div class="stepper" id="night-stepper">
             ${this._renderSteps()}
           </div>
@@ -62,7 +63,7 @@ export class NightView extends BaseView {
         <div class="mt-lg">
           ${game.isNightComplete() ? `
             <button class="btn btn--primary btn--lg btn--block" id="btn-resolve-night">
-              ☀️ حل شب و رفتن به روز
+              ${isBlind ? '☀️ پایان شب کور → روز' : '☀️ حل شب و رفتن به روز'}
             </button>
           ` : `
             <div class="text-center text-muted" style="font-size: var(--text-sm);">
@@ -163,9 +164,65 @@ export class NightView extends BaseView {
   /**
    * Render the active step body.
    * For godfather: shows mode selection (shoot vs salakhi) + target + optional role guess.
+   * For mafiaReveal: shows mafia members to each other.
+   * For jack (telesm): shows telesm target selection.
    * For other roles: shows standard target selection.
    */
   _renderActiveStep(step, idx, targets, selectedTarget) {
+    const game = this.app.game;
+
+    // ── Mafia reveal (blind night) ──
+    if (step.actionType === 'mafiaReveal') {
+      const mafiaMembers = step.actors.map(id => {
+        const p = game.getPlayer(id);
+        const role = Roles.get(p?.roleId);
+        return `<div class="flex items-center gap-sm mb-sm">
+          <span>${role?.icon || '🔴'}</span>
+          <span class="font-bold">${p?.name || '—'}</span>
+          <span class="text-muted" style="font-size: var(--text-xs);">${role?.name || ''}</span>
+        </div>`;
+      });
+      return `
+        <div class="card mb-md" style="border-color: var(--mafia); background: rgba(220,38,38,0.06);">
+          <div class="font-bold mb-sm" style="color: var(--mafia);">اعضای تیم مافیا:</div>
+          ${mafiaMembers.join('')}
+        </div>
+        <div class="text-muted mb-sm" style="font-size: var(--text-xs);">مافیا همدیگر را شناختند. تأیید کنید.</div>
+        <button class="btn btn--primary btn--block btn--sm" data-action="confirm-step" data-step="${idx}">
+          ✓ تأیید
+        </button>
+      `;
+    }
+
+    // ── Jack telesm ──
+    if (step.actionType === 'telesm') {
+      // Jack can target any alive player except himself
+      const telesmTargets = game.getAlivePlayers().filter(p => !step.actors.includes(p.id));
+      return `
+        <div class="card mb-sm" style="background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.3); font-size: var(--text-xs); padding: 8px 12px;">
+          🔪 جک طلسم خود را روی یک نفر می‌گذارد. اگر آن فرد کشته شود یا رأی بگیرد، جک هم حذف می‌شود.
+        </div>
+        <div class="target-grid">
+          ${telesmTargets.map(t => `
+            <button class="target-btn ${selectedTarget === t.id ? 'selected' : ''}" 
+                    data-step="${idx}" data-target="${t.id}">
+              ${t.name}
+            </button>
+          `).join('')}
+        </div>
+        <div class="flex gap-sm mt-md">
+          <button class="btn btn--primary btn--block btn--sm" 
+                  data-action="confirm-step" data-step="${idx}"
+                  ${!selectedTarget ? 'disabled' : ''}>
+            ✓ تأیید طلسم
+          </button>
+          <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
+            رد شدن
+          </button>
+        </div>
+      `;
+    }
+
     // ── Godfather special UI ──
     if (step.roleId === 'godfather') {
       return this._renderGodfatherStep(idx, targets, selectedTarget);
@@ -297,6 +354,8 @@ export class NightView extends BaseView {
       snipe: 'چه کسی را نشانه بگیرد؟',
       soloKill: 'چه کسی را بکشد؟',
       revive: 'چه کسی را زنده کند؟',
+      telesm: 'طلسم را روی چه کسی بگذارد؟',
+      mafiaReveal: 'تیم مافیا همدیگر را بشناسند',
     };
     return descriptions[actionType] || 'یک بازیکن انتخاب کنید';
   }
@@ -351,9 +410,17 @@ export class NightView extends BaseView {
     this.container.querySelectorAll('[data-action="confirm-step"]').forEach(btn => {
       btn.addEventListener('click', () => {
         const stepIdx = Number(btn.dataset.step);
+        const step = game.nightSteps[stepIdx];
+
+        // mafiaReveal: no target needed, just confirm
+        if (step?.actionType === 'mafiaReveal') {
+          game.recordNightAction(null);
+          this.render();
+          return;
+        }
+
         const targetId = this.selectedTargets[stepIdx];
         if (targetId) {
-          const step = game.nightSteps[stepIdx];
           // Pass extra data for godfather (mode + guessed role)
           if (step?.roleId === 'godfather' && this.godfatherMode) {
             const extra = { mode: this.godfatherMode };
@@ -382,6 +449,18 @@ export class NightView extends BaseView {
 
     // Resolve night
     this.container.querySelector('#btn-resolve-night')?.addEventListener('click', () => {
+      const isBlind = game.phase === 'blindNight';
+
+      if (isBlind) {
+        // Blind night: resolve telesm placement only, then go to day
+        const results = game.resolveNight();
+        game.startDay();
+        this.app.saveGame();
+        this.app._nightResults = results;
+        this.app.navigate('day');
+        return;
+      }
+
       const results = game.resolveNight();
       game.startDay();
       this.app.saveGame();

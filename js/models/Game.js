@@ -17,7 +17,7 @@ export class Game {
     Player.resetIdCounter();
     this.players = [];
     this.round = 0;
-    this.phase = 'setup'; // setup | roleReveal | night | day | ended
+    this.phase = 'setup'; // setup | roleReveal | blindDay | blindNight | night | day | ended
     this.winner = null;    // 'mafia' | 'citizen' | 'independent' | null
     this.history = [];     // Array of round events
     this.nightActions = {}; // { roleId: { actorId, targetId } }
@@ -27,10 +27,12 @@ export class Game {
     this.nightSteps = [];
     this.dayTimerDuration = 180; // seconds
     this.defenseTimerDuration = 60;
+    this.blindDayDuration = 60;  // 1 minute for blind day
     this.constantineUsed = false;
     this.gunnerUsed = false;
     this._lastDrWatsonTarget = null;
     this._lastDrLecterTarget = null;
+    this.zodiacFrequency = 'every'; // 'every' | 'odd' | 'even'
   }
 
   // ──────────────────────────────────
@@ -104,6 +106,68 @@ export class Game {
   }
 
   // ──────────────────────────────────
+  //  BLIND PHASE (روز و شب کور)
+  // ──────────────────────────────────
+
+  /** Start blind day — 1 min, no challenges */
+  startBlindDay() {
+    this.phase = 'blindDay';
+    this._addHistory('blind_day', '☀️ روز کور آغاز شد — ۱ دقیقه بدون چالش.');
+  }
+
+  /** Start blind night — only mafia wakes to meet each other */
+  startBlindNight() {
+    this.round = 1;
+    this.phase = 'blindNight';
+    this.nightActions = {};
+    this.currentNightStep = 0;
+
+    // Clear Jack's telesm at the start of every night
+    this._clearJackTelesm();
+
+    // Blind night: only mafia recognition + Jack telesm
+    this.nightSteps = this._buildBlindNightSteps();
+    this._addHistory('night_start', '🌙 شب کور — فقط تیم مافیا بیدار می‌شوند.');
+  }
+
+  /** Build steps for blind night (mafia meet + Jack telesm) */
+  _buildBlindNightSteps() {
+    const steps = [];
+
+    // Mafia recognition step (no target needed, just awareness)
+    const mafiaPlayers = this.players.filter(
+      p => p.isAlive && Roles.get(p.roleId)?.team === 'mafia'
+    );
+    if (mafiaPlayers.length > 0) {
+      steps.push({
+        roleId: 'mafiaReveal',
+        roleName: 'تیم مافیا',
+        roleIcon: '🔴',
+        actionType: 'mafiaReveal',
+        actors: mafiaPlayers.map(a => a.id),
+        targetId: null,
+        completed: false,
+      });
+    }
+
+    // Jack places telesm even on blind night
+    const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
+    if (jackPlayer) {
+      steps.push({
+        roleId: 'jack',
+        roleName: 'جک',
+        roleIcon: '🔪',
+        actionType: 'telesm',
+        actors: [jackPlayer.id],
+        targetId: null,
+        completed: false,
+      });
+    }
+
+    return steps;
+  }
+
+  // ──────────────────────────────────
   //  NIGHT PHASE
   // ──────────────────────────────────
 
@@ -115,6 +179,9 @@ export class Game {
     this.votes = {};
     this.currentNightStep = 0;
 
+    // Clear Jack's telesm at the start of every night
+    this._clearJackTelesm();
+
     // Reset per-night flags for alive players
     this.players.forEach(p => {
       if (p.isAlive) p.resetNightFlags();
@@ -124,6 +191,22 @@ export class Game {
     this.nightSteps = this._buildNightSteps();
 
     this._addHistory('night_start', `🌙 شب ${this.round} آغاز شد.`);
+  }
+
+  /** Clear Jack's telesm for the new night */
+  _clearJackTelesm() {
+    const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
+    if (jackPlayer) {
+      jackPlayer.telesm.clear();
+    }
+  }
+
+  /** Check if Zodiac can shoot this round based on frequency setting */
+  _canZodiacShoot() {
+    if (this.zodiacFrequency === 'every') return true;
+    if (this.zodiacFrequency === 'odd') return this.round % 2 === 1;
+    if (this.zodiacFrequency === 'even') return this.round % 2 === 0;
+    return true;
   }
 
   /** Build ordered night action steps */
@@ -140,6 +223,9 @@ export class Game {
 
       // Special: skip constantine if already used
       if (role.id === 'constantine' && this.constantineUsed) continue;
+
+      // Special: skip zodiac if not their turn based on frequency
+      if (role.id === 'zodiac' && !this._canZodiacShoot()) continue;
 
       steps.push({
         roleId: role.id,
@@ -313,32 +399,30 @@ export class Game {
       }
     }
 
-    // 6. Jack kills
+    // 6. Jack places telesm (no kill — Jack's telesm links his fate to target)
     if (actions.jack?.targetId) {
-      const targetId = actions.jack.targetId;
-      const target = this.getPlayer(targetId);
-      if (target && target.isAlive) {
-        if (target.healed) {
-          results.saved.push(targetId);
-        } else {
-          const died = target.tryKill(this.round, 'jack');
-          if (died) {
-            results.killed.push(targetId);
-            this._addHistory('death', `🔪 ${target.name} توسط جک کشته شد.`);
-          } else {
-            results.shielded.push(targetId);
-            this._addHistory('shield', `🛡️ سپر ${target.name} حمله جک را دفع کرد.`);
-          }
-        }
+      const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
+      if (jackPlayer) {
+        jackPlayer.telesm.place(actions.jack.targetId);
+        const telesmTarget = this.getPlayer(actions.jack.targetId);
+        this._addHistory('telesm', `🔪 جک طلسم خود را روی ${telesmTarget?.name || '—'} گذاشت.`);
       }
     }
 
-    // 7. Zodiac kills
+    // 7. Zodiac kills (special: if target is protected, Zodiac dies, bodyguard lives)
     if (actions.zodiac?.targetId) {
       const targetId = actions.zodiac.targetId;
       const target = this.getPlayer(targetId);
-      if (target && target.isAlive) {
-        if (target.healed) {
+      const zodiacId = actions.zodiac.actorIds[0];
+      const zodiacPlayer = this.getPlayer(zodiacId);
+
+      if (target && target.isAlive && zodiacPlayer) {
+        if (target.protected) {
+          // Zodiac shot a protected player → Zodiac dies, bodyguard survives
+          zodiacPlayer.kill(this.round, 'zodiac_bodyguard');
+          results.killed.push(zodiacId);
+          this._addHistory('death', `♈ زودیاک به فرد محافظت‌شده شلیک کرد و خودش حذف شد.`);
+        } else if (target.healed) {
           results.saved.push(targetId);
         } else {
           const died = target.tryKill(this.round, 'zodiac');
@@ -441,6 +525,22 @@ export class Game {
       }
     }
 
+    // Check Jack's telesm chain reaction — if telesm target died, Jack dies too
+    results.jackTelesmTriggered = false;
+    const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
+    if (jackPlayer && jackPlayer.telesm.isActive) {
+      for (const killedId of results.killed) {
+        if (jackPlayer.telesm.isTriggeredBy(killedId)) {
+          jackPlayer.kill(this.round, 'telesm');
+          results.killed.push(jackPlayer.id);
+          results.jackTelesmTriggered = true;
+          const telesmTarget = this.getPlayer(killedId);
+          this._addHistory('death', `🔪 ${telesmTarget?.name} کشته شد و به همراه آن جک هم از بازی خارج شد (طلسم).`);
+          break;
+        }
+      }
+    }
+
     return results;
   }
 
@@ -478,13 +578,29 @@ export class Game {
     return tally;
   }
 
-  /** Eliminate a player by vote */
+  /** Check if a player is immune to day voting */
+  isVoteImmune(playerId) {
+    const player = this.getPlayer(playerId);
+    if (!player) return false;
+    const role = Roles.get(player.roleId);
+    return role?.voteImmune === true;
+  }
+
+  /** Eliminate a player by vote. Returns extra info (e.g. telesm triggered). */
   eliminateByVote(playerId) {
     const player = this.getPlayer(playerId);
-    if (!player) return;
+    if (!player) return {};
+
+    // Jack is immune to vote
+    if (this.isVoteImmune(playerId)) {
+      this._addHistory('vote_immune', `⚖️ رأی‌گیری علیه ${player.name} — اما حذف نشد (مصونیت از رأی).`);
+      return { voteImmune: true };
+    }
 
     player.kill(this.round, 'vote');
     this._addHistory('death', `⚖️ ${player.name} با رأی‌گیری اعدام شد. (${Roles.get(player.roleId)?.name})`);
+
+    const extra = {};
 
     // Bomber chain
     if (player.roleId === 'bomber') {
@@ -494,6 +610,16 @@ export class Game {
         this._addHistory('death', `💥 ${bombedPlayer.name} با انفجار بمب کشته شد.`);
       }
     }
+
+    // Jack telesm chain — if voted-out player was Jack's telesm target
+    const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
+    if (jackPlayer && jackPlayer.telesm.isTriggeredBy(playerId)) {
+      jackPlayer.kill(this.round, 'telesm');
+      extra.jackTelesmTriggered = true;
+      this._addHistory('death', `🔪 ${player.name} اعدام شد و جک هم به همراه او از بازی خارج شد (طلسم).`);
+    }
+
+    return extra;
   }
 
   /** Gunner shoots during day (one-time ability) */
@@ -624,6 +750,8 @@ export class Game {
       gunnerUsed: this.gunnerUsed,
       dayTimerDuration: this.dayTimerDuration,
       defenseTimerDuration: this.defenseTimerDuration,
+      blindDayDuration: this.blindDayDuration,
+      zodiacFrequency: this.zodiacFrequency,
       _lastDrWatsonTarget: this._lastDrWatsonTarget,
       _lastDrLecterTarget: this._lastDrLecterTarget,
     };
@@ -641,6 +769,8 @@ export class Game {
     this.gunnerUsed = data.gunnerUsed || false;
     this.dayTimerDuration = data.dayTimerDuration || 180;
     this.defenseTimerDuration = data.defenseTimerDuration || 60;
+    this.blindDayDuration = data.blindDayDuration || 60;
+    this.zodiacFrequency = data.zodiacFrequency || 'every';
     this._lastDrWatsonTarget = data._lastDrWatsonTarget || null;
     this._lastDrLecterTarget = data._lastDrLecterTarget || null;
 

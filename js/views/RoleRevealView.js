@@ -94,17 +94,17 @@ export class RoleRevealView extends BaseView {
           <h2 style="font-size: var(--text-2xl); font-weight: 800;">
             همه نقش‌ها مشخص شد
           </h2>
-          <p class="text-secondary">آماده‌اید برای اولین شب؟</p>
-          <button class="btn btn--primary btn--lg" id="btn-start-night">
-            🌙 شروع شب اول
+          <p class="text-secondary">آماده‌اید برای روز کور؟</p>
+          <button class="btn btn--primary btn--lg" id="btn-start-blind-day">
+            ☀️ شروع روز کور
           </button>
         </div>
       </div>
     `;
 
-    this.container.querySelector('#btn-start-night')?.addEventListener('click', () => {
-      this.app.game.startNight();
-      this.app.navigate('night');
+    this.container.querySelector('#btn-start-blind-day')?.addEventListener('click', () => {
+      this.app.game.startBlindDay();
+      this.app.navigate('day');
     });
   }
 

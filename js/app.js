@@ -77,12 +77,16 @@ export class App {
 
   // ─── Header ───
   _updateHeader(route) {
+    const game = this.game;
+    const isBlindDay = game.phase === 'blindDay';
+    const isBlindNight = game.phase === 'blindNight';
+
     const titles = {
       home: 'خدای مافیا',
       setup: 'تنظیمات بازی',
       roleReveal: 'نمایش نقش‌ها',
-      night: `شب ${this.game.round}`,
-      day: `روز ${this.game.round}`,
+      night: isBlindNight ? 'شب کور' : `شب ${game.round}`,
+      day: isBlindDay ? 'روز کور' : `روز ${game.round}`,
       summary: 'خلاصه بازی',
     };
     if (this.headerTitle) {
@@ -92,10 +96,10 @@ export class App {
     // Badge shows phase
     if (this.headerBadge) {
       if (route === 'night') {
-        this.headerBadge.textContent = `🌙 شب ${this.game.round}`;
+        this.headerBadge.textContent = isBlindNight ? '🌙 شب کور' : `🌙 شب ${game.round}`;
         this.headerBadge.style.display = '';
       } else if (route === 'day') {
-        this.headerBadge.textContent = `☀️ روز ${this.game.round}`;
+        this.headerBadge.textContent = isBlindDay ? '☀️ روز کور' : `☀️ روز ${game.round}`;
         this.headerBadge.style.display = '';
       } else {
         this.headerBadge.style.display = 'none';
@@ -111,8 +115,8 @@ export class App {
         if (!route) return;
 
         // Validate navigation
-        if (route === 'night' && this.game.phase !== 'night') return;
-        if (route === 'day' && this.game.phase !== 'day') return;
+        if (route === 'night' && this.game.phase !== 'night' && this.game.phase !== 'blindNight') return;
+        if (route === 'day' && this.game.phase !== 'day' && this.game.phase !== 'blindDay') return;
 
         this.navigate(route);
       });
@@ -126,9 +130,9 @@ export class App {
 
       // Enable/disable based on game state
       if (navRoute === 'night') {
-        item.classList.toggle('disabled', this.game.phase !== 'night');
+        item.classList.toggle('disabled', this.game.phase !== 'night' && this.game.phase !== 'blindNight');
       } else if (navRoute === 'day') {
-        item.classList.toggle('disabled', this.game.phase !== 'day');
+        item.classList.toggle('disabled', this.game.phase !== 'day' && this.game.phase !== 'blindDay');
       } else if (navRoute === 'summary') {
         item.classList.toggle('disabled', this.game.history.length === 0);
       }

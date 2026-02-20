@@ -2,6 +2,7 @@
  * Player.js — Player model
  */
 import { Shield } from './Shield.js';
+import { Telesm } from './Telesm.js';
 
 export class Player {
   static _nextId = 1;
@@ -23,6 +24,7 @@ export class Player {
     this.lastHealedRound = null;
     this.notes = [];          // God's private notes
     this.shield = new Shield(false);  // One-time shield (activated based on role)
+    this.telesm = new Telesm();       // Jack's spell (only used if role is jack)
   }
 
   /**
@@ -96,6 +98,7 @@ export class Player {
       lastHealedRound: this.lastHealedRound,
       notes: this.notes,
       shield: this.shield.toJSON(),
+      telesm: this.telesm.toJSON(),
     };
   }
 
@@ -104,6 +107,7 @@ export class Player {
     const p = new Player(data.name);
     Object.assign(p, data);
     p.shield = Shield.fromJSON(data.shield);
+    p.telesm = Telesm.fromJSON(data.telesm);
     return p;
   }
 
