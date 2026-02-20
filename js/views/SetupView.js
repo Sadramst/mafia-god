@@ -34,6 +34,37 @@ export class SetupView extends BaseView {
     });
   }
 
+  /** Update players count shown in tabs and any visible subtitles/stats */
+  _updatePlayersCountDisplays() {
+    const game = this.app.game;
+    const playersTab = this.container.querySelector('.tabs [data-tab="players"]');
+    if (playersTab) playersTab.innerHTML = `👥 ${t(tr.setup.playersTab)} (${game.players.length})`;
+    const roleCountEl = this.container.querySelector('#role-count-display');
+    if (roleCountEl) roleCountEl.textContent = game.getTotalRoleCount();
+    const statsPlayerVal = this.container.querySelector('.stat-card .stat-card__value');
+    if (statsPlayerVal && statsPlayerVal.textContent) statsPlayerVal.textContent = game.players.length;
+  }
+
+  /** Update a numeric value near a clicked button inside role-card without re-rendering whole view */
+  _updateSiblingValue(btn, newValue) {
+    // find the nearest font-bold sibling used to show value
+    const bullets = btn.closest('.role-card__bullets');
+    if (!bullets) return;
+    const valueEl = bullets.querySelector('.font-bold');
+    if (valueEl) valueEl.textContent = newValue;
+    // also update Assign tab values if present by matching role id
+    const roleCard = btn.closest('.role-card');
+    const roleId = roleCard ? roleCard.dataset.role : null;
+    if (roleId) {
+      // try multiple id patterns used in Assign tab
+      const assignDec = this.container.querySelector(`#btn-${roleId}-dec-assign`) || this.container.querySelector(`#btn-${roleId}-dec`) || document.querySelector(`#btn-${roleId}-dec-assign`) || document.querySelector(`#btn-${roleId}-dec`);
+      if (assignDec) {
+        const valSpan = assignDec.parentElement.querySelector('.font-bold');
+        if (valSpan) valSpan.textContent = newValue;
+      }
+    }
+  }
+
   render() {
     const game = this.app.game;
 
@@ -124,10 +155,33 @@ export class SetupView extends BaseView {
         this.toast(t(tr.setup.playerExists), 'error');
         return;
       }
-      game.addPlayer(name);
+      const player = game.addPlayer(name);
       input.value = '';
       input.focus();
-      this._requestRender();
+      // append DOM node instead of full re-render to reduce flicker
+      const list = container.querySelector('#player-list');
+      if (list) {
+        // if empty state present, remove it
+        const empty = list.querySelector('.empty-state');
+        if (empty) empty.remove();
+        const i = game.players.length - 1;
+        const item = document.createElement('div');
+        item.className = 'player-item';
+        item.style.animationDelay = `${i * 50}ms`;
+        item.innerHTML = `
+          <div class="player-item__number">${toEnDigits(i + 1)}</div>
+          <div class="player-item__name">${player.name}</div>
+          <button class="player-item__remove" data-id="${player.id}" title="${t(tr.setup.removePlayer)}">✕</button>
+        `;
+        list.appendChild(item);
+        // attach remove handler for this item
+        item.querySelector('.player-item__remove').addEventListener('click', () => {
+          game.removePlayer(Number(player.id));
+          item.remove();
+          this._updatePlayersCountDisplays();
+        });
+      }
+      this._updatePlayersCountDisplays();
     };
 
     addBtn.addEventListener('click', addPlayer);
@@ -141,8 +195,12 @@ export class SetupView extends BaseView {
     // Remove players
     container.querySelectorAll('.player-item__remove').forEach(btn => {
       btn.addEventListener('click', () => {
-        game.removePlayer(Number(btn.dataset.id));
-        this._requestRender();
+        // remove DOM node and update counts without full re-render
+        const id = Number(btn.dataset.id);
+        const parent = btn.closest('.player-item');
+        game.removePlayer(id);
+        if (parent) parent.remove();
+        this._updatePlayersCountDisplays();
       });
     });
   }
@@ -267,43 +325,63 @@ export class SetupView extends BaseView {
       });
     });
 
-    // Roles-tab desired mafia +/- handlers
-    container.querySelector('#btn-mafia-dec-roles')?.addEventListener('click', () => {
+    // Roles-tab desired mafia +/- handlers (update header and assign spans in-place)
+    container.querySelector('#btn-mafia-dec-roles')?.addEventListener('click', (e) => {
       const independents = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0);
       const remaining = Math.max(0, game.players.length - independents);
       const newVal = Math.max(0, game.desiredMafia - 1);
       game.setDesiredMafia(Math.min(newVal, remaining));
-      this._requestRender();
+      const rolesSpan = this.container.querySelector('#desired-mafia-roles');
+      if (rolesSpan) rolesSpan.textContent = game.desiredMafia;
+      const assignSpan = this.container.querySelector('#desired-mafia');
+      if (assignSpan) assignSpan.textContent = game.desiredMafia;
     });
-    container.querySelector('#btn-mafia-inc-roles')?.addEventListener('click', () => {
+    container.querySelector('#btn-mafia-inc-roles')?.addEventListener('click', (e) => {
       const independents = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0);
       const remaining = Math.max(0, game.players.length - independents);
       const newVal = (game.desiredMafia || 0) + 1;
       game.setDesiredMafia(Math.min(newVal, remaining));
-      this._requestRender();
+      const rolesSpan = this.container.querySelector('#desired-mafia-roles');
+      if (rolesSpan) rolesSpan.textContent = game.desiredMafia;
+      const assignSpan = this.container.querySelector('#desired-mafia');
+      if (assignSpan) assignSpan.textContent = game.desiredMafia;
     });
 
-    // Roles-tab desired citizen +/- handlers
-    container.querySelector('#btn-citizen-dec-roles')?.addEventListener('click', () => {
+    // Roles-tab desired citizen +/- handlers (update header and assign spans in-place)
+    container.querySelector('#btn-citizen-dec-roles')?.addEventListener('click', (e) => {
       const independents = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0);
       const remaining = Math.max(0, game.players.length - independents);
       const newCitizen = Math.max(0, (game.desiredCitizen || 0) - 1);
       const newMafia = Math.max(0, remaining - newCitizen);
       game.setDesiredMafia(newMafia);
-      this._requestRender();
+      const rolesSpan = this.container.querySelector('#desired-citizen-roles');
+      if (rolesSpan) rolesSpan.textContent = game.desiredCitizen;
+      const assignSpan = this.container.querySelector('#desired-citizen');
+      if (assignSpan) assignSpan.textContent = game.desiredCitizen;
+      const mafiaRolesSpan = this.container.querySelector('#desired-mafia-roles');
+      if (mafiaRolesSpan) mafiaRolesSpan.textContent = game.desiredMafia;
+      const mafiaAssignSpan = this.container.querySelector('#desired-mafia');
+      if (mafiaAssignSpan) mafiaAssignSpan.textContent = game.desiredMafia;
     });
-    container.querySelector('#btn-citizen-inc-roles')?.addEventListener('click', () => {
+    container.querySelector('#btn-citizen-inc-roles')?.addEventListener('click', (e) => {
       const independents = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0);
       const remaining = Math.max(0, game.players.length - independents);
       const newCitizen = Math.min(remaining, (game.desiredCitizen || 0) + 1);
       const newMafia = Math.max(0, remaining - newCitizen);
       game.setDesiredMafia(newMafia);
-      this._requestRender();
+      const rolesSpan = this.container.querySelector('#desired-citizen-roles');
+      if (rolesSpan) rolesSpan.textContent = game.desiredCitizen;
+      const assignSpan = this.container.querySelector('#desired-citizen');
+      if (assignSpan) assignSpan.textContent = game.desiredCitizen;
+      const mafiaRolesSpan = this.container.querySelector('#desired-mafia-roles');
+      if (mafiaRolesSpan) mafiaRolesSpan.textContent = game.desiredMafia;
+      const mafiaAssignSpan = this.container.querySelector('#desired-mafia');
+      if (mafiaAssignSpan) mafiaAssignSpan.textContent = game.desiredMafia;
     });
 
     // Sniper buttons on role card are handled by data-action listeners further down
 
-    // Toggle unique roles
+    // Toggle unique roles — update DOM in-place to avoid full re-render
     container.querySelectorAll('.role-card').forEach(card => {
       card.addEventListener('click', (e) => {
         if (e.target.closest('.role-card__count-btn')) return;
@@ -314,18 +392,13 @@ export class SetupView extends BaseView {
         const role = Roles.get(roleId);
         if (!role) return;
 
+        // Toggle data model
         if (role.unique) {
-          if (game.selectedRoles[roleId]) {
-            delete game.selectedRoles[roleId];
-          } else {
-            game.selectedRoles[roleId] = 1;
-          }
+          if (game.selectedRoles[roleId]) delete game.selectedRoles[roleId];
+          else game.selectedRoles[roleId] = 1;
         } else {
-          if (!game.selectedRoles[roleId]) {
-            game.selectedRoles[roleId] = 1;
-          } else {
-            delete game.selectedRoles[roleId];
-          }
+          if (!game.selectedRoles[roleId]) game.selectedRoles[roleId] = 1;
+          else delete game.selectedRoles[roleId];
         }
 
         // If independent-role selection changed, recompute recommended counts (force overwrite)
@@ -333,73 +406,117 @@ export class SetupView extends BaseView {
           game.computeRecommendedCounts(true);
         }
 
-        this._requestRender();
+        // Update role-card visual state
+        const isSelected = !!game.selectedRoles[roleId];
+        card.classList.toggle('selected', isSelected);
+        const countEl = card.querySelector('.role-card__count-value');
+        if (countEl) countEl.textContent = isSelected ? (game.selectedRoles[roleId] || 1) : 0;
+
+        // Update global role count display in Roles tab and Assign tab
+        const roleCountDisplay = this.container.querySelector('#role-count-display');
+        if (roleCountDisplay) roleCountDisplay.textContent = game.getTotalRoleCount();
+        const rolesTabBtn = this.container.querySelector('.tabs [data-tab="roles"]');
+        if (rolesTabBtn) rolesTabBtn.innerHTML = `🎭 ${t(tr.setup.rolesTab)} (${game.getTotalRoleCount()})`;
+
+        // Update desired counts in Roles headers (roles tab) and Assign tab
+        const desiredMafiaRoles = this.container.querySelector('#desired-mafia-roles');
+        if (desiredMafiaRoles) desiredMafiaRoles.textContent = game.desiredMafia;
+        const desiredCitizenRoles = this.container.querySelector('#desired-citizen-roles');
+        if (desiredCitizenRoles) desiredCitizenRoles.textContent = game.desiredCitizen;
+        const desiredMafiaAssign = this.container.querySelector('#desired-mafia');
+        if (desiredMafiaAssign) desiredMafiaAssign.textContent = game.desiredMafia;
+        const desiredCitizenAssign = this.container.querySelector('#desired-citizen');
+        if (desiredCitizenAssign) desiredCitizenAssign.textContent = game.desiredCitizen;
       });
     });
     container.querySelectorAll('[data-action="blank-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.gunnerBlankMax > 0) { game.gunnerBlankMax--; this._requestRender(); }
+        if (game.gunnerBlankMax > 0) {
+          game.gunnerBlankMax--;
+          this._updateSiblingValue(btn, game.gunnerBlankMax);
+        }
       });
     });
     container.querySelectorAll('[data-action="blank-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.gunnerBlankMax < 10) { game.gunnerBlankMax++; this._requestRender(); }
+        if (game.gunnerBlankMax < 10) {
+          game.gunnerBlankMax++;
+          this._updateSiblingValue(btn, game.gunnerBlankMax);
+        }
       });
     });
     container.querySelectorAll('[data-action="live-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.gunnerLiveMax > 0) { game.gunnerLiveMax--; this._requestRender(); }
+        if (game.gunnerLiveMax > 0) { game.gunnerLiveMax--; this._updateSiblingValue(btn, game.gunnerLiveMax); }
       });
     });
     container.querySelectorAll('[data-action="live-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.gunnerLiveMax < 10) { game.gunnerLiveMax++; this._requestRender(); }
+        if (game.gunnerLiveMax < 10) { game.gunnerLiveMax++; this._updateSiblingValue(btn, game.gunnerLiveMax); }
       });
     });
 
-    // Freemason ally count +/- buttons on role card
+    // Freemason ally count +/- buttons on role card (update in-place)
     container.querySelectorAll('[data-action="ally-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.framasonMaxMembers > 1) { game.framasonMaxMembers--; this._requestRender(); }
+        if (game.framasonMaxMembers > 1) {
+          game.framasonMaxMembers--;
+          this._updateSiblingValue(btn, game.framasonMaxMembers);
+        }
       });
     });
     container.querySelectorAll('[data-action="ally-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.framasonMaxMembers < 10) { game.framasonMaxMembers++; this._requestRender(); }
+        if (game.framasonMaxMembers < 10) {
+          game.framasonMaxMembers++;
+          this._updateSiblingValue(btn, game.framasonMaxMembers);
+        }
       });
     });
 
-    // Negotiator threshold +/- buttons on role card
+    // Negotiator threshold +/- buttons on role card (update in-place)
     container.querySelectorAll('[data-action="neg-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.negotiatorThreshold > 1) { game.negotiatorThreshold--; this._requestRender(); }
+        if (game.negotiatorThreshold > 1) {
+          game.negotiatorThreshold--;
+          this._updateSiblingValue(btn, game.negotiatorThreshold);
+        }
       });
     });
     container.querySelectorAll('[data-action="neg-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.negotiatorThreshold < 10) { game.negotiatorThreshold++; this._requestRender(); }
+        if (game.negotiatorThreshold < 10) {
+          game.negotiatorThreshold++;
+          this._updateSiblingValue(btn, game.negotiatorThreshold);
+        }
       });
     });
 
-    // Sniper shot count +/- buttons on role card
+    // Sniper shot count +/- buttons on role card (update in-place and sync Assign tab)
     container.querySelectorAll('[data-action="sniper-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.sniperMaxShots > 1) { game.sniperMaxShots--; this._requestRender(); }
+        if (game.sniperMaxShots > 1) {
+          game.sniperMaxShots--;
+          this._updateSiblingValue(btn, game.sniperMaxShots);
+        }
       });
     });
     container.querySelectorAll('[data-action="sniper-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.sniperMaxShots < 10) { game.sniperMaxShots++; this._requestRender(); }
+        if (game.sniperMaxShots < 10) {
+          game.sniperMaxShots++;
+          this._updateSiblingValue(btn, game.sniperMaxShots);
+        }
       });
     });
   }
@@ -453,10 +570,7 @@ export class SetupView extends BaseView {
                 ${t(tr.setup.mafia)}: <strong id="desired-mafia">${game.desiredMafia}</strong>
                 <div style="font-size: var(--text-xs); color: var(--muted)">(${t(tr.setup.person)})</div>
               </div>
-              <div class="flex items-center gap-sm">
-                <button class="btn btn--ghost btn--sm" id="btn-mafia-dec">−</button>
-                <button class="btn btn--ghost btn--sm" id="btn-mafia-inc">+</button>
-              </div>
+              <!-- removed +/- here to avoid blinking; adjust desired counts in Roles tab -->
               <div style="margin-left: 12px;">
                 ${t(tr.setup.citizen)}: <strong id="desired-citizen">${game.desiredCitizen}</strong>
               </div>
@@ -501,16 +615,7 @@ export class SetupView extends BaseView {
           </div>
         ` : ''}
 
-        ${game.selectedRoles['freemason'] ? `
-          <div class="card mb-lg" style="border-color: rgba(239,68,68,0.4);">
-            <div class="font-bold mb-sm">🔺 ${t(tr.setup.freemasonSettings)}</div>
-            <div class="flex gap-sm items-center">
-              <button class="btn btn--sm btn--ghost" id="btn-framason-dec">−</button>
-              <span class="font-bold" style="min-width: 30px; text-align: center;">${game.framasonMaxMembers}</span>
-              <button class="btn btn--sm btn--ghost" id="btn-framason-inc">+</button>
-            </div>
-          </div>
-        ` : ''}
+        <!-- freemason settings removed from Assign page to avoid duplication and blinking -->
 
         ${game.selectedRoles['gunner'] ? `
           <div class="card mb-lg" style="border-color: rgba(234,179,8,0.4);">
@@ -527,16 +632,7 @@ export class SetupView extends BaseView {
           </div>
         ` : ''}
 
-        ${game.selectedRoles['sniper'] ? `
-          <div class="card mb-lg" style="border-color: rgba(99,102,241,0.4);">
-            <div class="font-bold mb-sm">🎯 ${t(tr.setup.sniperShots)}</div>
-            <div class="flex gap-sm items-center">
-              <button class="btn btn--sm btn--ghost" id="btn-sniper-dec-assign">−</button>
-              <span class="font-bold" style="min-width: 30px; text-align: center;">${game.sniperMaxShots}</span>
-              <button class="btn btn--sm btn--ghost" id="btn-sniper-inc-assign">+</button>
-            </div>
-          </div>
-        ` : ''}
+        <!-- sniper shoots removed from Assign page to avoid duplicate controls and blinking -->
 
         <!-- Errors -->
         ${errors.length > 0 ? `
@@ -564,75 +660,55 @@ export class SetupView extends BaseView {
       this.app.navigate('home');
     });
 
-    // Zodiac frequency selection
+    // Zodiac frequency selection — update classes in-place to avoid re-render blink
     container.querySelectorAll('[data-zodiac-freq]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
         game.zodiacFrequency = btn.dataset.zodiacFreq;
-        this._requestRender();
+        const parent = btn.parentElement;
+        if (parent) {
+          parent.querySelectorAll('[data-zodiac-freq]').forEach(b => {
+            if (b === btn) { b.classList.add('btn--primary'); b.classList.remove('btn--ghost'); }
+            else { b.classList.remove('btn--primary'); b.classList.add('btn--ghost'); }
+          });
+        }
       });
     });
 
-    // Framason max members
-    container.querySelector('#btn-framason-dec')?.addEventListener('click', () => {
-      if (game.framasonMaxMembers > 1) {
-        game.framasonMaxMembers--;
-        this._requestRender();
-      }
+    // Framason settings removed from Assign tab (use Roles tab to configure)
+
+    // Removed Assign-tab mafia +/- handlers (controls removed from Assign UI)
+
+    // Dr Watson self-heal max (update display in-place)
+    container.querySelector('#btn-watson-dec')?.addEventListener('click', (e) => {
+      if (game.drWatsonSelfHealMax > 0) { game.drWatsonSelfHealMax--; const span = e.currentTarget.parentElement.querySelector('.font-bold'); if (span) span.textContent = game.drWatsonSelfHealMax; }
     });
-    container.querySelector('#btn-framason-inc')?.addEventListener('click', () => {
-      if (game.framasonMaxMembers < 6) {
-        game.framasonMaxMembers++;
-        this._requestRender();
-      }
+    container.querySelector('#btn-watson-inc')?.addEventListener('click', (e) => {
+      if (game.drWatsonSelfHealMax < 10) { game.drWatsonSelfHealMax++; const span = e.currentTarget.parentElement.querySelector('.font-bold'); if (span) span.textContent = game.drWatsonSelfHealMax; }
     });
 
-    // Desired mafia +/- controls
-    container.querySelector('#btn-mafia-dec')?.addEventListener('click', () => {
-      const remaining = Math.max(0, game.players.length - (Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0)));
-      const newVal = Math.max(0, game.desiredMafia - 1);
-      game.setDesiredMafia(Math.min(newVal, remaining));
-      this._requestRender();
+    // Dr Lecter self-heal max (update display in-place)
+    container.querySelector('#btn-lecter-dec')?.addEventListener('click', (e) => {
+      if (game.drLecterSelfHealMax > 0) { game.drLecterSelfHealMax--; const span = e.currentTarget.parentElement.querySelector('.font-bold'); if (span) span.textContent = game.drLecterSelfHealMax; }
     });
-    container.querySelector('#btn-mafia-inc')?.addEventListener('click', () => {
-      const remaining = Math.max(0, game.players.length - (Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0)));
-      const newVal = game.desiredMafia + 1;
-      game.setDesiredMafia(Math.min(newVal, remaining));
-      this._requestRender();
+    container.querySelector('#btn-lecter-inc')?.addEventListener('click', (e) => {
+      if (game.drLecterSelfHealMax < 10) { game.drLecterSelfHealMax++; const span = e.currentTarget.parentElement.querySelector('.font-bold'); if (span) span.textContent = game.drLecterSelfHealMax; }
     });
 
-    // Dr Watson self-heal max
-    container.querySelector('#btn-watson-dec')?.addEventListener('click', () => {
-      if (game.drWatsonSelfHealMax > 0) { game.drWatsonSelfHealMax--; this._requestRender(); }
-    });
-    container.querySelector('#btn-watson-inc')?.addEventListener('click', () => {
-      if (game.drWatsonSelfHealMax < 10) { game.drWatsonSelfHealMax++; this._requestRender(); }
-    });
-
-    // Dr Lecter self-heal max
-    container.querySelector('#btn-lecter-dec')?.addEventListener('click', () => {
-      if (game.drLecterSelfHealMax > 0) { game.drLecterSelfHealMax--; this._requestRender(); }
-    });
-    container.querySelector('#btn-lecter-inc')?.addEventListener('click', () => {
-      if (game.drLecterSelfHealMax < 10) { game.drLecterSelfHealMax++; this._requestRender(); }
-    });
-
-    // Jack/Zodiac morning shot immunity toggles
-    container.querySelector('#btn-jack-immune')?.addEventListener('click', () => {
+    // Jack/Zodiac morning shot immunity toggles — update button state in-place
+    container.querySelector('#btn-jack-immune')?.addEventListener('click', (e) => {
       game.jackMorningShotImmune = !game.jackMorningShotImmune;
-      this._requestRender();
+      const btn = e.currentTarget;
+      if (game.jackMorningShotImmune) { btn.classList.add('btn--primary'); btn.classList.remove('btn--ghost'); btn.textContent = `${t(tr.setup.jackImmune)} ✓`; }
+      else { btn.classList.remove('btn--primary'); btn.classList.add('btn--ghost'); btn.textContent = `${t(tr.setup.jackImmune)}`; }
     });
-    container.querySelector('#btn-zodiac-immune')?.addEventListener('click', () => {
+    container.querySelector('#btn-zodiac-immune')?.addEventListener('click', (e) => {
       game.zodiacMorningShotImmune = !game.zodiacMorningShotImmune;
-      this._requestRender();
+      const btn = e.currentTarget;
+      if (game.zodiacMorningShotImmune) { btn.classList.add('btn--primary'); btn.classList.remove('btn--ghost'); btn.textContent = `${t(tr.setup.zodiacImmune)} ✓`; }
+      else { btn.classList.remove('btn--primary'); btn.classList.add('btn--ghost'); btn.textContent = `${t(tr.setup.zodiacImmune)}`; }
     });
 
-    // Sniper shots adjust in Assign tab
-    container.querySelector('#btn-sniper-dec-assign')?.addEventListener('click', () => {
-      if (game.sniperMaxShots > 1) { game.sniperMaxShots--; this._requestRender(); }
-    });
-    container.querySelector('#btn-sniper-inc-assign')?.addEventListener('click', () => {
-      if (game.sniperMaxShots < 10) { game.sniperMaxShots++; this._requestRender(); }
-    });
+    // Sniper assign controls removed (sniper shoots now configured in Roles tab only)
   }
 
   /** Show role description popup (triggered by long press) */
