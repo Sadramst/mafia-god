@@ -136,6 +136,23 @@ export class SetupView extends BaseView {
             ? `<span style="color: var(--danger)"> ${t(tr.setup.shouldBe).replace('%d', game.players.length)}</span>` 
             : '<span style="color: var(--success)"> ✓</span>'}
         </p>
+        <!-- Recommended / Desired team counts (Roles tab) -->
+        ${(() => {
+          const rec = game.computeRecommendedCounts();
+          return `
+            <div class="card mb-md">
+              <div class="flex gap-sm items-center">
+                <div>${t(tr.setup.mafia)}: <strong id="desired-mafia-roles">${game.desiredMafia}</strong></div>
+                <div class="flex items-center gap-sm" style="margin-left: 8px;">
+                  <button class="btn btn--ghost btn--xs" id="btn-mafia-dec-roles">−</button>
+                  <button class="btn btn--ghost btn--xs" id="btn-mafia-inc-roles">+</button>
+                </div>
+                <div style="margin-left: 12px;">${t(tr.setup.citizen)}: <strong id="desired-citizen-roles">${game.desiredCitizen}</strong></div>
+                <div style="margin-left: auto; font-size: var(--text-sm); color: var(--muted);">${t(tr.setup.person)}: ${game.players.length} · ${t(tr.setup.independent)}: ${rec.independents}</div>
+              </div>
+            </div>
+          `;
+        })()}
     `;
 
     for (const team of teams) {
@@ -224,6 +241,22 @@ export class SetupView extends BaseView {
         const role = Roles.get(roleId);
         if (role) this._showRoleDescription(role);
       });
+    });
+
+    // Roles-tab desired mafia +/- handlers
+    container.querySelector('#btn-mafia-dec-roles')?.addEventListener('click', () => {
+      const independents = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0);
+      const remaining = Math.max(0, game.players.length - independents);
+      const newVal = Math.max(0, game.desiredMafia - 1);
+      game.setDesiredMafia(Math.min(newVal, remaining));
+      this.render();
+    });
+    container.querySelector('#btn-mafia-inc-roles')?.addEventListener('click', () => {
+      const independents = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0);
+      const remaining = Math.max(0, game.players.length - independents);
+      const newVal = (game.desiredMafia || 0) + 1;
+      game.setDesiredMafia(Math.min(newVal, remaining));
+      this.render();
     });
 
     // Toggle unique roles
