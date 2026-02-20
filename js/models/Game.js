@@ -53,6 +53,9 @@ export class Game {
     this._drWatsonSelfHealCount = 0; // Times Dr Watson has healed self
     this._drLecterSelfHealCount = 0; // Times Dr Lecter has healed self
     this.zodiacFrequency = 'every'; // 'every' | 'odd' | 'even'
+    // Desired team counts (computed from players and independents)
+    this.desiredMafia = 0;
+    this.desiredCitizen = 0;
   }
 
   // ──────────────────────────────────
@@ -87,8 +90,9 @@ export class Game {
     const errors = [];
     const totalRoles = this.getTotalRoleCount();
 
-    if (this.players.length < 4) {
-      errors.push(t(tr.setup.minPlayers).replace('%d', 4));
+    const MIN_PLAYERS = 8;
+    if (this.players.length < MIN_PLAYERS) {
+      errors.push(t(tr.setup.minPlayers).replace('%d', MIN_PLAYERS));
     }
 
     if (totalRoles !== this.players.length) {
@@ -97,15 +101,58 @@ export class Game {
       errors.push(msg);
     }
 
-    // Ensure at least one mafia
+    // Team counts
     const mafiaCount = Object.entries(this.selectedRoles)
       .filter(([id]) => Roles.get(id)?.team === 'mafia')
       .reduce((s, [, c]) => s + c, 0);
+    const citizenCount = Object.entries(this.selectedRoles)
+      .filter(([id]) => Roles.get(id)?.team === 'citizen')
+      .reduce((s, [, c]) => s + c, 0);
+
+    // If desired counts are configured, enforce them
+    if (this.desiredMafia > 0 && mafiaCount !== this.desiredMafia) {
+      errors.push(t(tr.setup.mustChooseMafia).replace('%d', this.desiredMafia));
+    }
+    if (this.desiredCitizen > 0 && citizenCount !== this.desiredCitizen) {
+      errors.push(t(tr.setup.mustChooseCitizen).replace('%d', this.desiredCitizen));
+    }
+
+    // Ensure at least one mafia by default
     if (mafiaCount === 0) {
       errors.push(t(tr.setup.mafiaRequired));
     }
 
     return errors;
+  }
+
+  /** Compute recommended team counts based on current players and independents */
+  computeRecommendedCounts() {
+    const totalPlayers = this.players.length;
+    const independents = Object.entries(this.selectedRoles)
+      .filter(([id]) => Roles.get(id)?.team === 'independent')
+      .reduce((s, [, c]) => s + c, 0);
+
+    const remaining = Math.max(0, totalPlayers - independents);
+    const recommendedMafia = Math.max(1, Math.floor(remaining / 4));
+    const recommendedCitizen = Math.max(0, remaining - recommendedMafia);
+
+    // Initialize desired counts if not set
+    if (!this.desiredMafia) this.desiredMafia = recommendedMafia;
+    if (!this.desiredCitizen) this.desiredCitizen = recommendedCitizen;
+
+    return { recommendedMafia, recommendedCitizen, independents };
+  }
+
+  /** Adjust desired mafia count (clamped) and keep citizen consistent */
+  setDesiredMafia(count) {
+    const totalPlayers = this.players.length;
+    const independents = Object.entries(this.selectedRoles)
+      .filter(([id]) => Roles.get(id)?.team === 'independent')
+      .reduce((s, [, c]) => s + c, 0);
+    const remaining = Math.max(0, totalPlayers - independents);
+    const clamped = Math.max(0, Math.min(count, remaining));
+    this.desiredMafia = clamped;
+    this.desiredCitizen = remaining - clamped;
   }
 
   /** Randomly assign roles to players */

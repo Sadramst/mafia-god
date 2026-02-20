@@ -358,6 +358,31 @@ export class SetupView extends BaseView {
           </div>
         </div>
 
+        <!-- Recommended / Desired team counts -->
+        ${(() => {
+          const rec = game.computeRecommendedCounts();
+          return `
+          <div class="card mb-lg">
+            <div class="font-bold mb-sm">${t(tr.setup.warning)}: ${t(tr.setup.shouldBe).replace('%d', game.players.length)}</div>
+            <div class="flex gap-sm items-center">
+              <div style="min-width: 180px;">
+                ${t(tr.setup.mafia)}: <strong id="desired-mafia">${game.desiredMafia}</strong>
+                <div style="font-size: var(--text-xs); color: var(--muted)">(${t(tr.setup.person)})</div>
+              </div>
+              <div class="flex items-center gap-sm">
+                <button class="btn btn--ghost btn--sm" id="btn-mafia-dec">−</button>
+                <button class="btn btn--ghost btn--sm" id="btn-mafia-inc">+</button>
+              </div>
+              <div style="margin-left: 12px;">
+                ${t(tr.setup.citizen)}: <strong id="desired-citizen">${game.desiredCitizen}</strong>
+              </div>
+              <div style="margin-left: auto; font-size: var(--text-sm); color: var(--muted);">${t(tr.setup.person)}: ${game.players.length} · ${t(tr.setup.independent)}: ${rec.independents}</div>
+            </div>
+            <div style="font-size: var(--text-xs); color: var(--muted); margin-top: 6px;">${t(tr.setup.shouldBe).replace('%d', game.players.length)}</div>
+          </div>
+          `;
+        })()}
+
         <!-- Zodiac frequency setting (only if zodiac is selected) -->
         ${game.selectedRoles['zodiac'] ? `
           <div class="card mb-lg" style="border-color: rgba(139,92,246,0.4);">
@@ -418,6 +443,17 @@ export class SetupView extends BaseView {
           </div>
         ` : ''}
 
+        ${game.selectedRoles['sniper'] ? `
+          <div class="card mb-lg" style="border-color: rgba(99,102,241,0.4);">
+            <div class="font-bold mb-sm">🎯 ${t(tr.setup.sniperShots)}</div>
+            <div class="flex gap-sm items-center">
+              <button class="btn btn--sm btn--ghost" id="btn-sniper-dec-assign">−</button>
+              <span class="font-bold" style="min-width: 30px; text-align: center;">${game.sniperMaxShots}</span>
+              <button class="btn btn--sm btn--ghost" id="btn-sniper-inc-assign">+</button>
+            </div>
+          </div>
+        ` : ''}
+
         <!-- Errors -->
         ${errors.length > 0 ? `
           <div class="card mb-lg" style="border-color: var(--danger);">
@@ -466,6 +502,20 @@ export class SetupView extends BaseView {
       }
     });
 
+    // Desired mafia +/- controls
+    container.querySelector('#btn-mafia-dec')?.addEventListener('click', () => {
+      const remaining = Math.max(0, game.players.length - (Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0)));
+      const newVal = Math.max(0, game.desiredMafia - 1);
+      game.setDesiredMafia(Math.min(newVal, remaining));
+      this.render();
+    });
+    container.querySelector('#btn-mafia-inc')?.addEventListener('click', () => {
+      const remaining = Math.max(0, game.players.length - (Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0)));
+      const newVal = game.desiredMafia + 1;
+      game.setDesiredMafia(Math.min(newVal, remaining));
+      this.render();
+    });
+
     // Dr Watson self-heal max
     container.querySelector('#btn-watson-dec')?.addEventListener('click', () => {
       if (game.drWatsonSelfHealMax > 0) { game.drWatsonSelfHealMax--; this.render(); }
@@ -490,6 +540,14 @@ export class SetupView extends BaseView {
     container.querySelector('#btn-zodiac-immune')?.addEventListener('click', () => {
       game.zodiacMorningShotImmune = !game.zodiacMorningShotImmune;
       this.render();
+    });
+
+    // Sniper shots adjust in Assign tab
+    container.querySelector('#btn-sniper-dec-assign')?.addEventListener('click', () => {
+      if (game.sniperMaxShots > 1) { game.sniperMaxShots--; this.render(); }
+    });
+    container.querySelector('#btn-sniper-inc-assign')?.addEventListener('click', () => {
+      if (game.sniperMaxShots < 10) { game.sniperMaxShots++; this.render(); }
     });
   }
 

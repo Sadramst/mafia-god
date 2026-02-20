@@ -117,6 +117,8 @@ export const translations = {
     minPlayers: { fa: 'حداقل %d بازیکن نیاز است.', en: 'Minimum %d players required.' },
     rolesMismatch: { fa: 'تعداد نقش‌ها (%d) با تعداد بازیکنان (%d) برابر نیست.', en: 'Number of roles (%d) does not equal number of players (%d).' },
     mafiaRequired: { fa: 'حداقل یک نقش مافیا باید انتخاب شود.', en: 'At least one Mafia role must be selected.' },
+    mustChooseMafia: { fa: 'باید دقیقاً %d نقش مافیا انتخاب شود.', en: 'Must choose exactly %d Mafia roles.' },
+    mustChooseCitizen: { fa: 'باید دقیقاً %d نقش شهروند انتخاب شود.', en: 'Must choose exactly %d Citizen roles.' },
     person: { fa: 'نفر', en: 'people' },
     roleInfoTooltip: { fa: 'توضیحات', en: 'Info' },
     jackImmune: { fa: '🔪 جک', en: '🔪 Jack' },
