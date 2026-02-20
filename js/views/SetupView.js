@@ -175,6 +175,16 @@ export class SetupView extends BaseView {
                 </div>
               </div>
             ` : ''}
+            ${role.id === 'freemason' ? `
+              <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
+                <div class="flex gap-sm items-center justify-center">
+                  <span style="min-width: 70px;">👥 متحدان:</span>
+                  <button class="btn btn--ghost btn--sm" data-action="ally-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
+                  <span class="font-bold" style="min-width: 20px; text-align: center;">${game.framasonMaxMembers}</span>
+                  <button class="btn btn--ghost btn--sm" data-action="ally-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
+                </div>
+              </div>
+            ` : ''}
           </div>
         `;
       }
@@ -200,6 +210,7 @@ export class SetupView extends BaseView {
         if (e.target.closest('.role-card__count-btn')) return;
         if (e.target.closest('.role-card__info')) return;
         if (e.target.closest('.role-card__bullets')) return;
+        if (e.target.closest('.role-card__allies')) return;
         const roleId = card.dataset.role;
         const role = Roles.get(roleId);
         if (!role) return;
@@ -264,6 +275,20 @@ export class SetupView extends BaseView {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (game.gunnerLiveMax < 10) { game.gunnerLiveMax++; this.render(); }
+      });
+    });
+
+    // Freemason ally count +/- buttons on role card
+    container.querySelectorAll('[data-action="ally-dec"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (game.framasonMaxMembers > 1) { game.framasonMaxMembers--; this.render(); }
+      });
+    });
+    container.querySelectorAll('[data-action="ally-inc"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (game.framasonMaxMembers < 10) { game.framasonMaxMembers++; this.render(); }
       });
     });
   }
