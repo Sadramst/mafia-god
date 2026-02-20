@@ -125,8 +125,10 @@ export class Game {
     return errors;
   }
 
-  /** Compute recommended team counts based on current players and independents */
-  computeRecommendedCounts() {
+  /** Compute recommended team counts based on current players and independents
+   * @param {boolean} force — when true, overwrite `desiredMafia`/`desiredCitizen` with recommendations
+   */
+  computeRecommendedCounts(force = false) {
     const totalPlayers = this.players.length;
     const independents = Object.entries(this.selectedRoles)
       .filter(([id]) => Roles.get(id)?.team === 'independent')
@@ -136,9 +138,14 @@ export class Game {
     const recommendedMafia = Math.max(1, Math.floor(remaining / 4));
     const recommendedCitizen = Math.max(0, remaining - recommendedMafia);
 
-    // Initialize desired counts if not set
-    if (!this.desiredMafia) this.desiredMafia = recommendedMafia;
-    if (!this.desiredCitizen) this.desiredCitizen = recommendedCitizen;
+    // Initialize or update desired counts
+    if (force) {
+      this.desiredMafia = recommendedMafia;
+      this.desiredCitizen = recommendedCitizen;
+    } else {
+      if (!this.desiredMafia) this.desiredMafia = recommendedMafia;
+      if (!this.desiredCitizen) this.desiredCitizen = recommendedCitizen;
+    }
 
     return { recommendedMafia, recommendedCitizen, independents };
   }

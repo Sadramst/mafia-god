@@ -23,10 +23,10 @@ export class SetupView extends BaseView {
           <button class="tab ${this.activeTab === 'players' ? 'active' : ''}" data-tab="players">
             👥 ${t(tr.setup.playersTab)} (${game.players.length})
           </button>
-          <button class="tab ${this.activeTab === 'roles' ? 'active' : ''}" data-tab="roles">
+          <button class="tab ${this.activeTab === 'roles' ? 'active' : ''} ${game.players.length < 8 ? 'disabled' : ''}" data-tab="roles">
             🎭 ${t(tr.setup.rolesTab)} (${game.getTotalRoleCount()})
           </button>
-          <button class="tab ${this.activeTab === 'assign' ? 'active' : ''}" data-tab="assign">
+          <button class="tab ${this.activeTab === 'assign' ? 'active' : ''} ${game.players.length < 8 ? 'disabled' : ''}" data-tab="assign">
             🎲 ${t(tr.setup.assignTab)}
           </button>
         </div>
@@ -35,10 +35,16 @@ export class SetupView extends BaseView {
       </div>
     `;
 
-    // Tab switching
+    // Tab switching with minimal player guard
     this.container.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
-        this.activeTab = tab.dataset.tab;
+        const tabName = tab.dataset.tab;
+        const MIN_PLAYERS = 8;
+        if ((tabName === 'roles' || tabName === 'assign') && game.players.length < MIN_PLAYERS) {
+          this.toast(t(tr.setup.minPlayers).replace('%d', MIN_PLAYERS), 'error');
+          return;
+        }
+        this.activeTab = tabName;
         this.render();
       });
     });
@@ -123,7 +129,8 @@ export class SetupView extends BaseView {
   // ─── Roles Tab ───
   _renderRolesTab(container) {
     const game = this.app.game;
-    const teams = ['mafia', 'citizen', 'independent'];
+    // show independents first as requested
+    const teams = ['independent', 'mafia', 'citizen'];
     const teamNames = { mafia: `🔴 ${t(tr.setup.teamMafia)}`, citizen: `🔵 ${t(tr.setup.teamCitizen)}`, independent: `🧡 ${t(tr.setup.teamIndependent)}` };
 
     let html = `
@@ -297,6 +304,12 @@ export class SetupView extends BaseView {
             delete game.selectedRoles[roleId];
           }
         }
+
+        // If independent-role selection changed, recompute recommended counts (force overwrite)
+        if (role.team === 'independent' && game.computeRecommendedCounts) {
+          game.computeRecommendedCounts(true);
+        }
+
         this.render();
       });
     });
