@@ -5,6 +5,7 @@ import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
 import { Storage } from '../utils/Storage.js';
 import { t, translations as tr } from '../utils/i18n.js';
+import { Settings, Language } from '../utils/Settings.js';
 
 export class SummaryView extends BaseView {
 
@@ -57,7 +58,7 @@ export class SummaryView extends BaseView {
                   <span class="dot ${p.isAlive ? 'dot--alive' : 'dot--dead'}"></span>
                   <div class="player-item__name">${p.name}</div>
                   <span class="role-badge role-badge--${role?.team || 'citizen'}">
-                    ${role?.icon || ''} ${role?.getLocalizedName() || ''}
+                    ${role?.icon || ''} ${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedName() || ''}</span>` : (role?.getLocalizedName() || '')}
                   </span>
                 </div>
               `;

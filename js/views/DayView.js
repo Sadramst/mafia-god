@@ -5,6 +5,7 @@ import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
 import { Timer } from '../utils/Timer.js';
 import { t, translations as tr } from '../utils/i18n.js';
+import { Settings, Language } from '../utils/Settings.js';
 
 export class DayView extends BaseView {
 
@@ -216,7 +217,7 @@ export class DayView extends BaseView {
               return `<div class="flex items-center gap-sm mb-sm">
                 <span class="dot dot--dead"></span>
                 <span class="font-bold">${p?.name || '—'}</span>
-                <span class="role-badge role-badge--${role?.team || 'citizen'}">${role?.icon || ''} ${role?.getLocalizedName() || ''}</span>
+                <span class="role-badge role-badge--${role?.team || 'citizen'}">${role?.icon || ''} ${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedName() || ''}</span>` : (role?.getLocalizedName() || '')}</span>
               </div>`;
             }).join('')}
           </div>

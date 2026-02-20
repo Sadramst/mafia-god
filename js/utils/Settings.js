@@ -11,7 +11,6 @@
 export const Language = Object.freeze({
   FARSI: 'fa',
   ENGLISH: 'en',
-  BOTH: 'both',
 });
 
 /**
@@ -22,7 +21,7 @@ export class Settings {
   static KEY = 'mafia_god_settings';
   
   static DEFAULT = {
-    language: Language.BOTH, // Default to Both for bilingual display
+    language: Language.ENGLISH, // Default to English
   };
 
   /** Get current settings */
@@ -49,7 +48,7 @@ export class Settings {
 
   /** Get current language setting */
   static getLanguage() {
-    return Settings.get().language || Language.BOTH;
+    return Settings.get().language || Language.ENGLISH;
   }
 
   /** Set language preference */

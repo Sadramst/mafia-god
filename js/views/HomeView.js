@@ -152,13 +152,7 @@ export class HomeView extends BaseView {
                 </span>
               </label>
               
-              <label class="radio-option ${currentLang === Language.BOTH ? 'radio-option--active' : ''}">
-                <input type="radio" name="language" value="${Language.BOTH}" ${currentLang === Language.BOTH ? 'checked' : ''}>
-                <span class="radio-option__label">
-                  <span class="radio-option__title">🌍 ${t(tr.settings.both)}</span>
-                  <span class="radio-option__desc">${t(tr.settings.bothDesc)}</span>
-                </span>
-              </label>
+              <!-- BOTH option removed; default is English -->
             </div>
           </div>
 

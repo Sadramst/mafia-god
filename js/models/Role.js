@@ -75,7 +75,6 @@ export class Role {
   getLocalizedName() {
     const lang = Settings.getLanguage();
     if (lang === Language.ENGLISH) return this.nameEn;
-    if (lang === Language.BOTH) return this.nameBilingual;
     return this.nameFa; // Default to Farsi
   }
 
@@ -86,7 +85,6 @@ export class Role {
   getLocalizedDescription() {
     const lang = Settings.getLanguage();
     if (lang === Language.ENGLISH) return this.descriptionEn;
-    if (lang === Language.BOTH) return this.descriptionBilingual;
     return this.descriptionFa; // Default to Farsi
   }
 

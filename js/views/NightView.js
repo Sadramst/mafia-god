@@ -4,6 +4,7 @@
 import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
 import { t, translations as tr } from '../utils/i18n.js';
+import { Settings, Language } from '../utils/Settings.js';
 
 export class NightView extends BaseView {
 
@@ -108,7 +109,7 @@ export class NightView extends BaseView {
               <div class="god-player god-player--${team} ${!p.isAlive ? 'god-player--dead' : ''}">
                 <span class="dot ${p.isAlive ? 'dot--alive' : 'dot--dead'}"></span>
                 <span class="god-player__name">${p.name}</span>
-                <span class="god-player__role">${role?.icon || ''} ${role?.getLocalizedName() || ''}</span>
+                <span class="god-player__role">${role?.icon || ''} ${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedName() || ''}</span>` : (role?.getLocalizedName() || '')}</span>
               </div>
             `;
           }).join('')}
@@ -204,7 +205,7 @@ export class NightView extends BaseView {
         return `<div class="flex items-center gap-sm mb-sm">
           <span>${role?.icon || '🔴'}</span>
           <span class="font-bold">${p?.name || '—'}</span>
-          <span class="text-muted" style="font-size: var(--text-xs);">${role?.getLocalizedName() || ''}</span>
+          <span class="text-muted" style="font-size: var(--text-xs);">${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedName() || ''}</span>` : (role?.getLocalizedName() || '')}</span>
         </div>`;
       });
       return `
@@ -357,7 +358,7 @@ export class NightView extends BaseView {
             ${allRoles.map(r => `
               <button class="role-guess-btn ${this.salakhiGuessRoleId === r.id ? 'selected' : ''}"
                       data-guess-role="${r.id}">
-                ${r.icon} ${r.getLocalizedName()}
+                ${r.icon} ${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${r.getLocalizedName()}</span>` : r.getLocalizedName()}
               </button>
             `).join('')}
           </div>
