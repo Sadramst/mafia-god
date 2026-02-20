@@ -17,6 +17,7 @@ export class Player {
     this.isAlive = true;
     this.deathRound = null;   // Round number when eliminated
     this.deathCause = null;   // 'mafia' | 'vote' | 'sniper' | 'jack' | 'salakhi' | etc.
+    this.isRevivable = true;  // Can be revived by Constantine (false for salakhi, kane_sacrifice)
     this.silenced = false;    // Silenced by matador
     this.healed = false;      // Being healed by doctor
     this.lastHealedRound = null;
@@ -41,21 +42,23 @@ export class Player {
    * Shield is checked automatically — if it absorbs the hit, player survives.
    * @param {number} round — Current game round
    * @param {string} cause — Kill cause type
+   * @param {boolean} revivable — Can be revived by Constantine (default true)
    * @returns {boolean} true if player actually died, false if shield saved them
    */
-  tryKill(round, cause) {
+  tryKill(round, cause, revivable = true) {
     if (this.shield.absorb(cause)) {
       return false; // Shield absorbed the hit
     }
-    this.kill(round, cause);
+    this.kill(round, cause, revivable);
     return true;
   }
 
   /** Kill this player */
-  kill(round, cause) {
+  kill(round, cause, revivable = true) {
     this.isAlive = false;
     this.deathRound = round;
     this.deathCause = cause;
+    this.isRevivable = revivable;
   }
 
   /** Revive this player (Constantine ability) */
@@ -63,6 +66,7 @@ export class Player {
     this.isAlive = true;
     this.deathRound = null;
     this.deathCause = null;
+    this.isRevivable = true;
   }
 
   /** Reset per-night flags */
@@ -88,6 +92,7 @@ export class Player {
       isAlive: this.isAlive,
       deathRound: this.deathRound,
       deathCause: this.deathCause,
+      isRevivable: this.isRevivable,
       silenced: this.silenced,
       healed: this.healed,
       lastHealedRound: this.lastHealedRound,

@@ -354,7 +354,7 @@ export class Game {
     if (this._kanePendingDeath) {
       const kanePlayer = this.players.find(p => p.isAlive && p.roleId === 'kane');
       if (kanePlayer) {
-        kanePlayer.kill(this.round, 'kane_sacrifice');
+        kanePlayer.kill(this.round, 'kane_sacrifice', false); // Not revivable
         results.killed.push(kanePlayer.id);
         this._addHistory('death', `🎖️ همشهری کین به دستور خدا حذف شد (بهای افشاگری).`);
       }
@@ -423,8 +423,8 @@ export class Game {
         results.salakhied = { playerId: targetId, correct: isCorrect };
 
         if (isCorrect) {
-          // Salakhi bypasses doctor, shield, bodyguard — instant kill
-          target.kill(this.round, 'salakhi');
+          // Salakhi bypasses doctor, shield, bodyguard — instant kill (not revivable)
+          target.kill(this.round, 'salakhi', false);
           results.killed.push(targetId);
           this._addHistory('death', `🗡️ ${target.name} سلاخی شد. (${Roles.get(target.roleId)?.name})`);
         } else {
@@ -599,10 +599,10 @@ export class Game {
       }
     }
 
-    // 12. Constantine revives
+    // 12. Constantine revives (only players who died last night with revivable death)
     if (actions.constantine?.targetId) {
       const target = this.getPlayer(actions.constantine.targetId);
-      if (target && !target.isAlive) {
+      if (target && !target.isAlive && target.deathRound === this.round && target.isRevivable) {
         target.revive();
         results.revived = actions.constantine.targetId;
         this.constantineUsed = true;
@@ -1074,6 +1074,15 @@ export class Game {
   /** Get dead players */
   getDeadPlayers() {
     return this.players.filter(p => !p.isAlive);
+  }
+
+  /** Get revivable players (died last night, not salakhi/kane_sacrifice) */
+  getRevivablePlayers() {
+    return this.players.filter(p => 
+      !p.isAlive && 
+      p.deathRound === this.round && 
+      p.isRevivable
+    );
   }
 
   /** Get players by team (alive only) */

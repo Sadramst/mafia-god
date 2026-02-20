@@ -140,7 +140,7 @@ export class NightView extends BaseView {
       } else if (step.roleId === 'drWatson') {
         targets = targets.filter(p => game.canDrWatsonHeal(p.id));
       } else if (step.roleId === 'constantine') {
-        targets = game.getDeadPlayers();
+        targets = game.getRevivablePlayers();
       } else if (step.roleId === 'jadoogar') {
         // Jadoogar can only target citizens and independents, not same person as last night
         targets = targets.filter(p => {
