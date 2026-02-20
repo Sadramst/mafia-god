@@ -136,29 +136,26 @@ export class SetupView extends BaseView {
             ? `<span style="color: var(--danger)"> ${t(tr.setup.shouldBe).replace('%d', game.players.length)}</span>` 
             : '<span style="color: var(--success)"> ✓</span>'}
         </p>
-        <!-- Recommended / Desired team counts (Roles tab) -->
-        ${(() => {
-          const rec = game.computeRecommendedCounts();
-          return `
-            <div class="card mb-md">
-              <div class="flex gap-sm items-center">
-                <div>${t(tr.setup.mafia)}: <strong id="desired-mafia-roles">${game.desiredMafia}</strong></div>
-                <div class="flex items-center gap-sm" style="margin-left: 8px;">
-                  <button class="btn btn--ghost btn--xs" id="btn-mafia-dec-roles">−</button>
-                  <button class="btn btn--ghost btn--xs" id="btn-mafia-inc-roles">+</button>
-                </div>
-                <div style="margin-left: 12px;">${t(tr.setup.citizen)}: <strong id="desired-citizen-roles">${game.desiredCitizen}</strong></div>
-                <div style="margin-left: auto; font-size: var(--text-sm); color: var(--muted);">${t(tr.setup.person)}: ${game.players.length} · ${t(tr.setup.independent)}: ${rec.independents}</div>
-              </div>
-            </div>
-          `;
-        })()}
+        <!-- desired counts will appear inline on team headers -->
+    `;
+
+    // ensure desired counts initialized
+    if (game.computeRecommendedCounts) game.computeRecommendedCounts();
     `;
 
     for (const team of teams) {
       const roles = Roles.getByTeam(team);
       html += `
-        <div class="team-header team-header--${team}">${teamNames[team]}</div>
+        <div class="team-header team-header--${team}">
+          ${teamNames[team]}
+          ${team === 'mafia' || team === 'citizen' ? (`
+            <span class="team-controls" style="margin-left: 12px; font-weight: normal; font-size: 0.95rem;">
+              <button class="btn btn--ghost btn--xs" id="btn-${team}-dec-roles">−</button>
+              <span id="desired-${team}-roles" style="margin: 0 8px;">${team === 'mafia' ? game.desiredMafia : game.desiredCitizen}</span>
+              <button class="btn btn--ghost btn--xs" id="btn-${team}-inc-roles">+</button>
+            </span>
+          `) : ''}
+        </div>
         <div class="role-grid mb-lg">
       `;
 
@@ -256,6 +253,24 @@ export class SetupView extends BaseView {
       const remaining = Math.max(0, game.players.length - independents);
       const newVal = (game.desiredMafia || 0) + 1;
       game.setDesiredMafia(Math.min(newVal, remaining));
+      this.render();
+    });
+
+    // Roles-tab desired citizen +/- handlers
+    container.querySelector('#btn-citizen-dec-roles')?.addEventListener('click', () => {
+      const independents = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0);
+      const remaining = Math.max(0, game.players.length - independents);
+      const newCitizen = Math.max(0, (game.desiredCitizen || 0) - 1);
+      const newMafia = Math.max(0, remaining - newCitizen);
+      game.setDesiredMafia(newMafia);
+      this.render();
+    });
+    container.querySelector('#btn-citizen-inc-roles')?.addEventListener('click', () => {
+      const independents = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0);
+      const remaining = Math.max(0, game.players.length - independents);
+      const newCitizen = Math.min(remaining, (game.desiredCitizen || 0) + 1);
+      const newMafia = Math.max(0, remaining - newCitizen);
+      game.setDesiredMafia(newMafia);
       this.render();
     });
 
