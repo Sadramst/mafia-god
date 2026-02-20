@@ -20,13 +20,13 @@ export class SetupView extends BaseView {
         <!-- Tabs -->
         <div class="tabs">
           <button class="tab ${this.activeTab === 'players' ? 'active' : ''}" data-tab="players">
-            👥 بازیکنان (${game.players.length})
+            👥 ${t(tr.setup.playersTab)} (${game.players.length})
           </button>
           <button class="tab ${this.activeTab === 'roles' ? 'active' : ''}" data-tab="roles">
-            🎭 نقش‌ها (${game.getTotalRoleCount()})
+            🎭 ${t(tr.setup.rolesTab)} (${game.getTotalRoleCount()})
           </button>
           <button class="tab ${this.activeTab === 'assign' ? 'active' : ''}" data-tab="assign">
-            🎲 تخصیص
+            🎲 ${t(tr.setup.assignTab)}
           </button>
         </div>
 
@@ -55,15 +55,15 @@ export class SetupView extends BaseView {
 
     container.innerHTML = `
       <div class="section">
-        <h2 class="section__title">👥 بازیکنان</h2>
-        <p class="section__subtitle">اسم بازیکنان را اضافه کنید</p>
+        <h2 class="section__title">👥 ${t(tr.setup.playersTitle)}</h2>
+        <p class="section__subtitle">${t(tr.setup.playersSubtitle)}</p>
         
         <div class="input-group">
           <input type="text" class="input" id="player-name-input" 
-                 placeholder="نام بازیکن..." maxlength="20"
+                 placeholder="${t(tr.setup.playerName)}" maxlength="20"
                  autocomplete="off" enterkeyhint="done">
           <button class="btn btn--primary" id="btn-add-player">
-            افزودن
+            ${t(tr.setup.addButton)}
           </button>
         </div>
 
@@ -71,13 +71,13 @@ export class SetupView extends BaseView {
           ${game.players.length === 0 ? `
             <div class="empty-state">
               <div class="empty-state__icon">👻</div>
-              <div class="empty-state__text">هنوز بازیکنی اضافه نشده</div>
+              <div class="empty-state__text">${t(tr.setup.noPlayersYet)}</div>
             </div>
           ` : game.players.map((p, i) => `
             <div class="player-item" style="animation-delay: ${i * 50}ms">
               <div class="player-item__number">${i + 1}</div>
               <div class="player-item__name">${p.name}</div>
-              <button class="player-item__remove" data-id="${p.id}" title="حذف">✕</button>
+              <button class="player-item__remove" data-id="${p.id}" title="${t(tr.setup.removePlayer)}">✕</button>
             </div>
           `).join('')}
         </div>
