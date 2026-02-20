@@ -119,7 +119,8 @@ body {
   font-family: var(--font);
   background: #0a0a0f;
   color: var(--text-primary);
-  direction: rtl;
+  /* inherit direction from <html> so setDocumentDirection can control LTR/RTL */
+  direction: inherit;
   margin: 0;
   padding: 0;
   min-height: 100%;
@@ -1484,6 +1485,39 @@ img { max-width: 100%; display: block; }
     --max-w: 560px;
   }
 }
+
+/* ---------- Direction overrides for LTR mode ---------- */
+html[dir="ltr"] {
+  direction: ltr;
+}
+
+html[dir="ltr"] .app-header__badge {
+  left: auto;
+  right: var(--space-md);
+}
+
+html[dir="ltr"] .app-header__back {
+  right: auto;
+  left: var(--space-md);
+}
+
+html[dir="ltr"] .section__title,
+html[dir="ltr"] .section__subtitle,
+html[dir="ltr"] .section__subtitle .text-muted,
+html[dir="ltr"] .role-card__name,
+html[dir="ltr"] .role-badge {
+  text-align: left;
+}
+
+/* Ensure role grid and cards render left-to-right in LTR mode */
+html[dir="ltr"] .role-grid,
+html[dir="ltr"] .role-card {
+  direction: ltr;
+}
+
+/* Utility: treat .text-start as left in LTR */
+html[dir="ltr"] .text-start { text-align: left; }
+
 
 /* ---------- Negotiate Announcement Overlay ---------- */
 .negotiate-overlay {
