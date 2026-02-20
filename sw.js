@@ -1,7 +1,7 @@
 /**
  * Service Worker — Offline caching for PWA
  */
-const CACHE_NAME = 'mafia-god-v12';
+const CACHE_NAME = 'mafia-god-v13';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const ASSETS = [
   './js/models/Shield.js',
   './js/models/Telesm.js',
   './js/models/Bomb.js',
+  './js/models/Framason.js',
   './js/views/BaseView.js',
   './js/views/HomeView.js',
   './js/views/SetupView.js',

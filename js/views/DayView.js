@@ -262,6 +262,16 @@ export class DayView extends BaseView {
           </div>
         ` : ''}
 
+        ${results?.framasonRecruit?.contaminated ? `
+          <div class="card mb-md" style="border-color: var(--danger);">
+            <div class="font-bold mb-sm" style="color: var(--danger);">🔺 تیم فراماسون آلوده شد!</div>
+            <div class="text-secondary" style="font-size: var(--text-sm);">
+              فراماسون یک بازیکن خطرناک را بیدار کرد — تمام اعضای تیم فراماسون حذف خواهند شد.
+              <br>(دکمه «حل فراماسون» در پایین)
+            </div>
+          </div>
+        ` : ''}
+
         <!-- God-only info -->
         <div class="god-dashboard mt-lg">
           <div class="god-dashboard__title">👁️ اطلاعات محرمانه خدا</div>
@@ -296,7 +306,20 @@ export class DayView extends BaseView {
             }
             return '';
           })()}
+
+          ${game.framason.isActive || game.framason.isContaminated ? `
+            <div class="card mb-sm" style="background: rgba(239,68,68,0.08); font-size: var(--text-sm);">
+              🔺 تیم فراماسون: <strong>${game.getFramasonAllianceNames().join('، ') || '—'}</strong>
+              ${game.framason.isContaminated ? '<span style="color: var(--danger);"> ⚠️ آلوده!</span>' : ''}
+            </div>
+          ` : ''}
         </div>
+
+        ${game.hasFramasonContamination() ? `
+          <button class="btn btn--danger btn--block mt-md" id="btn-resolve-framason">
+            🔺 حل فراماسون — حذف تیم آلوده
+          </button>
+        ` : ''}
 
         <button class="btn btn--primary btn--block mt-lg" id="btn-go-discussion">
           💬 شروع بحث روز
@@ -307,6 +330,21 @@ export class DayView extends BaseView {
     container.querySelector('#btn-go-discussion')?.addEventListener('click', () => {
       this.subView = 'discussion';
       this.render();
+    });
+
+    container.querySelector('#btn-resolve-framason')?.addEventListener('click', () => {
+      const { deadIds } = game.resolveFramasonContamination();
+      this.app.saveGame();
+      if (deadIds.length > 0) {
+        const names = deadIds.map(id => game.getPlayer(id)?.name).filter(Boolean).join('، ');
+        this.app.showToast(`🔺 تیم فراماسون حذف شد: ${names}`, 'info');
+      }
+      const winner = game.checkWinCondition();
+      if (winner) {
+        this.app.navigate('summary');
+      } else {
+        this.render();
+      }
     });
   }
 

@@ -234,6 +234,11 @@ export class NightView extends BaseView {
       return this._renderBomberStep(idx, targets, selectedTarget);
     }
 
+    // ── Framason special UI (recruit) ──
+    if (step.roleId === 'freemason') {
+      return this._renderFramasonStep(idx, targets, selectedTarget);
+    }
+
     // ── Standard step UI ──
     return `
       <div class="target-grid">
@@ -386,6 +391,55 @@ export class NightView extends BaseView {
     `;
   }
 
+  /**
+   * Render Framason's special step: show alliance + recruit target selection.
+   */
+  _renderFramasonStep(idx, targets, selectedTarget) {
+    const game = this.app.game;
+    const framason = game.framason;
+
+    // Show current alliance
+    const allianceNames = game.getFramasonAllianceNames();
+    const remaining = framason.maxMembers - framason.memberCount;
+
+    // Exclude leader + current members from targets
+    const excludeIds = framason.allianceIds;
+    const recruitTargets = game.getAlivePlayers().filter(p => !excludeIds.includes(p.id));
+
+    return `
+      <div class="card mb-sm" style="background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.3); font-size: var(--text-xs); padding: 8px 12px;">
+        🔺 فراماسون یک نفر را بیدار می‌کند. اگر مافیا (غیر جاسوس) یا مستقل باشد، صبح فردا تمام تیم فراماسون حذف می‌شوند!
+      </div>
+      <div class="card mb-md" style="border-color: rgba(239,68,68,0.3);">
+        <div class="font-bold mb-sm" style="color: var(--danger);">👥 تیم فراماسون (${allianceNames.length} نفر):</div>
+        <div class="text-secondary" style="font-size: var(--text-sm);">
+          ${allianceNames.join('، ') || '—'}
+        </div>
+        <div class="text-muted mt-sm" style="font-size: var(--text-xs);">
+          ظرفیت باقی‌مانده: ${remaining} نفر
+        </div>
+      </div>
+      <div class="target-grid">
+        ${recruitTargets.map(t => `
+          <button class="target-btn ${selectedTarget === t.id ? 'selected' : ''}" 
+                  data-step="${idx}" data-target="${t.id}">
+            ${t.name}
+          </button>
+        `).join('')}
+      </div>
+      <div class="flex gap-sm mt-md">
+        <button class="btn btn--primary btn--block btn--sm" 
+                data-action="confirm-step" data-step="${idx}"
+                ${!selectedTarget ? 'disabled' : ''}>
+          ✓ بیدار کردن و اضافه به تیم
+        </button>
+        <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
+          رد شدن (امشب کسی اضافه نکن)
+        </button>
+      </div>
+    `;
+  }
+
   _getActionDescription(actionType) {
     const descriptions = {
       kill: 'شلیک یا سلاخی — نوع اقدام را انتخاب کنید',
@@ -401,6 +455,7 @@ export class NightView extends BaseView {
       soloKill: 'چه کسی را بکشد؟',
       revive: 'چه کسی را زنده کند؟',
       telesm: 'طلسم را روی چه کسی بگذارد؟',
+      framasonRecruit: 'چه کسی را به تیم اضافه کند؟',
       mafiaReveal: 'تیم مافیا همدیگر را بشناسند',
     };
     return descriptions[actionType] || 'یک بازیکن انتخاب کنید';

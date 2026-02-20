@@ -275,6 +275,17 @@ export class SetupView extends BaseView {
           </div>
         ` : ''}
 
+        ${game.selectedRoles['freemason'] ? `
+          <div class="card mb-lg" style="border-color: rgba(239,68,68,0.4);">
+            <div class="font-bold mb-sm">🔺 تنظیمات فراماسون — حداکثر تعداد متحدان:</div>
+            <div class="flex gap-sm items-center">
+              <button class="btn btn--sm btn--ghost" id="btn-framason-dec">−</button>
+              <span class="font-bold" style="min-width: 30px; text-align: center;">${game.framasonMaxMembers}</span>
+              <button class="btn btn--sm btn--ghost" id="btn-framason-inc">+</button>
+            </div>
+          </div>
+        ` : ''}
+
         <!-- Errors -->
         ${errors.length > 0 ? `
           <div class="card mb-lg" style="border-color: var(--danger);">
@@ -307,6 +318,20 @@ export class SetupView extends BaseView {
         game.zodiacFrequency = btn.dataset.zodiacFreq;
         this.render();
       });
+    });
+
+    // Framason max members
+    container.querySelector('#btn-framason-dec')?.addEventListener('click', () => {
+      if (game.framasonMaxMembers > 1) {
+        game.framasonMaxMembers--;
+        this.render();
+      }
+    });
+    container.querySelector('#btn-framason-inc')?.addEventListener('click', () => {
+      if (game.framasonMaxMembers < 6) {
+        game.framasonMaxMembers++;
+        this.render();
+      }
     });
   }
 

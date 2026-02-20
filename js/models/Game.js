@@ -6,6 +6,7 @@
 import { Player } from './Player.js';
 import { Roles } from './Roles.js';
 import { Bomb } from './Bomb.js';
+import { Framason } from './Framason.js';
 
 export class Game {
 
@@ -32,6 +33,8 @@ export class Game {
     this.constantineUsed = false;
     this.gunnerUsed = false;
     this.bomb = new Bomb();          // One-time bomb mechanic
+    this.framason = new Framason();   // Freemason alliance mechanic
+    this.framasonMaxMembers = 2;     // Configurable in settings
     this._lastDrWatsonTarget = null;
     this._lastDrLecterTarget = null;
     this.zodiacFrequency = 'every'; // 'every' | 'odd' | 'even'
@@ -104,6 +107,13 @@ export class Game {
       const roleDef = Roles.get(pool[idx]);
       player.initShield(roleDef);
     });
+
+    // Initialize framason if present
+    const framasonPlayer = this.players.find(p => p.roleId === 'freemason');
+    if (framasonPlayer) {
+      this.framason.init(framasonPlayer.id, this.framasonMaxMembers);
+    }
+
     this.phase = 'roleReveal';
   }
 
@@ -231,6 +241,9 @@ export class Game {
 
       // Special: skip zodiac if not their turn based on frequency
       if (role.id === 'zodiac' && !this._canZodiacShoot()) continue;
+
+      // Special: skip freemason if can't recruit (dead, max reached, or contaminated)
+      if (role.id === 'freemason' && !this.framason.canRecruit) continue;
 
       steps.push({
         roleId: role.id,
@@ -517,6 +530,26 @@ export class Game {
       }
     }
 
+    // 13. Framason recruits
+    if (actions.freemason?.targetId) {
+      const recruitId = actions.freemason.targetId;
+      const recruit = this.getPlayer(recruitId);
+      if (recruit) {
+        const recruitRole = Roles.get(recruit.roleId);
+        const res = this.framason.recruit(recruitId, recruit.roleId, recruitRole?.team);
+        results.framasonRecruit = {
+          recruitId,
+          safe: res.safe,
+          contaminated: res.contaminated,
+        };
+        if (res.safe) {
+          this._addHistory('framason', `🔺 فراماسون ${recruit.name} را به تیم اضافه کرد.`);
+        } else {
+          this._addHistory('framason', `🔺⚠️ فراماسون ${recruit.name} را بیدار کرد — تیم آلوده شد!`);
+        }
+      }
+    }
+
     // Check Jack's telesm chain reaction — if telesm target died, Jack dies too
     results.jackTelesmTriggered = false;
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
@@ -533,6 +566,11 @@ export class Game {
       }
     }
 
+    // Track framason leader death during night
+    if (this.framason.isActive && results.killed.includes(this.framason.leaderId)) {
+      this.framason.onLeaderDeath();
+    }
+
     return results;
   }
 
@@ -545,6 +583,41 @@ export class Game {
     this.phase = 'day';
     this.votes = {};
     this._addHistory('day_start', `☀️ روز ${this.round} آغاز شد.`);
+  }
+
+  // ──────────────────────────────────
+  //  FRAMASON (فراماسون)
+  // ──────────────────────────────────
+
+  /** Check if framason team was contaminated and needs resolution */
+  hasFramasonContamination() {
+    return this.framason.isContaminated;
+  }
+
+  /**
+   * Resolve framason contamination — kill all alliance members.
+   * @returns {{ deadIds: number[], recruitId: number|null }}
+   */
+  resolveFramasonContamination() {
+    if (!this.framason.isContaminated) return { deadIds: [], recruitId: null };
+
+    const recruitId = this.framason._contaminated.recruitId;
+    const deadIds = this.framason.resolveContamination();
+
+    for (const id of deadIds) {
+      const p = this.getPlayer(id);
+      if (p && p.isAlive) {
+        p.kill(this.round, 'framason');
+        this._addHistory('death', `🔺 ${p.name} (تیم فراماسون) حذف شد.`);
+      }
+    }
+
+    return { deadIds: deadIds.filter(id => this.getPlayer(id)), recruitId };
+  }
+
+  /** Get framason alliance member names (God-only info) */
+  getFramasonAllianceNames() {
+    return this.framason.allianceIds.map(id => this.getPlayer(id)?.name).filter(Boolean);
   }
 
   /** Cast a vote: voter votes to eliminate target */
@@ -591,6 +664,11 @@ export class Game {
 
     player.kill(this.round, 'vote');
     this._addHistory('death', `⚖️ ${player.name} با رأی‌گیری اعدام شد. (${Roles.get(player.roleId)?.name})`);
+
+    // If framason leader is eliminated, deactivate alliance
+    if (this.framason.isActive && playerId === this.framason.leaderId) {
+      this.framason.onLeaderDeath();
+    }
 
     const extra = {};
 
@@ -803,6 +881,8 @@ export class Game {
       constantineUsed: this.constantineUsed,
       gunnerUsed: this.gunnerUsed,
       bomb: this.bomb.toJSON(),
+      framason: this.framason.toJSON(),
+      framasonMaxMembers: this.framasonMaxMembers,
       dayTimerDuration: this.dayTimerDuration,
       defenseTimerDuration: this.defenseTimerDuration,
       blindDayDuration: this.blindDayDuration,
@@ -823,6 +903,8 @@ export class Game {
     this.constantineUsed = data.constantineUsed || false;
     this.gunnerUsed = data.gunnerUsed || false;
     this.bomb = Bomb.fromJSON(data.bomb);
+    this.framason = Framason.fromJSON(data.framason);
+    this.framasonMaxMembers = data.framasonMaxMembers ?? 2;
     this.dayTimerDuration = data.dayTimerDuration || 180;
     this.defenseTimerDuration = data.defenseTimerDuration || 60;
     this.blindDayDuration = data.blindDayDuration || 60;
