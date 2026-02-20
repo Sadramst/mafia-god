@@ -56,7 +56,7 @@ export class SummaryView extends BaseView {
                   <span class="dot ${p.isAlive ? 'dot--alive' : 'dot--dead'}"></span>
                   <div class="player-item__name">${p.name}</div>
                   <span class="role-badge role-badge--${role?.team || 'citizen'}">
-                    ${role?.icon || ''} ${role?.name || ''}
+                    ${role?.icon || ''} ${role?.getLocalizedName() || ''}
                   </span>
                 </div>
               `;

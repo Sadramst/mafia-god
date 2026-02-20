@@ -151,7 +151,7 @@ export class SetupView extends BaseView {
           <div class="role-card role-card--${team} ${isSelected ? 'selected' : ''}" data-role="${role.id}">
             <button class="role-card__info" data-info="${role.id}" title="توضیحات">i</button>
             <div class="role-card__icon">${role.icon}</div>
-            <div class="role-card__name">${role.name}</div>
+            <div class="role-card__name">${role.getLocalizedName()}</div>
             ${role.unique ? '' : `
               <div class="role-card__count">
                 <button class="role-card__count-btn" data-action="dec" data-role="${role.id}">−</button>
@@ -373,7 +373,7 @@ export class SetupView extends BaseView {
             ${Object.entries(game.selectedRoles).map(([roleId, count]) => {
               const role = Roles.get(roleId);
               if (!role) return '';
-              return `<span class="role-badge role-badge--${role.team}">${role.icon} ${role.name}${count > 1 ? ` ×${count}` : ''}</span>`;
+              return `<span class="role-badge role-badge--${role.team}">${role.icon} ${role.getLocalizedName()}${count > 1 ? ` ×${count}` : ''}</span>`;
             }).join('')}
             ${Object.keys(game.selectedRoles).length === 0 ? '<span class="text-muted">نقشی انتخاب نشده</span>' : ''}
           </div>
@@ -526,9 +526,9 @@ export class SetupView extends BaseView {
     overlay.innerHTML = `
       <div class="role-tooltip">
         <div class="role-tooltip__icon">${role.icon}</div>
-        <div class="role-tooltip__name">${role.name}</div>
+        <div class="role-tooltip__name">${role.getLocalizedName()}</div>
         <div class="role-tooltip__team role-tooltip__team--${role.team}">${teamNames[role.team]}</div>
-        <div class="role-tooltip__desc">${role.description}</div>
+        <div class="role-tooltip__desc">${role.getLocalizedDescription()}</div>
       </div>
     `;
 

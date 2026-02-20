@@ -49,9 +49,9 @@ export class RoleRevealView extends BaseView {
               <!-- Back (role shown) -->
               <div class="reveal-card__back reveal-card__back--${teamClass}">
                 <div class="reveal-card__back-icon">${role?.icon || '👤'}</div>
-                <div class="reveal-card__back-role">${role?.name || '—'}</div>
+                <div class="reveal-card__back-role">${role?.getLocalizedName() || '—'}</div>
                 <div class="reveal-card__back-team">${Roles.getTeamName(teamClass)}</div>
-                <div class="reveal-card__back-desc">${role?.description || ''}</div>
+                <div class="reveal-card__back-desc">${role?.getLocalizedDescription() || ''}</div>
               </div>
             </div>
           </div>

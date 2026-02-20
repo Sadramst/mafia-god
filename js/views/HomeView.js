@@ -3,6 +3,7 @@
  */
 import { BaseView } from './BaseView.js';
 import { Storage } from '../utils/Storage.js';
+import { Settings, Language } from '../utils/Settings.js';
 
 export class HomeView extends BaseView {
 
@@ -28,6 +29,9 @@ export class HomeView extends BaseView {
           ` : ''}
           <button class="btn btn--ghost btn--block" id="btn-history">
             📊 تاریخچه بازی‌ها
+          </button>
+          <button class="btn btn--ghost btn--block" id="btn-settings">
+            ⚙️ تنظیمات
           </button>
         </div>
       </div>
@@ -66,6 +70,10 @@ export class HomeView extends BaseView {
 
     this.container.querySelector('#btn-history')?.addEventListener('click', () => {
       this._showHistory();
+    });
+
+    this.container.querySelector('#btn-settings')?.addEventListener('click', () => {
+      this._showSettings();
     });
   }
 
@@ -108,6 +116,80 @@ export class HomeView extends BaseView {
 
     this.container.querySelector('#btn-back-home')?.addEventListener('click', () => {
       this.render();
+    });
+  }
+
+  _showSettings() {
+    const currentLang = Settings.getLanguage();
+
+    this.container.innerHTML = `
+      <div class="view">
+        <button class="btn btn--ghost mb-lg" id="btn-back-home">→ بازگشت / Back</button>
+        <div class="section">
+          <h2 class="section__title">⚙️ تنظیمات / Settings</h2>
+          
+          <div class="card mb-md">
+            <h3 class="mb-sm" style="font-size: var(--text-md); font-weight: 600;">🌐 زبان / Language</h3>
+            <p class="text-muted mb-md" style="font-size: var(--text-sm);">
+              انتخاب زبان نمایش نام و توضیحات نقش‌ها
+              <br>
+              Choose the display language for role names and descriptions
+            </p>
+            
+            <div class="radio-group">
+              <label class="radio-option ${currentLang === Language.FARSI ? 'radio-option--active' : ''}">
+                <input type="radio" name="language" value="${Language.FARSI}" ${currentLang === Language.FARSI ? 'checked' : ''}>
+                <span class="radio-option__label">
+                  <span class="radio-option__title">🇮🇷 فارسی</span>
+                  <span class="radio-option__desc">نمایش فقط به فارسی</span>
+                </span>
+              </label>
+              
+              <label class="radio-option ${currentLang === Language.ENGLISH ? 'radio-option--active' : ''}">
+                <input type="radio" name="language" value="${Language.ENGLISH}" ${currentLang === Language.ENGLISH ? 'checked' : ''}>
+                <span class="radio-option__label">
+                  <span class="radio-option__title">🇬🇧 English</span>
+                  <span class="radio-option__desc">Display in English only</span>
+                </span>
+              </label>
+              
+              <label class="radio-option ${currentLang === Language.BOTH ? 'radio-option--active' : ''}">
+                <input type="radio" name="language" value="${Language.BOTH}" ${currentLang === Language.BOTH ? 'checked' : ''}>
+                <span class="radio-option__label">
+                  <span class="radio-option__title">🌍 هر دو / Both</span>
+                  <span class="radio-option__desc">نمایش فارسی و انگلیسی با هم / Display both languages</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <button class="btn btn--primary btn--block" id="btn-save-settings">✓ ذخیره / Save</button>
+        </div>
+      </div>
+    `;
+
+    // Event listeners
+    this.container.querySelector('#btn-back-home')?.addEventListener('click', () => {
+      this.render();
+    });
+
+    // Handle radio button visual feedback
+    this.container.querySelectorAll('input[name="language"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        this.container.querySelectorAll('.radio-option').forEach(opt => {
+          opt.classList.remove('radio-option--active');
+        });
+        e.target.closest('.radio-option').classList.add('radio-option--active');
+      });
+    });
+
+    this.container.querySelector('#btn-save-settings')?.addEventListener('click', () => {
+      const selected = this.container.querySelector('input[name="language"]:checked')?.value;
+      if (selected) {
+        Settings.setLanguage(selected);
+        this.app.showToast('✓ تنظیمات ذخیره شد / Settings saved', 'success');
+        this.render();
+      }
     });
   }
 }

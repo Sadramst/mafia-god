@@ -1,0 +1,66 @@
+/**
+ * Settings.js — App settings management with localStorage persistence
+ */
+
+/**
+ * Language Options
+ * FARSI: Farsi only (default)
+ * ENGLISH: English only
+ * BOTH: Both languages displayed together
+ */
+export const Language = Object.freeze({
+  FARSI: 'fa',
+  ENGLISH: 'en',
+  BOTH: 'both',
+});
+
+/**
+ * Settings Manager
+ * Handles user preferences and app configuration
+ */
+export class Settings {
+  static KEY = 'mafia_god_settings';
+  
+  static DEFAULT = {
+    language: Language.FARSI, // Default to Farsi for backward compatibility
+  };
+
+  /** Get current settings */
+  static get() {
+    try {
+      const stored = localStorage.getItem(Settings.KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return { ...Settings.DEFAULT, ...parsed };
+      }
+    } catch { /* ignore */ }
+    return { ...Settings.DEFAULT };
+  }
+
+  /** Save settings */
+  static save(settings) {
+    try {
+      localStorage.setItem(Settings.KEY, JSON.stringify(settings));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Get current language setting */
+  static getLanguage() {
+    return Settings.get().language || Language.FARSI;
+  }
+
+  /** Set language preference */
+  static setLanguage(language) {
+    const settings = Settings.get();
+    settings.language = language;
+    Settings.save(settings);
+  }
+
+  /** Reset to defaults */
+  static reset() {
+    localStorage.removeItem(Settings.KEY);
+  }
+}

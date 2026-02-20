@@ -3,6 +3,7 @@
  * Provides bilingual support and consistent structure
  */
 import { NightAction, Team } from './Enums.js';
+import { Settings, Language } from '../utils/Settings.js';
 
 /**
  * Base Role Class
@@ -65,6 +66,28 @@ export class Role {
    */
   get descriptionBilingual() {
     return `${this.nameBilingual}\n\n${this.descriptionFa}\n\n${this.descriptionEn}`;
+  }
+
+  /**
+   * Get localized name based on current language setting
+   * @returns {string} Name in selected language
+   */
+  getLocalizedName() {
+    const lang = Settings.getLanguage();
+    if (lang === Language.ENGLISH) return this.nameEn;
+    if (lang === Language.BOTH) return this.nameBilingual;
+    return this.nameFa; // Default to Farsi
+  }
+
+  /**
+   * Get localized description based on current language setting
+   * @returns {string} Description in selected language
+   */
+  getLocalizedDescription() {
+    const lang = Settings.getLanguage();
+    if (lang === Language.ENGLISH) return this.descriptionEn;
+    if (lang === Language.BOTH) return this.descriptionBilingual;
+    return this.descriptionFa; // Default to Farsi
   }
 
   /**

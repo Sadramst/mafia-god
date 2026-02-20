@@ -215,7 +215,7 @@ export class DayView extends BaseView {
               return `<div class="flex items-center gap-sm mb-sm">
                 <span class="dot dot--dead"></span>
                 <span class="font-bold">${p?.name || '—'}</span>
-                <span class="role-badge role-badge--${role?.team || 'citizen'}">${role?.icon || ''} ${role?.name || ''}</span>
+                <span class="role-badge role-badge--${role?.team || 'citizen'}">${role?.icon || ''} ${role?.getLocalizedName() || ''}</span>
               </div>`;
             }).join('')}
           </div>
