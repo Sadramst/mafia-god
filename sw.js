@@ -1,7 +1,7 @@
 /**
  * Service Worker — Offline caching for PWA
  */
-const CACHE_NAME = 'mafia-god-v32';
+const CACHE_NAME = 'mafia-god-v33';
 const ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,8 @@ const ASSETS = [
   './js/models/Game.js',
   './js/models/Player.js',
   './js/models/Roles.js',
+  './js/models/Role.js',
+  './js/models/Enums.js',
   './js/models/Shield.js',
   './js/models/Curse.js',
   './js/models/Bomb.js',
@@ -24,6 +26,8 @@ const ASSETS = [
   './js/views/SummaryView.js',
   './js/utils/Storage.js',
   './js/utils/Timer.js',
+  './js/utils/Settings.js',
+  './js/utils/i18n.js',
   './assets/icon.svg',
   './assets/icon-192.png',
   './assets/icon-512.png',

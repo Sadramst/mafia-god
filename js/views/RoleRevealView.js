@@ -3,6 +3,7 @@
  */
 import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
+import { t, translations as tr } from '../utils/i18n.js';
 
 export class RoleRevealView extends BaseView {
 
@@ -28,7 +29,7 @@ export class RoleRevealView extends BaseView {
     this.container.innerHTML = `
       <div class="view">
         <div class="text-center mb-lg">
-          <span class="chip">بازیکن ${this.currentIndex + 1} از ${game.players.length}</span>
+          <span class="chip">${t(tr.roleReveal.playerOfTotal).replace('%d', this.currentIndex + 1).replace('%d', game.players.length)}</span>
         </div>
 
         <div class="reveal-container">
@@ -36,7 +37,7 @@ export class RoleRevealView extends BaseView {
             ${player.name}
           </h2>
           <p class="text-secondary" style="font-size: var(--text-sm);">
-            ${this.isFlipped ? 'نقش خود را به خاطر بسپارید' : 'برای دیدن نقش، کارت را لمس کنید'}
+            ${this.isFlipped ? t(tr.roleReveal.rememberRole) : t(tr.roleReveal.tapToReveal)}
           </p>
 
           <div class="reveal-card ${this.isFlipped ? 'flipped' : ''}" id="reveal-card">
@@ -44,7 +45,7 @@ export class RoleRevealView extends BaseView {
               <!-- Front (hidden role) -->
               <div class="reveal-card__front">
                 <div class="reveal-card__front-icon">❓</div>
-                <div class="reveal-card__front-text">لمس کنید</div>
+                <div class="reveal-card__front-text">${t(tr.roleReveal.tapCard)}</div>
               </div>
               <!-- Back (role shown) -->
               <div class="reveal-card__back reveal-card__back--${teamClass}">
@@ -58,11 +59,11 @@ export class RoleRevealView extends BaseView {
 
           ${this.isFlipped ? `
             <button class="btn btn--primary btn--lg" id="btn-next-reveal">
-              ${this.currentIndex < game.players.length - 1 ? 'بازیکن بعدی ←' : '🎮 شروع بازی'}
+              ${this.currentIndex < game.players.length - 1 ? t(tr.roleReveal.nextPlayer) : t(tr.roleReveal.startGame)}
             </button>
           ` : `
             <div class="text-muted" style="font-size: var(--text-xs);">
-              فقط ${player.name} باید صفحه را ببیند
+              ${t(tr.roleReveal.onlyPlayerShouldSee).replace('%s', player.name)}
             </div>
           `}
         </div>
@@ -92,11 +93,11 @@ export class RoleRevealView extends BaseView {
         <div class="reveal-container">
           <div style="font-size: 64px;">🌙</div>
           <h2 style="font-size: var(--text-2xl); font-weight: 800;">
-            همه نقش‌ها مشخص شد
+            ${t(tr.roleReveal.allRevealed)}
           </h2>
-          <p class="text-secondary">آماده‌اید برای روز کور؟</p>
+          <p class="text-secondary">${t(tr.roleReveal.readyForBlindDay)}</p>
           <button class="btn btn--primary btn--lg" id="btn-start-blind-day">
-            ☀️ شروع روز کور
+            ${t(tr.roleReveal.startBlindDay)}
           </button>
         </div>
       </div>

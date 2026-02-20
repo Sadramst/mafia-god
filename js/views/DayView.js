@@ -4,6 +4,7 @@
 import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
 import { Timer } from '../utils/Timer.js';
+import { t, translations as tr } from '../utils/i18n.js';
 
 export class DayView extends BaseView {
 

@@ -4,6 +4,7 @@
 import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
 import { Storage } from '../utils/Storage.js';
+import { t, translations as tr } from '../utils/i18n.js';
 
 export class SummaryView extends BaseView {
 
@@ -22,9 +23,9 @@ export class SummaryView extends BaseView {
     const counts = game.getTeamCounts();
 
     const winnerData = {
-      mafia: { icon: '🔴', title: 'تیم مافیا پیروز شد!', class: 'mafia' },
-      citizen: { icon: '🔵', title: 'تیم شهروند پیروز شد!', class: 'citizen' },
-      independent: { icon: '🟣', title: 'بازیکن مستقل پیروز شد!', class: 'independent' },
+      mafia: { icon: '🔴', title: t(tr.summary.mafiaWins), class: 'mafia' },
+      citizen: { icon: '🔵', title: t(tr.summary.citizenWins), class: 'citizen' },
+      independent: { icon: '🟣', title: t(tr.summary.independentWins), class: 'independent' },
     };
     const w = winnerData[game.winner] || winnerData.citizen;
 
@@ -42,12 +43,12 @@ export class SummaryView extends BaseView {
         <div class="win-screen">
           <div class="win-screen__icon">${w.icon}</div>
           <h1 class="win-screen__title win-screen__title--${w.class}">${w.title}</h1>
-          <p class="win-screen__subtitle">بعد از ${game.round} دور</p>
+          <p class="win-screen__subtitle">${t(tr.summary.afterRounds).replace('%d', game.round)}</p>
         </div>
 
         <!-- All players final state -->
         <div class="section mt-lg">
-          <h2 class="section__title">👥 وضعیت نهایی بازیکنان</h2>
+          <h2 class="section__title">${t(tr.summary.finalPlayerStatus)}</h2>
           <div class="player-list">
             ${game.players.map(p => {
               const role = Roles.get(p.roleId);
@@ -69,10 +70,10 @@ export class SummaryView extends BaseView {
 
         <div class="mt-lg">
           <button class="btn btn--primary btn--lg btn--block" id="btn-new-game-summary">
-            🎮 بازی جدید
+            ${t(tr.summary.newGame)}
           </button>
           <button class="btn btn--ghost btn--block mt-sm" id="btn-home-summary">
-            ← بازگشت به خانه
+            ${t(tr.summary.backHome)}
           </button>
         </div>
       </div>
@@ -100,22 +101,22 @@ export class SummaryView extends BaseView {
         <div class="stats-row">
           <div class="stat-card">
             <div class="stat-card__value">${game.round}</div>
-            <div class="stat-card__label">دور</div>
+            <div class="stat-card__label">${t(tr.summary.roundLabel)}</div>
           </div>
           <div class="stat-card">
             <div class="stat-card__value">${game.getAlivePlayers().length}</div>
-            <div class="stat-card__label">زنده</div>
+            <div class="stat-card__label">${t(tr.summary.aliveLabel)}</div>
           </div>
           <div class="stat-card">
             <div class="stat-card__value">${game.getDeadPlayers().length}</div>
-            <div class="stat-card__label">مرده</div>
+            <div class="stat-card__label">${t(tr.summary.deadLabel)}</div>
           </div>
         </div>
 
         ${this._renderTimeline()}
 
         <button class="btn btn--ghost btn--block mt-lg" id="btn-back-game">
-          ← بازگشت به بازی
+          ${t(tr.summary.backGame)}
         </button>
       </div>
     `;
@@ -133,14 +134,14 @@ export class SummaryView extends BaseView {
       return `
         <div class="empty-state">
           <div class="empty-state__icon">📭</div>
-          <div class="empty-state__text">هنوز رویدادی ثبت نشده</div>
+          <div class="empty-state__text">${t(tr.summary.noEvents)}</div>
         </div>
       `;
     }
 
     return `
       <div class="section mt-lg">
-        <h2 class="section__title">📜 خط زمانی بازی</h2>
+        <h2 class="section__title">${t(tr.summary.timeline)}</h2>
         <div class="timeline">
           ${game.history.map(h => {
             const itemClass = h.type.includes('death') || h.type === 'death'
@@ -151,7 +152,7 @@ export class SummaryView extends BaseView {
 
             return `
               <div class="timeline-item ${itemClass}">
-                <div class="timeline-item__title">دور ${h.round}</div>
+                <div class="timeline-item__title">${t(tr.summary.roundInTimeline).replace('%d', h.round)}</div>
                 <div class="timeline-item__desc">${h.text}</div>
               </div>
             `;
