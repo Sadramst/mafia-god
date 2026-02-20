@@ -35,8 +35,10 @@ export class Game {
     this.bomb = new Bomb();          // One-time bomb mechanic
     this.framason = new Framason();   // Freemason alliance mechanic
     this.framasonMaxMembers = 2;     // Configurable in settings
-    this._lastDrWatsonTarget = null;
-    this._lastDrLecterTarget = null;
+    this.drWatsonSelfHealMax = 2;   // Max times Dr Watson can heal self
+    this.drLecterSelfHealMax = 2;   // Max times Dr Lecter can heal self
+    this._drWatsonSelfHealCount = 0; // Times Dr Watson has healed self
+    this._drLecterSelfHealCount = 0; // Times Dr Lecter has healed self
     this.zodiacFrequency = 'every'; // 'every' | 'odd' | 'even'
   }
 
@@ -345,7 +347,11 @@ export class Game {
         healedPlayer.healed = true;
         results.saved.push(actions.drWatson.targetId);
       }
-      this._lastDrWatsonTarget = actions.drWatson.targetId;
+      // Track self-heal count
+      const watsonId = actions.drWatson.actorIds?.[0];
+      if (watsonId && actions.drWatson.targetId === watsonId) {
+        this._drWatsonSelfHealCount++;
+      }
     }
 
     // 4. Dr Lecter heals mafia
@@ -354,7 +360,11 @@ export class Game {
       if (target && Roles.get(target.roleId)?.team === 'mafia') {
         target.healed = true;
       }
-      this._lastDrLecterTarget = actions.drLecter.targetId;
+      // Track self-heal count
+      const lecterId = actions.drLecter.actorIds?.[0];
+      if (lecterId && actions.drLecter.targetId === lecterId) {
+        this._drLecterSelfHealCount++;
+      }
     }
 
     // 5. Godfather action — Shoot OR Salakhi (سلاخی)
@@ -839,14 +849,22 @@ export class Game {
     };
   }
 
-  /** Can Dr Watson heal this target? (not same as last night) */
+  /** Can Dr Watson heal this target? (anyone freely, self limited) */
   canDrWatsonHeal(targetId) {
-    return this._lastDrWatsonTarget !== targetId;
+    const watson = this.players.find(p => p.isAlive && p.roleId === 'drWatson');
+    if (watson && targetId === watson.id) {
+      return this._drWatsonSelfHealCount < this.drWatsonSelfHealMax;
+    }
+    return true;
   }
 
-  /** Can Dr Lecter heal this target? (not same as last night) */
+  /** Can Dr Lecter heal this target? (mafia freely, self limited) */
   canDrLecterHeal(targetId) {
-    return this._lastDrLecterTarget !== targetId;
+    const lecter = this.players.find(p => p.isAlive && p.roleId === 'drLecter');
+    if (lecter && targetId === lecter.id) {
+      return this._drLecterSelfHealCount < this.drLecterSelfHealMax;
+    }
+    return true;
   }
 
   /** Add a history entry */
@@ -887,8 +905,10 @@ export class Game {
       defenseTimerDuration: this.defenseTimerDuration,
       blindDayDuration: this.blindDayDuration,
       zodiacFrequency: this.zodiacFrequency,
-      _lastDrWatsonTarget: this._lastDrWatsonTarget,
-      _lastDrLecterTarget: this._lastDrLecterTarget,
+      drWatsonSelfHealMax: this.drWatsonSelfHealMax,
+      drLecterSelfHealMax: this.drLecterSelfHealMax,
+      _drWatsonSelfHealCount: this._drWatsonSelfHealCount,
+      _drLecterSelfHealCount: this._drLecterSelfHealCount,
     };
   }
 
@@ -909,8 +929,10 @@ export class Game {
     this.defenseTimerDuration = data.defenseTimerDuration || 60;
     this.blindDayDuration = data.blindDayDuration || 60;
     this.zodiacFrequency = data.zodiacFrequency || 'every';
-    this._lastDrWatsonTarget = data._lastDrWatsonTarget || null;
-    this._lastDrLecterTarget = data._lastDrLecterTarget || null;
+    this.drWatsonSelfHealMax = data.drWatsonSelfHealMax ?? 2;
+    this.drLecterSelfHealMax = data.drLecterSelfHealMax ?? 2;
+    this._drWatsonSelfHealCount = data._drWatsonSelfHealCount ?? 0;
+    this._drLecterSelfHealCount = data._drLecterSelfHealCount ?? 0;
 
     // Restore Player ID counter
     const maxId = Math.max(0, ...this.players.map(p => p.id));

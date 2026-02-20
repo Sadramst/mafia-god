@@ -275,6 +275,28 @@ export class SetupView extends BaseView {
           </div>
         ` : ''}
 
+        ${game.selectedRoles['drWatson'] ? `
+          <div class="card mb-lg" style="border-color: rgba(16,185,129,0.4);">
+            <div class="font-bold mb-sm">⚕️ دکتر واتسون — حداکثر هیل خود:</div>
+            <div class="flex gap-sm items-center">
+              <button class="btn btn--sm btn--ghost" id="btn-watson-dec">−</button>
+              <span class="font-bold" style="min-width: 30px; text-align: center;">${game.drWatsonSelfHealMax}</span>
+              <button class="btn btn--sm btn--ghost" id="btn-watson-inc">+</button>
+            </div>
+          </div>
+        ` : ''}
+
+        ${game.selectedRoles['drLecter'] ? `
+          <div class="card mb-lg" style="border-color: rgba(220,38,38,0.4);">
+            <div class="font-bold mb-sm">💉 دکتر لکتر — حداکثر هیل خود:</div>
+            <div class="flex gap-sm items-center">
+              <button class="btn btn--sm btn--ghost" id="btn-lecter-dec">−</button>
+              <span class="font-bold" style="min-width: 30px; text-align: center;">${game.drLecterSelfHealMax}</span>
+              <button class="btn btn--sm btn--ghost" id="btn-lecter-inc">+</button>
+            </div>
+          </div>
+        ` : ''}
+
         ${game.selectedRoles['freemason'] ? `
           <div class="card mb-lg" style="border-color: rgba(239,68,68,0.4);">
             <div class="font-bold mb-sm">🔺 تنظیمات فراماسون — حداکثر تعداد متحدان:</div>
@@ -332,6 +354,22 @@ export class SetupView extends BaseView {
         game.framasonMaxMembers++;
         this.render();
       }
+    });
+
+    // Dr Watson self-heal max
+    container.querySelector('#btn-watson-dec')?.addEventListener('click', () => {
+      if (game.drWatsonSelfHealMax > 0) { game.drWatsonSelfHealMax--; this.render(); }
+    });
+    container.querySelector('#btn-watson-inc')?.addEventListener('click', () => {
+      if (game.drWatsonSelfHealMax < 10) { game.drWatsonSelfHealMax++; this.render(); }
+    });
+
+    // Dr Lecter self-heal max
+    container.querySelector('#btn-lecter-dec')?.addEventListener('click', () => {
+      if (game.drLecterSelfHealMax > 0) { game.drLecterSelfHealMax--; this.render(); }
+    });
+    container.querySelector('#btn-lecter-inc')?.addEventListener('click', () => {
+      if (game.drLecterSelfHealMax < 10) { game.drLecterSelfHealMax++; this.render(); }
     });
   }
 
