@@ -78,7 +78,7 @@ export class SetupView extends BaseView {
           <button class="tab ${this.activeTab === 'roles' ? 'active' : ''} ${game.players.length < 8 ? 'disabled' : ''}" data-tab="roles">
             🎭 ${t(tr.setup.rolesTab)} (${game.getTotalRoleCount()})
           </button>
-          <button class="tab ${this.activeTab === 'assign' ? 'active' : ''} ${game.players.length < 8 ? 'disabled' : ''}" data-tab="assign">
+          <button class="tab ${this.activeTab === 'assign' ? 'active' : ''} ${(game.players.length < 8 || game.getTotalRoleCount() !== game.players.length) ? 'disabled' : ''}" data-tab="assign">
             🎲 ${t(tr.setup.assignTab)}
           </button>
         </div>
@@ -392,13 +392,35 @@ export class SetupView extends BaseView {
         const role = Roles.get(roleId);
         if (!role) return;
 
-        // Toggle data model
-        if (role.unique) {
-          if (game.selectedRoles[roleId]) delete game.selectedRoles[roleId];
-          else game.selectedRoles[roleId] = 1;
+        // Toggle data model with limits
+        const selecting = !game.selectedRoles[roleId];
+        const totalSelected = game.getTotalRoleCount();
+        const playersCount = game.players.length;
+        if (selecting) {
+          if (totalSelected >= playersCount) {
+            this.toast(t(tr.setup.shouldBe).replace('%d', playersCount), 'error');
+            return;
+          }
+          if (role.team === 'mafia') {
+            const mafiaCount = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'mafia').reduce((s, [, c]) => s + c, 0);
+            if (mafiaCount >= game.desiredMafia) {
+              this.toast(t(tr.setup.mustChooseMafia).replace('%d', game.desiredMafia), 'error');
+              return;
+            }
+          }
+          if (role.team === 'citizen') {
+            const citizenCount = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'citizen').reduce((s, [, c]) => s + c, 0);
+            if (citizenCount >= game.desiredCitizen) {
+              this.toast(t(tr.setup.mustChooseCitizen).replace('%d', game.desiredCitizen), 'error');
+              return;
+            }
+          }
+          // perform selection
+          if (role.unique) game.selectedRoles[roleId] = 1;
+          else game.selectedRoles[roleId] = (game.selectedRoles[roleId] || 0) + 1;
         } else {
-          if (!game.selectedRoles[roleId]) game.selectedRoles[roleId] = 1;
-          else delete game.selectedRoles[roleId];
+          // deselect: remove entirely
+          delete game.selectedRoles[roleId];
         }
 
         // If independent-role selection changed, recompute recommended counts (force overwrite)
@@ -427,6 +449,72 @@ export class SetupView extends BaseView {
         if (desiredMafiaAssign) desiredMafiaAssign.textContent = game.desiredMafia;
         const desiredCitizenAssign = this.container.querySelector('#desired-citizen');
         if (desiredCitizenAssign) desiredCitizenAssign.textContent = game.desiredCitizen;
+      });
+    });
+    // +/- buttons for non-unique roles (in-place, respecting team and total limits)
+    container.querySelectorAll('.role-card__count-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const roleId = btn.dataset.role;
+        const action = btn.dataset.action;
+        const role = Roles.get(roleId);
+        if (!role) return;
+
+        const current = game.selectedRoles[roleId] || 0;
+        const totalSelected = game.getTotalRoleCount();
+        const playersCount = game.players.length;
+
+        if (action === 'inc') {
+          // total limit
+          if (totalSelected >= playersCount) {
+            this.toast(t(tr.setup.shouldBe).replace('%d', playersCount), 'error');
+            return;
+          }
+          // team-specific limits based on desired counts
+          if (role.team === 'mafia') {
+            const mafiaCount = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'mafia').reduce((s, [, c]) => s + c, 0);
+            if (mafiaCount >= game.desiredMafia) {
+              this.toast(t(tr.setup.mustChooseMafia).replace('%d', game.desiredMafia), 'error');
+              return;
+            }
+          }
+          if (role.team === 'citizen') {
+            const citizenCount = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'citizen').reduce((s, [, c]) => s + c, 0);
+            if (citizenCount >= game.desiredCitizen) {
+              this.toast(t(tr.setup.mustChooseCitizen).replace('%d', game.desiredCitizen), 'error');
+              return;
+            }
+          }
+
+          game.selectedRoles[roleId] = current + 1;
+        } else if (action === 'dec') {
+          if (current > 0) {
+            const next = current - 1;
+            if (next === 0) delete game.selectedRoles[roleId];
+            else game.selectedRoles[roleId] = next;
+          }
+        }
+
+        // update UI in-place
+        const countEl = btn.closest('.role-card__count')?.querySelector('.role-card__count-value');
+        if (countEl) countEl.textContent = game.selectedRoles[roleId] || 0;
+        const roleCountDisplay = this.container.querySelector('#role-count-display');
+        if (roleCountDisplay) roleCountDisplay.textContent = game.getTotalRoleCount();
+        const rolesTabBtn = this.container.querySelector('.tabs [data-tab="roles"]');
+        if (rolesTabBtn) rolesTabBtn.innerHTML = `🎭 ${t(tr.setup.rolesTab)} (${game.getTotalRoleCount()})`;
+
+        // sync Assign desired counts if visible
+        const desiredMafiaRoles = this.container.querySelector('#desired-mafia-roles'); if (desiredMafiaRoles) desiredMafiaRoles.textContent = game.desiredMafia;
+        const desiredCitizenRoles = this.container.querySelector('#desired-citizen-roles'); if (desiredCitizenRoles) desiredCitizenRoles.textContent = game.desiredCitizen;
+        const desiredMafiaAssign = this.container.querySelector('#desired-mafia'); if (desiredMafiaAssign) desiredMafiaAssign.textContent = game.desiredMafia;
+        const desiredCitizenAssign = this.container.querySelector('#desired-citizen'); if (desiredCitizenAssign) desiredCitizenAssign.textContent = game.desiredCitizen;
+
+        // enable/disable Assign tab based on totals
+        const assignTab = this.container.querySelector('.tabs [data-tab="assign"]');
+        if (assignTab) {
+          if (game.players.length >= 8 && game.getTotalRoleCount() === game.players.length) assignTab.classList.remove('disabled');
+          else assignTab.classList.add('disabled');
+        }
       });
     });
     container.querySelectorAll('[data-action="blank-dec"]').forEach(btn => {
