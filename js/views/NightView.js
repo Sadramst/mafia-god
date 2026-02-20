@@ -246,6 +246,11 @@ export class NightView extends BaseView {
       return this._renderGunnerStep(idx, targets, selectedTarget);
     }
 
+    // ── Reporter special UI (check negotiation result) ──
+    if (step.roleId === 'reporter') {
+      return this._renderReporterStep(idx);
+    }
+
     // ── Standard step UI ──
     return `
       <div class="target-grid">
@@ -560,6 +565,40 @@ export class NightView extends BaseView {
     `;
   }
 
+  /**
+   * Render Reporter's informational step: show whether negotiation succeeded.
+   * Reads the already-recorded godfather action to determine the result.
+   */
+  _renderReporterStep(idx) {
+    const game = this.app.game;
+    const gfAction = game.nightActions.godfather;
+
+    let negotiationSuccess = false;
+    if (gfAction?.mode === 'negotiate' && gfAction?.targetId) {
+      const target = game.getPlayer(gfAction.targetId);
+      negotiationSuccess = target && (target.roleId === 'simpleCitizen' || target.roleId === 'suspect');
+    }
+
+    const resultIcon = negotiationSuccess ? '👍' : '👎';
+    const resultText = negotiationSuccess
+      ? 'خریداری انجام شده است!'
+      : 'خریداری انجام نشده.';
+    const resultColor = negotiationSuccess ? 'var(--success)' : 'var(--danger)';
+
+    return `
+      <div class="card mb-md" style="border-color: ${resultColor}; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: var(--space-sm);">${resultIcon}</div>
+        <div class="font-bold" style="color: ${resultColor}; font-size: var(--text-lg);">
+          ${resultText}
+        </div>
+      </div>
+      <div class="text-muted mb-sm" style="font-size: var(--text-xs);">نتیجه را به خبرنگار نشان دهید و تأیید کنید.</div>
+      <button class="btn btn--primary btn--block btn--sm" data-action="confirm-step" data-step="${idx}">
+        ✓ تأیید
+      </button>
+    `;
+  }
+
   _getActionDescription(actionType) {
     const descriptions = {
       kill: 'شلیک یا سلاخی — نوع اقدام را انتخاب کنید',
@@ -577,6 +616,7 @@ export class NightView extends BaseView {
       curse: 'طلسم را روی چه کسی بگذارد؟',
       framasonRecruit: 'چه کسی را به تیم اضافه کند؟',
       giveBullet: 'نوع تیر و بازیکن هدف را انتخاب کنید',
+      checkNegotiation: 'آیا خریداری انجام شده؟',
       mafiaReveal: 'تیم مافیا همدیگر را بشناسند',
     };
     return descriptions[actionType] || 'یک بازیکن انتخاب کنید';
@@ -673,6 +713,13 @@ export class NightView extends BaseView {
 
         // mafiaReveal: no target needed, just confirm
         if (step?.actionType === 'mafiaReveal') {
+          game.recordNightAction(null);
+          this.render();
+          return;
+        }
+
+        // Reporter: informational only, no target
+        if (step?.actionType === 'checkNegotiation') {
           game.recordNightAction(null);
           this.render();
           return;

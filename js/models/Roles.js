@@ -206,6 +206,17 @@ export class Roles {
       maxCount: 1,
       unique: true,
     },
+    reporter: {
+      id: 'reporter',
+      name: 'خبرنگار',
+      team: 'citizen',
+      icon: '📰',
+      description: 'هر شب بیدار می‌شود و از خدا می‌پرسد آیا خریداری (مذاکره موفق) انجام شده یا نه. خدا با 👍 یا 👎 پاسخ می‌دهد. هیچ اقدام دیگری ندارد.',
+      nightAction: 'checkNegotiation',
+      nightOrder: 1.5,
+      maxCount: 1,
+      unique: true,
+    },
     sniper: {
       id: 'sniper',
       name: 'تک‌تیرانداز',
