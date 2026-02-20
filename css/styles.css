@@ -439,7 +439,8 @@ img { max-width: 100%; display: block; }
   font-size: var(--text-base);
   outline: none;
   transition: all var(--duration) var(--ease);
-  direction: rtl;
+  /* inherit direction from document; override below for RTL/LTR */
+  direction: inherit;
   min-height: 48px;
 }
 .input::placeholder { color: var(--text-muted); }
@@ -448,6 +449,10 @@ img { max-width: 100%; display: block; }
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
   background: var(--bg-glass-strong);
 }
+
+/* Input direction overrides based on document direction */
+html[dir="rtl"] .input { direction: rtl; text-align: right; }
+html[dir="ltr"] .input { direction: ltr; text-align: left; }
 
 /* ---------- Radio Options ---------- */
 .radio-group {
