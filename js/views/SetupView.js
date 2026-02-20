@@ -11,6 +11,27 @@ export class SetupView extends BaseView {
   constructor(container, app) {
     super(container, app);
     this.activeTab = 'players'; // players | roles | assign
+    this._renderScheduled = false;
+  }
+
+  /** Schedule a single render on the next animation frame and preserve input focus/selection */
+  _requestRender() {
+    if (this._renderScheduled) return;
+    this._renderScheduled = true;
+    // capture focused element id and caret position if it's the player input
+    const active = document.activeElement;
+    const activeId = active && active.id;
+    const selectionStart = active && typeof active.selectionStart === 'number' ? active.selectionStart : null;
+    requestAnimationFrame(() => {
+      this._renderScheduled = false;
+      this.render();
+      if (activeId) {
+        const el = this.container.querySelector('#' + activeId) || document.getElementById(activeId);
+        if (el) {
+          try { el.focus(); if (selectionStart !== null && el.setSelectionRange) el.setSelectionRange(selectionStart, selectionStart); } catch (e) {}
+        }
+      }
+    });
   }
 
   render() {
@@ -45,7 +66,7 @@ export class SetupView extends BaseView {
           return;
         }
         this.activeTab = tabName;
-        this.render();
+        this._requestRender();
       });
     });
 
@@ -106,7 +127,7 @@ export class SetupView extends BaseView {
       game.addPlayer(name);
       input.value = '';
       input.focus();
-      this.render();
+      this._requestRender();
     };
 
     addBtn.addEventListener('click', addPlayer);
@@ -121,7 +142,7 @@ export class SetupView extends BaseView {
     container.querySelectorAll('.player-item__remove').forEach(btn => {
       btn.addEventListener('click', () => {
         game.removePlayer(Number(btn.dataset.id));
-        this.render();
+        this._requestRender();
       });
     });
   }
@@ -252,14 +273,14 @@ export class SetupView extends BaseView {
       const remaining = Math.max(0, game.players.length - independents);
       const newVal = Math.max(0, game.desiredMafia - 1);
       game.setDesiredMafia(Math.min(newVal, remaining));
-      this.render();
+      this._requestRender();
     });
     container.querySelector('#btn-mafia-inc-roles')?.addEventListener('click', () => {
       const independents = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0);
       const remaining = Math.max(0, game.players.length - independents);
       const newVal = (game.desiredMafia || 0) + 1;
       game.setDesiredMafia(Math.min(newVal, remaining));
-      this.render();
+      this._requestRender();
     });
 
     // Roles-tab desired citizen +/- handlers
@@ -269,7 +290,7 @@ export class SetupView extends BaseView {
       const newCitizen = Math.max(0, (game.desiredCitizen || 0) - 1);
       const newMafia = Math.max(0, remaining - newCitizen);
       game.setDesiredMafia(newMafia);
-      this.render();
+      this._requestRender();
     });
     container.querySelector('#btn-citizen-inc-roles')?.addEventListener('click', () => {
       const independents = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0);
@@ -277,7 +298,7 @@ export class SetupView extends BaseView {
       const newCitizen = Math.min(remaining, (game.desiredCitizen || 0) + 1);
       const newMafia = Math.max(0, remaining - newCitizen);
       game.setDesiredMafia(newMafia);
-      this.render();
+      this._requestRender();
     });
 
     // Sniper buttons on role card are handled by data-action listeners further down
@@ -312,31 +333,31 @@ export class SetupView extends BaseView {
           game.computeRecommendedCounts(true);
         }
 
-        this.render();
+        this._requestRender();
       });
     });
     container.querySelectorAll('[data-action="blank-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.gunnerBlankMax > 0) { game.gunnerBlankMax--; this.render(); }
+        if (game.gunnerBlankMax > 0) { game.gunnerBlankMax--; this._requestRender(); }
       });
     });
     container.querySelectorAll('[data-action="blank-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.gunnerBlankMax < 10) { game.gunnerBlankMax++; this.render(); }
+        if (game.gunnerBlankMax < 10) { game.gunnerBlankMax++; this._requestRender(); }
       });
     });
     container.querySelectorAll('[data-action="live-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.gunnerLiveMax > 0) { game.gunnerLiveMax--; this.render(); }
+        if (game.gunnerLiveMax > 0) { game.gunnerLiveMax--; this._requestRender(); }
       });
     });
     container.querySelectorAll('[data-action="live-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.gunnerLiveMax < 10) { game.gunnerLiveMax++; this.render(); }
+        if (game.gunnerLiveMax < 10) { game.gunnerLiveMax++; this._requestRender(); }
       });
     });
 
@@ -344,13 +365,13 @@ export class SetupView extends BaseView {
     container.querySelectorAll('[data-action="ally-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.framasonMaxMembers > 1) { game.framasonMaxMembers--; this.render(); }
+        if (game.framasonMaxMembers > 1) { game.framasonMaxMembers--; this._requestRender(); }
       });
     });
     container.querySelectorAll('[data-action="ally-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.framasonMaxMembers < 10) { game.framasonMaxMembers++; this.render(); }
+        if (game.framasonMaxMembers < 10) { game.framasonMaxMembers++; this._requestRender(); }
       });
     });
 
@@ -358,13 +379,13 @@ export class SetupView extends BaseView {
     container.querySelectorAll('[data-action="neg-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.negotiatorThreshold > 1) { game.negotiatorThreshold--; this.render(); }
+        if (game.negotiatorThreshold > 1) { game.negotiatorThreshold--; this._requestRender(); }
       });
     });
     container.querySelectorAll('[data-action="neg-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.negotiatorThreshold < 10) { game.negotiatorThreshold++; this.render(); }
+        if (game.negotiatorThreshold < 10) { game.negotiatorThreshold++; this._requestRender(); }
       });
     });
 
@@ -372,13 +393,13 @@ export class SetupView extends BaseView {
     container.querySelectorAll('[data-action="sniper-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.sniperMaxShots > 1) { game.sniperMaxShots--; this.render(); }
+        if (game.sniperMaxShots > 1) { game.sniperMaxShots--; this._requestRender(); }
       });
     });
     container.querySelectorAll('[data-action="sniper-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (game.sniperMaxShots < 10) { game.sniperMaxShots++; this.render(); }
+        if (game.sniperMaxShots < 10) { game.sniperMaxShots++; this._requestRender(); }
       });
     });
   }
@@ -547,7 +568,7 @@ export class SetupView extends BaseView {
     container.querySelectorAll('[data-zodiac-freq]').forEach(btn => {
       btn.addEventListener('click', () => {
         game.zodiacFrequency = btn.dataset.zodiacFreq;
-        this.render();
+        this._requestRender();
       });
     });
 
@@ -555,13 +576,13 @@ export class SetupView extends BaseView {
     container.querySelector('#btn-framason-dec')?.addEventListener('click', () => {
       if (game.framasonMaxMembers > 1) {
         game.framasonMaxMembers--;
-        this.render();
+        this._requestRender();
       }
     });
     container.querySelector('#btn-framason-inc')?.addEventListener('click', () => {
       if (game.framasonMaxMembers < 6) {
         game.framasonMaxMembers++;
-        this.render();
+        this._requestRender();
       }
     });
 
@@ -570,47 +591,47 @@ export class SetupView extends BaseView {
       const remaining = Math.max(0, game.players.length - (Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0)));
       const newVal = Math.max(0, game.desiredMafia - 1);
       game.setDesiredMafia(Math.min(newVal, remaining));
-      this.render();
+      this._requestRender();
     });
     container.querySelector('#btn-mafia-inc')?.addEventListener('click', () => {
       const remaining = Math.max(0, game.players.length - (Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'independent').reduce((s, [, c]) => s + c, 0)));
       const newVal = game.desiredMafia + 1;
       game.setDesiredMafia(Math.min(newVal, remaining));
-      this.render();
+      this._requestRender();
     });
 
     // Dr Watson self-heal max
     container.querySelector('#btn-watson-dec')?.addEventListener('click', () => {
-      if (game.drWatsonSelfHealMax > 0) { game.drWatsonSelfHealMax--; this.render(); }
+      if (game.drWatsonSelfHealMax > 0) { game.drWatsonSelfHealMax--; this._requestRender(); }
     });
     container.querySelector('#btn-watson-inc')?.addEventListener('click', () => {
-      if (game.drWatsonSelfHealMax < 10) { game.drWatsonSelfHealMax++; this.render(); }
+      if (game.drWatsonSelfHealMax < 10) { game.drWatsonSelfHealMax++; this._requestRender(); }
     });
 
     // Dr Lecter self-heal max
     container.querySelector('#btn-lecter-dec')?.addEventListener('click', () => {
-      if (game.drLecterSelfHealMax > 0) { game.drLecterSelfHealMax--; this.render(); }
+      if (game.drLecterSelfHealMax > 0) { game.drLecterSelfHealMax--; this._requestRender(); }
     });
     container.querySelector('#btn-lecter-inc')?.addEventListener('click', () => {
-      if (game.drLecterSelfHealMax < 10) { game.drLecterSelfHealMax++; this.render(); }
+      if (game.drLecterSelfHealMax < 10) { game.drLecterSelfHealMax++; this._requestRender(); }
     });
 
     // Jack/Zodiac morning shot immunity toggles
     container.querySelector('#btn-jack-immune')?.addEventListener('click', () => {
       game.jackMorningShotImmune = !game.jackMorningShotImmune;
-      this.render();
+      this._requestRender();
     });
     container.querySelector('#btn-zodiac-immune')?.addEventListener('click', () => {
       game.zodiacMorningShotImmune = !game.zodiacMorningShotImmune;
-      this.render();
+      this._requestRender();
     });
 
     // Sniper shots adjust in Assign tab
     container.querySelector('#btn-sniper-dec-assign')?.addEventListener('click', () => {
-      if (game.sniperMaxShots > 1) { game.sniperMaxShots--; this.render(); }
+      if (game.sniperMaxShots > 1) { game.sniperMaxShots--; this._requestRender(); }
     });
     container.querySelector('#btn-sniper-inc-assign')?.addEventListener('click', () => {
-      if (game.sniperMaxShots < 10) { game.sniperMaxShots++; this.render(); }
+      if (game.sniperMaxShots < 10) { game.sniperMaxShots++; this._requestRender(); }
     });
   }
 
