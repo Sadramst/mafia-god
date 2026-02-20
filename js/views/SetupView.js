@@ -248,33 +248,11 @@ export class SetupView extends BaseView {
             game.selectedRoles[roleId] = 1;
           } else {
             delete game.selectedRoles[roleId];
-                            ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.gunnerBlankBullets) + '</span>') : ('<span style="min-width: 50px;">' + t(tr.setup.gunnerBlankBullets) + '</span>')}
+          }
         }
         this.render();
       });
     });
-
-                            ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.gunnerLiveBullets) + '</span>') : ('<span style="min-width: 50px;">' + t(tr.setup.gunnerLiveBullets) + '</span>')}
-    container.querySelectorAll('.role-card__count-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const roleId = btn.dataset.role;
-        const action = btn.dataset.action;
-        const role = Roles.get(roleId);
-        if (!role) return;
-
-        const current = game.selectedRoles[roleId] || 0;
-                            ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.framasonAllies) + '</span>') : ('<span style="min-width: 70px;">' + t(tr.setup.framasonAllies) + '</span>')}
-          game.selectedRoles[roleId] = current + 1;
-        } else if (action === 'dec' && current > 0) {
-          game.selectedRoles[roleId] = current - 1;
-          if (game.selectedRoles[roleId] === 0) delete game.selectedRoles[roleId];
-        }
-        this.render();
-      });
-    });
-
-                            ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.negotiatorThreshold) + '</span>') : ('<span style="min-width: 80px;">' + t(tr.setup.negotiatorThreshold) + '</span>')}
     container.querySelectorAll('[data-action="blank-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -284,9 +262,8 @@ export class SetupView extends BaseView {
     container.querySelectorAll('[data-action="blank-inc"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-                            ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.sniperShots) + '</span>') : ('<span style="min-width: 70px;">' + t(tr.setup.sniperShots) + '</span>')}
+        });
       });
-    });
     container.querySelectorAll('[data-action="live-dec"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
