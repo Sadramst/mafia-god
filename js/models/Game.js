@@ -8,6 +8,7 @@ import { Roles } from './Roles.js';
 import { Bomb } from './Bomb.js';
 import { Framason } from './Framason.js';
 import { BulletManager } from './BulletManager.js';
+import { t, translations as tr } from '../utils/i18n.js';
 
 export class Game {
 
@@ -84,20 +85,26 @@ export class Game {
   /** Validate setup before starting */
   validateSetup() {
     const errors = [];
-    if (this.players.length < 4) {
-      errors.push('حداقل ۴ بازیکن نیاز است.');
-    }
     const totalRoles = this.getTotalRoleCount();
-    if (totalRoles !== this.players.length) {
-      errors.push(`تعداد نقش‌ها (${totalRoles}) با تعداد بازیکنان (${this.players.length}) برابر نیست.`);
+
+    if (this.players.length < 4) {
+      errors.push(t(tr.setup.minPlayers).replace('%d', 4));
     }
+
+    if (totalRoles !== this.players.length) {
+      // Use translated mismatch message with placeholders
+      const msg = t(tr.setup.rolesMismatch).replace('%d', totalRoles).replace('%d', this.players.length);
+      errors.push(msg);
+    }
+
     // Ensure at least one mafia
     const mafiaCount = Object.entries(this.selectedRoles)
       .filter(([id]) => Roles.get(id)?.team === 'mafia')
       .reduce((s, [, c]) => s + c, 0);
     if (mafiaCount === 0) {
-      errors.push('حداقل یک نقش مافیا باید انتخاب شود.');
+      errors.push(t(tr.setup.mafiaRequired));
     }
+
     return errors;
   }
 
