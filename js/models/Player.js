@@ -18,7 +18,6 @@ export class Player {
     this.deathRound = null;   // Round number when eliminated
     this.deathCause = null;   // 'mafia' | 'vote' | 'sniper' | 'jack' | 'salakhi' | etc.
     this.silenced = false;    // Silenced by matador
-    this.protected = false;   // Being protected by bodyguard
     this.healed = false;      // Being healed by doctor
     this.lastHealedRound = null;
     this.notes = [];          // God's private notes
@@ -69,7 +68,6 @@ export class Player {
   /** Reset per-night flags */
   resetNightFlags() {
     this.silenced = false;
-    this.protected = false;
     this.healed = false;
   }
 
@@ -91,7 +89,6 @@ export class Player {
       deathRound: this.deathRound,
       deathCause: this.deathCause,
       silenced: this.silenced,
-      protected: this.protected,
       healed: this.healed,
       lastHealedRound: this.lastHealedRound,
       notes: this.notes,

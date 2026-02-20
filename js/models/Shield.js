@@ -38,7 +38,7 @@ export class Shield {
     'bomb',
     'live_explosion',
     'sniper_miss',
-    'bodyguard_sacrifice',
+
   ]);
 
   /**

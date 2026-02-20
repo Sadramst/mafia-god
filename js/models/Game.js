@@ -323,7 +323,7 @@ export class Game {
       blocked: null,
       bombed: null,
       revived: null,
-      protected: null,
+
       salakhied: null,    // { playerId, correct: boolean }
     };
 
@@ -345,14 +345,7 @@ export class Game {
       }
     }
 
-    // 2. Bodyguard protects
-    if (actions.bodyguard?.targetId) {
-      const protectedPlayer = this.getPlayer(actions.bodyguard.targetId);
-      if (protectedPlayer) {
-        protectedPlayer.protected = true;
-        results.protected = actions.bodyguard.targetId;
-      }
-    }
+    // 2. (Bodyguard has no night action — abilities are bomb-guess & zodiac-immunity)
 
     // 3. Dr Watson heals
     if (actions.drWatson?.targetId) {
@@ -411,22 +404,6 @@ export class Game {
         } else if (target.healed) {
           results.saved.push(targetId);
           this._addHistory('save', `⚕️ ${target.name} توسط دکتر نجات یافت.`);
-        } else if (target.protected) {
-          // Bodyguard dies instead
-          const bodyguardId = actions.bodyguard?.actorIds?.[0];
-          if (bodyguardId) {
-            const bodyguard = this.getPlayer(bodyguardId);
-            if (bodyguard) {
-              const died = bodyguard.tryKill(this.round, 'bodyguard_sacrifice');
-              if (died) {
-                results.killed.push(bodyguardId);
-                this._addHistory('death', `🛡️ ${bodyguard.name} (محافظ) جان خود را فدا کرد.`);
-              } else {
-                results.shielded.push(bodyguardId);
-                this._addHistory('shield', `🛡️ سپر ${bodyguard.name} ضربه را جذب کرد.`);
-              }
-            }
-          }
         } else {
           // Check shield before killing
           const died = target.tryKill(this.round, 'mafia');
