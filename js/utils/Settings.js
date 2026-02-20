@@ -4,9 +4,9 @@
 
 /**
  * Language Options
- * FARSI: Farsi only (default)
+ * FARSI: Farsi only
  * ENGLISH: English only
- * BOTH: Both languages displayed together
+ * BOTH: Both languages displayed together (default)
  */
 export const Language = Object.freeze({
   FARSI: 'fa',
@@ -22,7 +22,7 @@ export class Settings {
   static KEY = 'mafia_god_settings';
   
   static DEFAULT = {
-    language: Language.FARSI, // Default to Farsi for backward compatibility
+    language: Language.BOTH, // Default to Both for bilingual display
   };
 
   /** Get current settings */
@@ -49,7 +49,7 @@ export class Settings {
 
   /** Get current language setting */
   static getLanguage() {
-    return Settings.get().language || Language.FARSI;
+    return Settings.get().language || Language.BOTH;
   }
 
   /** Set language preference */
