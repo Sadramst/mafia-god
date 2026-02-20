@@ -159,15 +159,15 @@ export class SetupView extends BaseView {
                 <button class="role-card__count-btn" data-action="inc" data-role="${role.id}">+</button>
               </div>
             `}
-            ${role.id === 'gunner' && isSelected ? `
-              <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs);">
-                <div class="flex gap-sm items-center mb-sm">
+            ${role.id === 'gunner' ? `
+              <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
+                <div class="flex gap-sm items-center justify-center mb-sm">
                   <span style="min-width: 50px;">🟡 مشقی:</span>
                   <button class="btn btn--ghost btn--sm" data-action="blank-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.gunnerBlankMax}</span>
                   <button class="btn btn--ghost btn--sm" data-action="blank-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
                 </div>
-                <div class="flex gap-sm items-center">
+                <div class="flex gap-sm items-center justify-center">
                   <span style="min-width: 50px;">🔴 جنگی:</span>
                   <button class="btn btn--ghost btn--sm" data-action="live-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.gunnerLiveMax}</span>
