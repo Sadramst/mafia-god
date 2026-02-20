@@ -186,6 +186,7 @@ export class HomeView extends BaseView {
       const selected = this.container.querySelector('input[name="language"]:checked')?.value;
       if (selected) {
         Settings.setLanguage(selected);
+        if (this.app && typeof this.app.onLanguageChange === 'function') this.app.onLanguageChange();
         this.app.showToast(t(tr.settings.saved), 'success');
         this.render();
       }

@@ -45,6 +45,18 @@ export class App {
     this.navigate('home');
   }
 
+  /**
+   * Called when the app language setting changes to update direction, labels and current view
+   */
+  onLanguageChange() {
+    const lang = Settings.getLanguage();
+    setDocumentDirection(lang === 'en' ? 'en' : 'fa');
+    this._updateNavLabels();
+    this._updateHeader(this.currentRoute);
+    // re-render current view to pick up new translations/layout
+    if (this.currentView && this.currentView.render) this.currentView.render();
+  }
+
   /** Navigate to a route */
   navigate(route) {
     // Destroy previous view

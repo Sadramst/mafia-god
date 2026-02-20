@@ -425,7 +425,8 @@ export function t(textObj) {
   }
   
   if (lang === Language.BOTH) {
-    return `${textObj.fa} / ${textObj.en}`;
+    // When showing both languages, render the bilingual pair as LTR inline
+    return `<span class="ltr-inline">${textObj.fa} / ${textObj.en}</span>`;
   }
   
   // Default: FARSI

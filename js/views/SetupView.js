@@ -4,6 +4,7 @@
 import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
 import { t, translations as tr, toEnDigits } from '../utils/i18n.js';
+import { Settings } from '../utils/Settings.js';
 
 export class SetupView extends BaseView {
 
