@@ -277,6 +277,18 @@ export class DayView extends BaseView {
           </div>
         ` : ''}
 
+        ${results?.kaneReveal ? `
+          <div class="card mb-md" style="border-color: var(--warning); background: rgba(234,179,8,0.08);">
+            <div class="font-bold mb-sm" style="color: var(--warning);">🎖️ اعلام همشهری کین:</div>
+            <div style="font-size: var(--text-lg); font-weight: 700;">
+              به دستور همشهری کین،
+              <strong>${results.kaneReveal.targetName}</strong>
+              نقش ${results.kaneReveal.roleIcon} <strong>${results.kaneReveal.roleName}</strong> را داشته!
+            </div>
+            <div class="text-muted mt-sm" style="font-size: var(--text-xs);">هدف در بازی می‌ماند — مردم می‌توانند رأی بدهند. شب بعد همشهری کین حذف می‌شود.</div>
+          </div>
+        ` : ''}
+
         <!-- God-only info -->
         <div class="god-dashboard mt-lg">
           <div class="god-dashboard__title">👁️ اطلاعات محرمانه خدا</div>
@@ -481,7 +493,7 @@ export class DayView extends BaseView {
       let count = 0;
       for (const voterId of voters) {
         const voter = game.getPlayer(voterId);
-        count += voter?.roleId === 'kane' ? 2 : 1;
+        count += 1;
       }
       tally[playerId] = count;
     }

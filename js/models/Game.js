@@ -43,6 +43,10 @@ export class Game {
     this.negotiatorThreshold = 2;    // Negotiate unlocks when alive mafia <= this
     this.sniperMaxShots = 2;          // Sniper's max number of shots
     this._sniperShotCount = 0;        // Sniper shots used so far
+    this._kaneUsed = false;            // Kane has used his one-time ability
+    this._kaneTargetId = null;         // Kane's current target (set during night, resolved in morning)
+    this._kanePendingDeath = false;    // Kane should die next night after successful reveal
+    this._jadoogarLastBlockedId = null; // Jadoogar can't block same person two nights in a row
     this.drWatsonSelfHealMax = 2;   // Max times Dr Watson can heal self
     this.drLecterSelfHealMax = 2;   // Max times Dr Lecter can heal self
     this._drWatsonSelfHealCount = 0; // Times Dr Watson has healed self
@@ -272,6 +276,9 @@ export class Game {
       // Special: skip sniper if no shots remaining
       if (role.id === 'sniper' && this._sniperShotCount >= this.sniperMaxShots) continue;
 
+      // Special: skip kane if already used his one-time ability
+      if (role.id === 'kane' && this._kaneUsed) continue;
+
       // Special: skip freemason if can't recruit (dead, max reached, or contaminated)
       if (role.id === 'freemason' && !this.framason.canRecruit) continue;
 
@@ -343,6 +350,17 @@ export class Game {
 
     const actions = this.nightActions;
 
+    // 0. Kane pending death from previous night's successful reveal
+    if (this._kanePendingDeath) {
+      const kanePlayer = this.players.find(p => p.isAlive && p.roleId === 'kane');
+      if (kanePlayer) {
+        kanePlayer.kill(this.round, 'kane_sacrifice');
+        results.killed.push(kanePlayer.id);
+        this._addHistory('death', `🎖️ همشهری کین به دستور خدا حذف شد (بهای افشاگری).`);
+      }
+      this._kanePendingDeath = false;
+    }
+
     // 1. Jadoogar blocks a citizen/independent's night action
     if (actions.jadoogar?.targetId) {
       const blockedId = actions.jadoogar.targetId;
@@ -357,6 +375,10 @@ export class Game {
           }
         }
       }
+      // Track for consecutive block restriction
+      this._jadoogarLastBlockedId = blockedId;
+    } else {
+      this._jadoogarLastBlockedId = null;
     }
 
     // 2. (Bodyguard has no night action — abilities are bomb-guess & zodiac-immunity)
@@ -624,6 +646,36 @@ export class Game {
       results.gunnerBullets = [{ holderId, type: bulletType, success: res.success }];
     }
 
+    // 15. Kane reveal — check if target survived night
+    if (actions.kane?.targetId) {
+      const kaneTargetId = actions.kane.targetId;
+      const kaneTarget = this.getPlayer(kaneTargetId);
+      if (kaneTarget && results.killed.includes(kaneTargetId)) {
+        // Target died during night → act returns to Kane
+        this._kaneUsed = false;
+        this._addHistory('kane', `🎖️ هدف همشهری کین در شب کشته شد — توانایی برگشت.`);
+      } else if (kaneTarget) {
+        this._kaneUsed = true;
+        const targetRole = Roles.get(kaneTarget.roleId);
+        const targetTeam = targetRole?.team;
+        if (targetTeam === 'mafia' || targetTeam === 'independent') {
+          // Successful reveal — announce in morning, Kane dies next night
+          results.kaneReveal = {
+            targetId: kaneTargetId,
+            targetName: kaneTarget.name,
+            roleName: targetRole?.name || '—',
+            roleIcon: targetRole?.icon || '',
+          };
+          this._kanePendingDeath = true;
+          this._addHistory('kane', `🎖️ همشهری کین ${kaneTarget.name} را افشا کرد: ${targetRole?.name}`);
+        } else {
+          // Target is citizen → nothing happens, act is consumed
+          results.kaneReveal = null;
+          this._addHistory('kane', `🎖️ همشهری کین اقدام کرد اما هدف شهروند بود — هیچ اعلامی نمی‌شود.`);
+        }
+      }
+    }
+
     // Check Jack's curse chain reaction — if curse target died, Jack dies too
     results.jackCurseTriggered = false;
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
@@ -709,10 +761,7 @@ export class Game {
     const tally = {};
     for (const [voterId, targetId] of Object.entries(this.votes)) {
       if (!targetId) continue;
-      // Kane's vote counts double
-      const voter = this.getPlayer(Number(voterId));
-      const weight = voter?.roleId === 'kane' ? 2 : 1;
-      tally[targetId] = (tally[targetId] || 0) + weight;
+      tally[targetId] = (tally[targetId] || 0) + 1;
     }
     return tally;
   }
@@ -1102,6 +1151,10 @@ export class Game {
       negotiatorThreshold: this.negotiatorThreshold,
       sniperMaxShots: this.sniperMaxShots,
       _sniperShotCount: this._sniperShotCount,
+      _kaneUsed: this._kaneUsed,
+      _kaneTargetId: this._kaneTargetId,
+      _kanePendingDeath: this._kanePendingDeath,
+      _jadoogarLastBlockedId: this._jadoogarLastBlockedId,
       dayTimerDuration: this.dayTimerDuration,
       defenseTimerDuration: this.defenseTimerDuration,
       blindDayDuration: this.blindDayDuration,
@@ -1133,6 +1186,10 @@ export class Game {
     this.negotiatorThreshold = data.negotiatorThreshold ?? 2;
     this.sniperMaxShots = data.sniperMaxShots ?? 2;
     this._sniperShotCount = data._sniperShotCount ?? 0;
+    this._kaneUsed = data._kaneUsed ?? false;
+    this._kaneTargetId = data._kaneTargetId ?? null;
+    this._kanePendingDeath = data._kanePendingDeath ?? false;
+    this._jadoogarLastBlockedId = data._jadoogarLastBlockedId ?? null;
     this.dayTimerDuration = data.dayTimerDuration || 180;
     this.defenseTimerDuration = data.defenseTimerDuration || 60;
     this.blindDayDuration = data.blindDayDuration || 60;

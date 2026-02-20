@@ -142,10 +142,11 @@ export class NightView extends BaseView {
       } else if (step.roleId === 'constantine') {
         targets = game.getDeadPlayers();
       } else if (step.roleId === 'jadoogar') {
-        // Jadoogar can only target citizens and independents
+        // Jadoogar can only target citizens and independents, not same person as last night
         targets = targets.filter(p => {
           const role = Roles.get(p.roleId);
-          return role?.team === 'citizen' || role?.team === 'independent';
+          return (role?.team === 'citizen' || role?.team === 'independent')
+            && p.id !== game._jadoogarLastBlockedId;
         });
       } else if (step.roleId === 'godfather') {
         // Filter based on which mode is selected
@@ -656,6 +657,7 @@ export class NightView extends BaseView {
       investigate: 'چه کسی را استعلام کند؟ (👍/👎/✊)',
 
       snipe: 'چه کسی را هدف بگیرد؟ (تیر باقیمانده)',
+      kaneReveal: 'یک بازیکن را انتخاب کند (افشاگری یک‌باره)',
       soloKill: 'چه کسی را بکشد؟',
       revive: 'چه کسی را زنده کند؟',
       curse: 'طلسم را روی چه کسی بگذارد؟',
