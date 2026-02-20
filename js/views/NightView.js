@@ -275,10 +275,11 @@ export class NightView extends BaseView {
    */
   _renderGodfatherStep(idx, targets, selectedTarget) {
     const game = this.app.game;
+    const canNegotiate = game.canNegotiate();
 
     // Step 1: Mode selection
     const modeButtons = `
-      <div class="flex gap-sm mb-md">
+      <div class="flex gap-sm mb-md" style="flex-wrap: wrap;">
         <button class="btn ${this.godfatherMode === 'shoot' ? 'btn--primary' : 'btn--ghost'} btn--sm btn--block"
                 data-gf-mode="shoot">
           🔫 شلیک
@@ -287,6 +288,12 @@ export class NightView extends BaseView {
                 data-gf-mode="salakhi">
           🗡️ سلاخی
         </button>
+        ${canNegotiate ? `
+          <button class="btn ${this.godfatherMode === 'negotiate' ? 'btn--warning' : 'btn--ghost'} btn--sm btn--block"
+                  data-gf-mode="negotiate">
+            🤝 مذاکره
+          </button>
+        ` : ''}
       </div>
     `;
 
@@ -331,18 +338,33 @@ export class NightView extends BaseView {
       `;
     }
 
-    // Confirm conditions
-    const canConfirm = this.godfatherMode === 'shoot'
-      ? !!selectedTarget
-      : !!selectedTarget && !!this.salakhiGuessRoleId;
-
-    return `
-      ${modeButtons}
-      ${this.godfatherMode === 'salakhi' ? `
+    // Info card per mode
+    let modeInfoCard = '';
+    if (this.godfatherMode === 'salakhi') {
+      modeInfoCard = `
         <div class="card mb-sm" style="background: rgba(220,38,38,0.1); border-color: var(--danger); font-size: var(--text-xs); padding: 8px 12px;">
           ⚠️ در شب سلاخی مافیا شلیک ندارد. اگر حدس درست باشد هدف حذف می‌شود (دکتر و سپر تأثیری ندارد).
         </div>
-      ` : ''}
+      `;
+    } else if (this.godfatherMode === 'negotiate') {
+      modeInfoCard = `
+        <div class="card mb-sm" style="background: rgba(234,179,8,0.1); border-color: var(--warning); font-size: var(--text-xs); padding: 8px 12px;">
+          🤝 اگر هدف شهروند ساده یا مظنون باشد → به مافیا اضافه می‌شود. در غیر این صورت مذاکره شکست می‌خورد و شلیک مافیا از دست می‌رود.
+        </div>
+      `;
+    }
+
+    // Confirm conditions
+    let canConfirm;
+    if (this.godfatherMode === 'salakhi') {
+      canConfirm = !!selectedTarget && !!this.salakhiGuessRoleId;
+    } else {
+      canConfirm = !!selectedTarget;
+    }
+
+    return `
+      ${modeButtons}
+      ${modeInfoCard}
       ${targetGrid}
       ${roleGuessUI}
       <div class="flex gap-sm mt-md">

@@ -398,6 +398,10 @@ img { max-width: 100%; display: block; }
   background: linear-gradient(135deg, var(--danger), #b91c1c);
   color: white;
 }
+.btn--warning {
+  background: linear-gradient(135deg, var(--warning), #b45309);
+  color: white;
+}
 
 .btn--block { width: 100%; }
 .btn--lg { padding: 16px 32px; font-size: var(--text-lg); min-height: 56px; border-radius: var(--radius-lg); }

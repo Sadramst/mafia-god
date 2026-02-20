@@ -40,6 +40,7 @@ export class Game {
     this.bomb = new Bomb();          // One-time bomb mechanic
     this.framason = new Framason();   // Freemason alliance mechanic
     this.framasonMaxMembers = 2;     // Configurable in settings
+    this.negotiatorThreshold = 2;    // Negotiate unlocks when alive mafia <= this
     this.drWatsonSelfHealMax = 2;   // Max times Dr Watson can heal self
     this.drLecterSelfHealMax = 2;   // Max times Dr Lecter can heal self
     this._drWatsonSelfHealCount = 0; // Times Dr Watson has healed self
@@ -226,6 +227,14 @@ export class Game {
     }
   }
 
+  /** Check if negotiation option is available (negotiator alive + alive mafia <= threshold) */
+  canNegotiate() {
+    const negotiatorAlive = this.players.some(p => p.isAlive && p.roleId === 'negotiator');
+    if (!negotiatorAlive) return false;
+    const mafiaAlive = this.players.filter(p => p.isAlive && Roles.get(p.roleId)?.team === 'mafia').length;
+    return mafiaAlive <= this.negotiatorThreshold;
+  }
+
   /** Check if Zodiac can shoot this round based on frequency setting */
   _canZodiacShoot() {
     if (this.zodiacFrequency === 'every') return true;
@@ -374,13 +383,13 @@ export class Game {
       }
     }
 
-    // 5. Godfather action — Shoot OR Salakhi (سلاخی)
+    // 5. Godfather action — Shoot, Salakhi, or Negotiate
     if (actions.godfather?.targetId) {
       const targetId = actions.godfather.targetId;
       const target = this.getPlayer(targetId);
-      const isSalakhi = actions.godfather.mode === 'salakhi';
+      const mode = actions.godfather.mode; // 'shoot' | 'salakhi' | 'negotiate'
 
-      if (target && isSalakhi) {
+      if (target && mode === 'salakhi') {
         // ── Salakhi — guess exact role ──
         const guessedRoleId = actions.godfather.guessedRoleId;
         const isCorrect = target.roleId === guessedRoleId;
@@ -393,6 +402,16 @@ export class Game {
           this._addHistory('death', `🗡️ ${target.name} سلاخی شد. (${Roles.get(target.roleId)?.name})`);
         } else {
           this._addHistory('salakhi_fail', `🗡️ سلاخی نادرست بود — ${target.name} زنده ماند.`);
+        }
+      } else if (target && mode === 'negotiate') {
+        // ── Negotiate — recruit simpleCitizen or suspect ──
+        const isRecruitable = target.roleId === 'simpleCitizen' || target.roleId === 'suspect';
+        results.negotiated = { playerId: targetId, success: isRecruitable };
+        if (isRecruitable) {
+          target.roleId = 'simpleMafia';
+          this._addHistory('negotiate', `🤝 ${target.name} توسط مذاکره به تیم مافیا پیوست.`);
+        } else {
+          this._addHistory('negotiate_fail', `🤝 مذاکره با ${target.name} شکست خورد — شلیک مافیا از دست رفت.`);
         }
       } else if (target) {
         // ── Regular mafia shoot ──
@@ -492,8 +511,15 @@ export class Game {
       const target = this.getPlayer(targetId);
       if (target) {
         const role = Roles.get(target.roleId);
-        // Godfather appears as citizen
-        const appearsAs = target.roleId === 'godfather' ? 'citizen' : role?.team;
+        // Godfather appears as citizen, Suspect appears as mafia
+        let appearsAs;
+        if (target.roleId === 'godfather') {
+          appearsAs = 'citizen';
+        } else if (target.roleId === 'suspect') {
+          appearsAs = 'mafia';
+        } else {
+          appearsAs = role?.team;
+        }
         results.investigated = { playerId: targetId, result: appearsAs };
         this._addHistory('investigate', `🔍 کارآگاه ${target.name} را بررسی کرد: ${Roles.getTeamName(appearsAs)}`);
       }
@@ -1041,6 +1067,7 @@ export class Game {
       bomb: this.bomb.toJSON(),
       framason: this.framason.toJSON(),
       framasonMaxMembers: this.framasonMaxMembers,
+      negotiatorThreshold: this.negotiatorThreshold,
       dayTimerDuration: this.dayTimerDuration,
       defenseTimerDuration: this.defenseTimerDuration,
       blindDayDuration: this.blindDayDuration,
@@ -1069,6 +1096,7 @@ export class Game {
     this.bomb = Bomb.fromJSON(data.bomb);
     this.framason = Framason.fromJSON(data.framason);
     this.framasonMaxMembers = data.framasonMaxMembers ?? 2;
+    this.negotiatorThreshold = data.negotiatorThreshold ?? 2;
     this.dayTimerDuration = data.dayTimerDuration || 180;
     this.defenseTimerDuration = data.defenseTimerDuration || 60;
     this.blindDayDuration = data.blindDayDuration || 60;

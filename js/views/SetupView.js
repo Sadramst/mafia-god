@@ -185,6 +185,16 @@ export class SetupView extends BaseView {
                 </div>
               </div>
             ` : ''}
+            ${role.id === 'negotiator' ? `
+              <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
+                <div class="flex gap-sm items-center justify-center">
+                  <span style="min-width: 80px;">📉 آستانه:</span>
+                  <button class="btn btn--ghost btn--sm" data-action="neg-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
+                  <span class="font-bold" style="min-width: 20px; text-align: center;">${game.negotiatorThreshold}</span>
+                  <button class="btn btn--ghost btn--sm" data-action="neg-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
+                </div>
+              </div>
+            ` : ''}
           </div>
         `;
       }
@@ -289,6 +299,20 @@ export class SetupView extends BaseView {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (game.framasonMaxMembers < 10) { game.framasonMaxMembers++; this.render(); }
+      });
+    });
+
+    // Negotiator threshold +/- buttons on role card
+    container.querySelectorAll('[data-action="neg-dec"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (game.negotiatorThreshold > 1) { game.negotiatorThreshold--; this.render(); }
+      });
+    });
+    container.querySelectorAll('[data-action="neg-inc"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (game.negotiatorThreshold < 10) { game.negotiatorThreshold++; this.render(); }
       });
     });
   }
