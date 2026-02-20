@@ -161,7 +161,7 @@ export class SetupView extends BaseView {
             `}
             ${role.id === 'gunner' && isSelected ? `
               <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs);">
-                <div class="flex gap-sm items-center mb-xs">
+                <div class="flex gap-sm items-center mb-sm">
                   <span style="min-width: 50px;">🟡 مشقی:</span>
                   <button class="btn btn--ghost btn--sm" data-action="blank-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
                   <span class="font-bold" style="min-width: 20px; text-align: center;">${game.gunnerBlankMax}</span>
@@ -199,6 +199,7 @@ export class SetupView extends BaseView {
       card.addEventListener('click', (e) => {
         if (e.target.closest('.role-card__count-btn')) return;
         if (e.target.closest('.role-card__info')) return;
+        if (e.target.closest('.role-card__bullets')) return;
         const roleId = card.dataset.role;
         const role = Roles.get(roleId);
         if (!role) return;
