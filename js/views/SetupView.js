@@ -93,7 +93,7 @@ export class SetupView extends BaseView {
       if (!name) return;
       // Check duplicates
       if (game.players.some(p => p.name === name)) {
-        this.toast('این اسم قبلاً اضافه شده!', 'error');
+        this.toast(t(tr.setup.playerExists), 'error');
         return;
       }
       game.addPlayer(name);
