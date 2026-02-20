@@ -409,7 +409,7 @@ export class Game {
       }
     }
 
-    // 7. Zodiac kills (special: if target is protected, Zodiac dies, bodyguard lives)
+    // 7. Zodiac kills (special: if target IS the bodyguard role, Zodiac dies, bodyguard lives)
     if (actions.zodiac?.targetId) {
       const targetId = actions.zodiac.targetId;
       const target = this.getPlayer(targetId);
@@ -417,11 +417,11 @@ export class Game {
       const zodiacPlayer = this.getPlayer(zodiacId);
 
       if (target && target.isAlive && zodiacPlayer) {
-        if (target.protected) {
-          // Zodiac shot a protected player → Zodiac dies, bodyguard survives
+        if (target.roleId === 'bodyguard') {
+          // Zodiac shot the bodyguard → Zodiac dies, bodyguard survives
           zodiacPlayer.kill(this.round, 'zodiac_bodyguard');
           results.killed.push(zodiacId);
-          this._addHistory('death', `♈ زودیاک به فرد محافظت‌شده شلیک کرد و خودش حذف شد.`);
+          this._addHistory('death', `♈ زودیاک به محافظ شلیک کرد و خودش حذف شد.`);
         } else if (target.healed) {
           results.saved.push(targetId);
         } else {
