@@ -195,6 +195,16 @@ export class SetupView extends BaseView {
                 </div>
               </div>
             ` : ''}
+            ${role.id === 'sniper' ? `
+              <div class="role-card__bullets" style="margin-top: 6px; font-size: var(--text-xs); width: 100%;">
+                <div class="flex gap-sm items-center justify-center">
+                  <span style="min-width: 70px;">🎯 تیرها:</span>
+                  <button class="btn btn--ghost btn--sm" data-action="sniper-dec" style="padding: 1px 6px; font-size: var(--text-xs);">−</button>
+                  <span class="font-bold" style="min-width: 20px; text-align: center;">${game.sniperMaxShots}</span>
+                  <button class="btn btn--ghost btn--sm" data-action="sniper-inc" style="padding: 1px 6px; font-size: var(--text-xs);">+</button>
+                </div>
+              </div>
+            ` : ''}
           </div>
         `;
       }
@@ -313,6 +323,20 @@ export class SetupView extends BaseView {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (game.negotiatorThreshold < 10) { game.negotiatorThreshold++; this.render(); }
+      });
+    });
+
+    // Sniper shot count +/- buttons on role card
+    container.querySelectorAll('[data-action="sniper-dec"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (game.sniperMaxShots > 1) { game.sniperMaxShots--; this.render(); }
+      });
+    });
+    container.querySelectorAll('[data-action="sniper-inc"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (game.sniperMaxShots < 10) { game.sniperMaxShots++; this.render(); }
       });
     });
   }

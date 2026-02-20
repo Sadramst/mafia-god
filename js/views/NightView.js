@@ -19,6 +19,20 @@ export class NightView extends BaseView {
 
   render() {
     const game = this.app.game;
+
+    // Auto-skip reporter step if godfather didn't negotiate this night
+    while (true) {
+      const cur = game.getCurrentNightStep();
+      if (cur && cur.roleId === 'reporter' && !cur.completed) {
+        const gfAction = game.nightActions.godfather;
+        if (!gfAction || gfAction.mode !== 'negotiate') {
+          game.recordNightAction(null);
+          continue;
+        }
+      }
+      break;
+    }
+
     const counts = game.getTeamCounts();
     const isBlind = game.phase === 'blindNight';
 
@@ -127,6 +141,12 @@ export class NightView extends BaseView {
         targets = targets.filter(p => game.canDrWatsonHeal(p.id));
       } else if (step.roleId === 'constantine') {
         targets = game.getDeadPlayers();
+      } else if (step.roleId === 'jadoogar') {
+        // Jadoogar can only target citizens and independents
+        targets = targets.filter(p => {
+          const role = Roles.get(p.roleId);
+          return role?.team === 'citizen' || role?.team === 'independent';
+        });
       } else if (step.roleId === 'godfather') {
         // Filter based on which mode is selected
         targets = targets.filter(p => !step.actors.includes(p.id));
@@ -599,6 +619,31 @@ export class NightView extends BaseView {
     `;
   }
 
+  /**
+   * Show a full-screen announcement overlay for the God to read aloud
+   * when mafia is negotiating (buying a player).
+   */
+  _showNegotiateAnnouncement() {
+    const overlay = document.createElement('div');
+    overlay.className = 'negotiate-overlay';
+    overlay.innerHTML = `
+      <div class="negotiate-overlay__content">
+        <div style="font-size: 64px; margin-bottom: var(--space-md);">📢</div>
+        <div class="negotiate-overlay__title">با صدای بلند اعلام کنید:</div>
+        <div class="negotiate-overlay__text">«مافیا در حال خریداری است»</div>
+        <button class="btn btn--warning btn--lg btn--block mt-lg negotiate-overlay__dismiss">
+          ✓ اعلام کردم
+        </button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('.negotiate-overlay__dismiss').addEventListener('click', () => {
+      overlay.remove();
+      this.render();
+    });
+  }
+
   _getActionDescription(actionType) {
     const descriptions = {
       kill: 'شلیک یا سلاخی — نوع اقدام را انتخاب کنید',
@@ -606,11 +651,11 @@ export class NightView extends BaseView {
       bomb: 'بمب روی چه کسی؟ رمز ۱ تا ۴ را تعیین کنید',
 
       silence: 'چه کسی را سکوت کند؟',
-      block: 'اقدام شبانه چه کسی را خنثی کند؟',
+      block: 'اقدام شبانه چه شهروند یا مستقلی را خنثی کند؟',
       heal: 'چه کسی را نجات دهد؟',
-      investigate: 'چه کسی را استعلام کند؟',
+      investigate: 'چه کسی را استعلام کند؟ (👍/👎/✊)',
 
-      snipe: 'چه کسی را نشانه بگیرد؟',
+      snipe: 'چه کسی را هدف بگیرد؟ (تیر باقیمانده)',
       soloKill: 'چه کسی را بکشد؟',
       revive: 'چه کسی را زنده کند؟',
       curse: 'طلسم را روی چه کسی بگذارد؟',
@@ -743,10 +788,16 @@ export class NightView extends BaseView {
             if (this.godfatherMode === 'salakhi') {
               extra.guessedRoleId = this.salakhiGuessRoleId;
             }
+            const wasNegotiate = this.godfatherMode === 'negotiate';
             game.recordNightAction(targetId, extra);
             // Reset godfather state
             this.godfatherMode = null;
             this.salakhiGuessRoleId = null;
+            // Show loud announcement overlay when negotiating
+            if (wasNegotiate) {
+              this._showNegotiateAnnouncement();
+              return; // render will happen when overlay is dismissed
+            }
           } else if (step?.roleId === 'bomber' && this.bombPassword) {
             game.recordNightAction(targetId, { bombPassword: this.bombPassword });
             this.bombPassword = null;

@@ -41,6 +41,8 @@ export class Game {
     this.framason = new Framason();   // Freemason alliance mechanic
     this.framasonMaxMembers = 2;     // Configurable in settings
     this.negotiatorThreshold = 2;    // Negotiate unlocks when alive mafia <= this
+    this.sniperMaxShots = 2;          // Sniper's max number of shots
+    this._sniperShotCount = 0;        // Sniper shots used so far
     this.drWatsonSelfHealMax = 2;   // Max times Dr Watson can heal self
     this.drLecterSelfHealMax = 2;   // Max times Dr Lecter can heal self
     this._drWatsonSelfHealCount = 0; // Times Dr Watson has healed self
@@ -267,6 +269,9 @@ export class Game {
       // Special: skip gunner if no bullets remain
       if (role.id === 'gunner' && !this.bulletManager.hasBullets) continue;
 
+      // Special: skip sniper if no shots remaining
+      if (role.id === 'sniper' && this._sniperShotCount >= this.sniperMaxShots) continue;
+
       // Special: skip freemason if can't recruit (dead, max reached, or contaminated)
       if (role.id === 'freemason' && !this.framason.canRecruit) continue;
 
@@ -338,16 +343,16 @@ export class Game {
 
     const actions = this.nightActions;
 
-    // 1. Sorcerer blocks someone's action
-    if (actions.sorcerer?.targetId) {
-      const blockedId = actions.sorcerer.targetId;
+    // 1. Jadoogar blocks a citizen/independent's night action
+    if (actions.jadoogar?.targetId) {
+      const blockedId = actions.jadoogar.targetId;
       results.blocked = blockedId;
       // Find which role the blocked player has and remove their action
       const blockedPlayer = this.getPlayer(blockedId);
       if (blockedPlayer) {
         // Remove the blocked player's action
         for (const [roleId, action] of Object.entries(actions)) {
-          if (action.actorIds?.includes(blockedId) && roleId !== 'sorcerer') {
+          if (action.actorIds?.includes(blockedId) && roleId !== 'jadoogar') {
             delete actions[roleId];
           }
         }
@@ -483,23 +488,37 @@ export class Game {
       const sniperPlayer = this.getPlayer(sniperId);
 
       if (target && sniperPlayer) {
-        const targetTeam = Roles.get(target.roleId)?.team;
-        if (targetTeam === 'mafia' || targetTeam === 'independent') {
-          // Correct shot — check target's shield
-          const died = target.tryKill(this.round, 'sniper');
-          if (died) {
-            results.killed.push(targetId);
-            this._addHistory('death', `🎯 ${target.name} توسط تک‌تیرانداز کشته شد.`);
+        this._sniperShotCount++;
+        const targetRole = Roles.get(target.roleId);
+        const targetTeam = targetRole?.team;
+
+        if (targetTeam === 'independent') {
+          // Independent → nothing happens, bullet wasted
+          this._addHistory('sniper', `🎯 اسنایپر به ${target.name} شلیک کرد — مستقل است، هیچ اتفاقی نیفتاد.`);
+        } else if (targetTeam === 'mafia') {
+          if (target.roleId === 'godfather' && target.shield?.isActive) {
+            // Godfather with shield → nothing happens, bullet wasted
+            this._addHistory('sniper', `🎯 اسنایپر به ${target.name} شلیک کرد — پدرخوانده سپر دارد، هیچ اتفاقی نیفتاد.`);
+          } else if (target.healed) {
+            // Healed by Dr Lecter → bullet wasted, nothing happens
+            this._addHistory('sniper', `🎯 اسنایپر به ${target.name} شلیک کرد ولی دکتر لکتر نجاتش داد — تیر هدر رفت.`);
           } else {
-            results.shielded.push(targetId);
-            this._addHistory('shield', `🛡️ سپر ${target.name} تیر تک‌تیرانداز را دفع کرد.`);
+            // Mafia not healed, godfather without shield → killed
+            const died = target.tryKill(this.round, 'sniper');
+            if (died) {
+              results.killed.push(targetId);
+              this._addHistory('death', `🎯 ${target.name} توسط اسنایپر کشته شد.`);
+            } else {
+              results.shielded.push(targetId);
+              this._addHistory('shield', `🛡️ سپر ${target.name} تیر اسنایپر را دفع کرد.`);
+            }
           }
         } else {
-          // Wrong shot — sniper dies (check sniper's own shield)
+          // Citizen → sniper dies (check sniper's own shield)
           const died = sniperPlayer.tryKill(this.round, 'sniper_miss');
           if (died) {
             results.killed.push(sniperId);
-            this._addHistory('death', `🎯 تک‌تیرانداز اشتباه زد و خودش مرد.`);
+            this._addHistory('death', `🎯 اسنایپر اشتباه زد و خودش مرد.`);
           }
         }
       }
@@ -510,18 +529,30 @@ export class Game {
       const targetId = actions.detective.targetId;
       const target = this.getPlayer(targetId);
       if (target) {
-        const role = Roles.get(target.roleId);
-        // Godfather appears as citizen, Suspect appears as mafia
-        let appearsAs;
-        if (target.roleId === 'godfather') {
-          appearsAs = 'citizen';
-        } else if (target.roleId === 'suspect') {
-          appearsAs = 'mafia';
+        // Check if detective was blocked by jadoogar
+        const wasBlocked = results.blocked && results.blocked === actions.detective.actorIds?.[0];
+        if (wasBlocked) {
+          // Blocked → closed fist ✊
+          results.investigated = { playerId: targetId, result: 'blocked' };
+          this._addHistory('investigate', `🔍 کارآگاه بلاک شده بود — نتیجه‌ای ندارد. ✊`);
         } else {
-          appearsAs = role?.team;
+          const role = Roles.get(target.roleId);
+          const targetTeam = role?.team;
+          // 👍 if: mafia (not godfather) OR suspect
+          // 👎 if: godfather, independent, or citizen (not suspect)
+          let thumbsUp;
+          if (target.roleId === 'suspect') {
+            thumbsUp = true;  // Suspect → false positive 👍
+          } else if (target.roleId === 'godfather') {
+            thumbsUp = false; // Godfather hides → 👎
+          } else if (targetTeam === 'mafia') {
+            thumbsUp = true;  // Other mafia → 👍
+          } else {
+            thumbsUp = false; // Citizen or independent → 👎
+          }
+          results.investigated = { playerId: targetId, result: thumbsUp ? 'positive' : 'negative' };
+          this._addHistory('investigate', `🔍 کارآگاه ${target.name} را بررسی کرد: ${thumbsUp ? '👍' : '👎'}`);
         }
-        results.investigated = { playerId: targetId, result: appearsAs };
-        this._addHistory('investigate', `🔍 کارآگاه ${target.name} را بررسی کرد: ${Roles.getTeamName(appearsAs)}`);
       }
     }
 
@@ -774,10 +805,11 @@ export class Game {
     // Jangi bullet — check protections
     const shooter = this.getPlayer(shooterId);
 
-    // Check if shooter was blocked by sorcerer last night
-    const sorcererAction = this.nightActions?.sorcerer;
-    if (sorcererAction?.targetId === shooterId) {
-      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (شلیک‌کننده بلاک شده)`);
+    // Check if shooter was blocked by jadoogar last night — bullet becomes blank
+    const jadoogarAction = this.nightActions?.jadoogar;
+    if (jadoogarAction?.targetId === shooterId) {
+      result.type = 'blank';
+      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (جادوگر تیر را خنثی کرد)`);
       return result;
     }
 
@@ -1068,6 +1100,8 @@ export class Game {
       framason: this.framason.toJSON(),
       framasonMaxMembers: this.framasonMaxMembers,
       negotiatorThreshold: this.negotiatorThreshold,
+      sniperMaxShots: this.sniperMaxShots,
+      _sniperShotCount: this._sniperShotCount,
       dayTimerDuration: this.dayTimerDuration,
       defenseTimerDuration: this.defenseTimerDuration,
       blindDayDuration: this.blindDayDuration,
@@ -1097,6 +1131,8 @@ export class Game {
     this.framason = Framason.fromJSON(data.framason);
     this.framasonMaxMembers = data.framasonMaxMembers ?? 2;
     this.negotiatorThreshold = data.negotiatorThreshold ?? 2;
+    this.sniperMaxShots = data.sniperMaxShots ?? 2;
+    this._sniperShotCount = data._sniperShotCount ?? 0;
     this.dayTimerDuration = data.dayTimerDuration || 180;
     this.defenseTimerDuration = data.defenseTimerDuration || 60;
     this.blindDayDuration = data.blindDayDuration || 60;

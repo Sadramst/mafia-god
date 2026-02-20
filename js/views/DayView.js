@@ -285,7 +285,7 @@ export class DayView extends BaseView {
             <div class="card mb-sm" style="background: var(--bg-glass); font-size: var(--text-sm);">
               🔍 نتیجه استعلام کارآگاه: 
               <strong>${game.getPlayer(results.investigated.playerId)?.name}</strong>
-              ← <span class="role-badge role-badge--${results.investigated.result}">${Roles.getTeamName(results.investigated.result)}</span>
+              ← ${results.investigated.result === 'blocked' ? '✊ بلاک شده' : results.investigated.result === 'positive' ? '👍' : '👎'}
             </div>
           ` : ''}
 
