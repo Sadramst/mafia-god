@@ -141,7 +141,6 @@ export class SetupView extends BaseView {
 
     // ensure desired counts initialized
     if (game.computeRecommendedCounts) game.computeRecommendedCounts();
-    `;
 
     for (const team of teams) {
       const roles = Roles.getByTeam(team);
