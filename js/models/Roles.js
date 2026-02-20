@@ -208,7 +208,7 @@ export class Roles {
     }),
 
     sniper: new Role({
-      id: 'constantine',
+      id: 'sniper',
       nameEn: 'Sniper',
       nameFa: 'اسنایپر',
       team: Team.CITIZEN,
