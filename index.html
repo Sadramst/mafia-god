@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#0a0a0f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="خدای مافیا">
-  <meta name="description" content="ابزار حرفه‌ای مدیریت بازی مافیا برای خدای بازی">
+  <meta name="apple-mobile-web-app-title" content="Mafia God | خدای مافیا">
+  <meta name="description" content="Professional Mafia Game Management Tool | ابزار حرفه‌ای مدیریت بازی مافیا">
 
-  <title>خدای مافیا</title>
+  <title>Mafia God | خدای مافیا</title>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -27,7 +27,7 @@
   <div id="app">
     <!-- Header -->
     <header class="app-header">
-      <h1 class="app-header__title">خدای مافیا</h1>
+      <h1 class="app-header__title">Mafia God | خدای مافیا</h1>
       <span class="app-header__badge" style="display:none;"></span>
     </header>
 
@@ -36,8 +36,8 @@
       <!-- Views render here -->
       <div class="hero">
         <div class="hero__icon">🎭</div>
-        <h1 class="hero__title">خدای مافیا</h1>
-        <p class="hero__subtitle">در حال بارگذاری...</p>
+        <h1 class="hero__title">Mafia God | خدای مافیا</h1>
+        <p class="hero__subtitle">Loading... / در حال بارگذاری...</p>
       </div>
     </main>
 
@@ -45,23 +45,23 @@
     <nav class="bottom-nav">
       <button class="nav-item active" data-route="home">
         <span class="nav-item__icon">🏠</span>
-        <span class="nav-item__label">خانه</span>
+        <span class="nav-item__label" data-nav-key="home">خانه</span>
       </button>
       <button class="nav-item" data-route="setup">
         <span class="nav-item__icon">⚙️</span>
-        <span class="nav-item__label">تنظیمات</span>
+        <span class="nav-item__label" data-nav-key="setup">تنظیمات</span>
       </button>
       <button class="nav-item disabled" data-route="night">
         <span class="nav-item__icon">🌙</span>
-        <span class="nav-item__label">شب</span>
+        <span class="nav-item__label" data-nav-key="night">شب</span>
       </button>
       <button class="nav-item disabled" data-route="day">
         <span class="nav-item__icon">☀️</span>
-        <span class="nav-item__label">روز</span>
+        <span class="nav-item__label" data-nav-key="day">روز</span>
       </button>
       <button class="nav-item disabled" data-route="summary">
         <span class="nav-item__icon">📊</span>
-        <span class="nav-item__label">خلاصه</span>
+        <span class="nav-item__label" data-nav-key="summary">خلاصه</span>
       </button>
     </nav>
   </div>

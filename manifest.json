@@ -1,7 +1,7 @@
 {
-  "name": "خدای مافیا",
-  "short_name": "مافیا",
-  "description": "ابزار حرفه‌ای مدیریت بازی مافیا برای خدای بازی",
+  "name": "Mafia God | خدای مافیا",
+  "short_name": "Mafia God",
+  "description": "Professional Mafia Game Management Tool | ابزار حرفه‌ای مدیریت بازی مافیا",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

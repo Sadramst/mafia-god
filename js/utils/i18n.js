@@ -362,6 +362,29 @@ export const translations = {
     edit: { fa: 'ویرایش', en: 'Edit' },
     close: { fa: 'بستن', en: 'Close' },
     ok: { fa: 'باشه', en: 'OK' },
+    loading: { fa: 'در حال بارگذاری...', en: 'Loading...' },
+    modalConfirm: { fa: 'تأیید', en: 'Confirm' },
+    modalCancel: { fa: 'انصراف', en: 'Cancel' },
+  },
+
+  // Navigation & Headers
+  nav: {
+    home: { fa: 'خانه', en: 'Home' },
+    setup: { fa: 'تنظیمات', en: 'Setup' },
+    night: { fa: 'شب', en: 'Night' },
+    day: { fa: 'روز', en: 'Day' },
+    summary: { fa: 'خلاصه', en: 'Summary' },
+  },
+
+  header: {
+    home: { fa: 'خدای مافیا', en: 'Mafia God' },
+    setup: { fa: 'تنظیمات بازی', en: 'Game Setup' },
+    roleReveal: { fa: 'نمایش نقش‌ها', en: 'Role Reveal' },
+    nightRound: { fa: 'شب %d', en: 'Night %d' },
+    dayRound: { fa: 'روز %d', en: 'Day %d' },
+    blindNight: { fa: 'شب کور', en: 'Blind Night' },
+    blindDay: { fa: 'روز کور', en: 'Blind Day' },
+    summary: { fa: 'خلاصه بازی', en: 'Game Summary' },
   },
 };
 

@@ -11,6 +11,7 @@ import { RoleRevealView } from './views/RoleRevealView.js';
 import { NightView } from './views/NightView.js';
 import { DayView } from './views/DayView.js';
 import { SummaryView } from './views/SummaryView.js';
+import { t, translations as tr } from './utils/i18n.js';
 
 export class App {
 
@@ -37,6 +38,7 @@ export class App {
     };
 
     this._initNavigation();
+    this._updateNavLabels();
     this._initWakeLock();
     this.navigate('home');
   }
@@ -82,24 +84,26 @@ export class App {
     const isBlindNight = game.phase === 'blindNight';
 
     const titles = {
-      home: 'خدای مافیا',
-      setup: 'تنظیمات بازی',
-      roleReveal: 'نمایش نقش‌ها',
-      night: isBlindNight ? 'شب کور' : `شب ${game.round}`,
-      day: isBlindDay ? 'روز کور' : `روز ${game.round}`,
-      summary: 'خلاصه بازی',
+      home: t(tr.header.home),
+      setup: t(tr.header.setup),
+      roleReveal: t(tr.header.roleReveal),
+      night: isBlindNight ? t(tr.header.blindNight) : t(tr.header.nightRound).replace('%d', game.round),
+      day: isBlindDay ? t(tr.header.blindDay) : t(tr.header.dayRound).replace('%d', game.round),
+      summary: t(tr.header.summary),
     };
     if (this.headerTitle) {
-      this.headerTitle.textContent = titles[route] || 'خدای مافیا';
+      this.headerTitle.textContent = titles[route] || t(tr.header.home);
     }
 
     // Badge shows phase
     if (this.headerBadge) {
       if (route === 'night') {
-        this.headerBadge.textContent = isBlindNight ? '🌙 شب کور' : `🌙 شب ${game.round}`;
+        const nightText = isBlindNight ? t(tr.header.blindNight) : t(tr.header.nightRound).replace('%d', game.round);
+        this.headerBadge.textContent = `🌙 ${nightText}`;
         this.headerBadge.style.display = '';
       } else if (route === 'day') {
-        this.headerBadge.textContent = isBlindDay ? '☀️ روز کور' : `☀️ روز ${game.round}`;
+        const dayText = isBlindDay ? t(tr.header.blindDay) : t(tr.header.dayRound).replace('%d', game.round);
+        this.headerBadge.textContent = `☀️ ${dayText}`;
         this.headerBadge.style.display = '';
       } else {
         this.headerBadge.style.display = 'none';
@@ -123,7 +127,15 @@ export class App {
     });
   }
 
+  _updateNavLabels() {
+    document.querySelectorAll('[data-nav-key]').forEach(label => {
+      const key = label.dataset.navKey;
+      if (tr.nav[key]) label.textContent = t(tr.nav[key]);
+    });
+  }
+
   _updateNav(route) {
+    this._updateNavLabels();
     this.navItems.forEach(item => {
       const navRoute = item.dataset.route;
       item.classList.toggle('active', navRoute === route);
@@ -157,7 +169,9 @@ export class App {
   }
 
   // ─── Modal ───
-  showModal(title, body, onConfirm, confirmText = 'تأیید', cancelText = 'انصراف') {
+  showModal(title, body, onConfirm, confirmText = null, cancelText = null) {
+    confirmText = confirmText || t(tr.common.modalConfirm);
+    cancelText = cancelText || t(tr.common.modalCancel);
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
