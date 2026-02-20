@@ -94,9 +94,11 @@ export class Game {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    // Assign
+    // Assign + initialize shields
     this.players.forEach((player, idx) => {
       player.roleId = pool[idx];
+      const roleDef = Roles.get(pool[idx]);
+      player.initShield(roleDef);
     });
     this.phase = 'roleReveal';
   }
@@ -157,8 +159,11 @@ export class Game {
     return this.nightSteps[this.currentNightStep] || null;
   }
 
-  /** Record a night action and advance to next step */
-  recordNightAction(targetId) {
+  /** Record a night action and advance to next step
+   * @param {number} targetId — Target player ID
+   * @param {object} [extra] — Optional extra data (e.g. { mode: 'salakhi', guessedRoleId: 'detective' })
+   */
+  recordNightAction(targetId, extra = {}) {
     const step = this.getCurrentNightStep();
     if (!step) return;
 
@@ -168,6 +173,7 @@ export class Game {
       actorIds: step.actors,
       targetId,
       actionType: step.actionType,
+      ...extra,
     };
     this.currentNightStep++;
   }
@@ -191,12 +197,14 @@ export class Game {
     const results = {
       killed: [],
       saved: [],
+      shielded: [],       // Players whose shield absorbed a hit
       investigated: null,
       silenced: null,
       blocked: null,
       bombed: null,
       revived: null,
       protected: null,
+      salakhied: null,    // { playerId, correct: boolean }
     };
 
     const actions = this.nightActions;
@@ -245,12 +253,34 @@ export class Game {
       this._lastDrLecterTarget = actions.drLecter.targetId;
     }
 
-    // 5. Mafia kill (godfather / mafia vote)
+    // 5. Godfather action — Shoot OR Salakhi (سلاخی)
     if (actions.godfather?.targetId) {
       const targetId = actions.godfather.targetId;
       const target = this.getPlayer(targetId);
-      if (target) {
-        if (target.healed) {
+      const isSalakhi = actions.godfather.mode === 'salakhi';
+
+      if (target && isSalakhi) {
+        // ── Salakhi — guess exact role ──
+        const guessedRoleId = actions.godfather.guessedRoleId;
+        const isCorrect = target.roleId === guessedRoleId;
+        results.salakhied = { playerId: targetId, correct: isCorrect };
+
+        if (isCorrect) {
+          // Salakhi bypasses doctor, shield, bodyguard — instant kill
+          target.kill(this.round, 'salakhi');
+          results.killed.push(targetId);
+          this._addHistory('death', `🗡️ ${target.name} سلاخی شد. (${Roles.get(target.roleId)?.name})`);
+        } else {
+          this._addHistory('salakhi_fail', `🗡️ سلاخی نادرست بود — ${target.name} زنده ماند.`);
+        }
+      } else if (target) {
+        // ── Regular mafia shoot ──
+        const targetRole = Roles.get(target.roleId);
+
+        // Jack & Zodiac are immune to mafia shoot
+        if (targetRole?.shootImmune) {
+          this._addHistory('immune', `🔫 شلیک مافیا به ${target.name} تأثیری نداشت (مصونیت).`);
+        } else if (target.healed) {
           results.saved.push(targetId);
           this._addHistory('save', `⚕️ ${target.name} توسط دکتر نجات یافت.`);
         } else if (target.protected) {
@@ -259,15 +289,26 @@ export class Game {
           if (bodyguardId) {
             const bodyguard = this.getPlayer(bodyguardId);
             if (bodyguard) {
-              bodyguard.kill(this.round, 'bodyguard_sacrifice');
-              results.killed.push(bodyguardId);
-              this._addHistory('death', `🛡️ ${bodyguard.name} (محافظ) جان خود را فدا کرد.`);
+              const died = bodyguard.tryKill(this.round, 'bodyguard_sacrifice');
+              if (died) {
+                results.killed.push(bodyguardId);
+                this._addHistory('death', `🛡️ ${bodyguard.name} (محافظ) جان خود را فدا کرد.`);
+              } else {
+                results.shielded.push(bodyguardId);
+                this._addHistory('shield', `🛡️ سپر ${bodyguard.name} ضربه را جذب کرد.`);
+              }
             }
           }
         } else {
-          target.kill(this.round, 'mafia');
-          results.killed.push(targetId);
-          this._addHistory('death', `🔫 ${target.name} توسط مافیا کشته شد.`);
+          // Check shield before killing
+          const died = target.tryKill(this.round, 'mafia');
+          if (died) {
+            results.killed.push(targetId);
+            this._addHistory('death', `🔫 ${target.name} توسط مافیا کشته شد.`);
+          } else {
+            results.shielded.push(targetId);
+            this._addHistory('shield', `🛡️ سپر ${target.name} شلیک مافیا را دفع کرد.`);
+          }
         }
       }
     }
@@ -280,9 +321,14 @@ export class Game {
         if (target.healed) {
           results.saved.push(targetId);
         } else {
-          target.kill(this.round, 'jack');
-          results.killed.push(targetId);
-          this._addHistory('death', `🔪 ${target.name} توسط جک کشته شد.`);
+          const died = target.tryKill(this.round, 'jack');
+          if (died) {
+            results.killed.push(targetId);
+            this._addHistory('death', `🔪 ${target.name} توسط جک کشته شد.`);
+          } else {
+            results.shielded.push(targetId);
+            this._addHistory('shield', `🛡️ سپر ${target.name} حمله جک را دفع کرد.`);
+          }
         }
       }
     }
@@ -295,9 +341,14 @@ export class Game {
         if (target.healed) {
           results.saved.push(targetId);
         } else {
-          target.kill(this.round, 'zodiac');
-          results.killed.push(targetId);
-          this._addHistory('death', `♈ ${target.name} توسط زودیاک کشته شد.`);
+          const died = target.tryKill(this.round, 'zodiac');
+          if (died) {
+            results.killed.push(targetId);
+            this._addHistory('death', `♈ ${target.name} توسط زودیاک کشته شد.`);
+          } else {
+            results.shielded.push(targetId);
+            this._addHistory('shield', `🛡️ سپر ${target.name} حمله زودیاک را دفع کرد.`);
+          }
         }
       }
     }
@@ -312,15 +363,22 @@ export class Game {
       if (target && sniperPlayer) {
         const targetTeam = Roles.get(target.roleId)?.team;
         if (targetTeam === 'mafia' || targetTeam === 'independent') {
-          // Correct shot
-          target.kill(this.round, 'sniper');
-          results.killed.push(targetId);
-          this._addHistory('death', `🎯 ${target.name} توسط تک‌تیرانداز کشته شد.`);
+          // Correct shot — check target's shield
+          const died = target.tryKill(this.round, 'sniper');
+          if (died) {
+            results.killed.push(targetId);
+            this._addHistory('death', `🎯 ${target.name} توسط تک‌تیرانداز کشته شد.`);
+          } else {
+            results.shielded.push(targetId);
+            this._addHistory('shield', `🛡️ سپر ${target.name} تیر تک‌تیرانداز را دفع کرد.`);
+          }
         } else {
-          // Wrong shot — sniper dies
-          sniperPlayer.kill(this.round, 'sniper_miss');
-          results.killed.push(sniperId);
-          this._addHistory('death', `🎯 تک‌تیرانداز اشتباه زد و خودش مرد.`);
+          // Wrong shot — sniper dies (check sniper's own shield)
+          const died = sniperPlayer.tryKill(this.round, 'sniper_miss');
+          if (died) {
+            results.killed.push(sniperId);
+            this._addHistory('death', `🎯 تک‌تیرانداز اشتباه زد و خودش مرد.`);
+          }
         }
       }
     }

@@ -10,6 +10,8 @@ export class NightView extends BaseView {
     super(container, app);
     this.selectedTargets = {}; // stepIndex → playerId
     this.showDashboard = true;
+    this.godfatherMode = null;  // null | 'shoot' | 'salakhi'
+    this.salakhiGuessRoleId = null; // Guessed role ID for salakhi
   }
 
   render() {
@@ -115,19 +117,22 @@ export class NightView extends BaseView {
 
       // Filter targets based on role
       if (step.roleId === 'drLecter') {
-        // Only mafia members
         targets = targets.filter(p => Roles.get(p.roleId)?.team === 'mafia');
         targets = targets.filter(p => game.canDrLecterHeal(p.id));
       } else if (step.roleId === 'drWatson') {
         targets = targets.filter(p => game.canDrWatsonHeal(p.id));
       } else if (step.roleId === 'constantine') {
-        // Only dead players
         targets = game.getDeadPlayers();
       } else if (step.roleId === 'godfather') {
-        // Can't target mafia
+        // Filter based on which mode is selected
         targets = targets.filter(p => !step.actors.includes(p.id));
-        // Also filter out other mafia 
         targets = targets.filter(p => Roles.get(p.roleId)?.team !== 'mafia');
+
+        if (this.godfatherMode === 'shoot') {
+          // Regular shoot: exclude shoot-immune roles (Jack, Zodiac)
+          targets = targets.filter(p => !Roles.get(p.roleId)?.shootImmune);
+        }
+        // Salakhi: all non-mafia alive players (including Jack/Zodiac)
       }
 
       const selectedTarget = this.selectedTargets[idx];
@@ -146,26 +151,7 @@ export class NightView extends BaseView {
               <div class="chip" style="color: var(--success);">
                 ✓ ${step.targetId ? `هدف: ${game.getPlayer(step.targetId)?.name || '—'}` : 'رد شد'}
               </div>
-            ` : isActive ? `
-              <div class="target-grid">
-                ${targets.map(t => `
-                  <button class="target-btn ${selectedTarget === t.id ? 'selected' : ''}" 
-                          data-step="${idx}" data-target="${t.id}">
-                    ${t.name}
-                  </button>
-                `).join('')}
-              </div>
-              <div class="flex gap-sm mt-md">
-                <button class="btn btn--primary btn--block btn--sm" 
-                        data-action="confirm-step" data-step="${idx}"
-                        ${!selectedTarget ? 'disabled' : ''}>
-                  ✓ تأیید
-                </button>
-                <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
-                  رد شدن
-                </button>
-              </div>
-            ` : `
+            ` : isActive ? this._renderActiveStep(step, idx, targets, selectedTarget) : `
               <div class="text-muted" style="font-size: var(--text-sm);">در انتظار...</div>
             `}
           </div>
@@ -174,9 +160,132 @@ export class NightView extends BaseView {
     }).join('');
   }
 
+  /**
+   * Render the active step body.
+   * For godfather: shows mode selection (shoot vs salakhi) + target + optional role guess.
+   * For other roles: shows standard target selection.
+   */
+  _renderActiveStep(step, idx, targets, selectedTarget) {
+    // ── Godfather special UI ──
+    if (step.roleId === 'godfather') {
+      return this._renderGodfatherStep(idx, targets, selectedTarget);
+    }
+
+    // ── Standard step UI ──
+    return `
+      <div class="target-grid">
+        ${targets.map(t => `
+          <button class="target-btn ${selectedTarget === t.id ? 'selected' : ''}" 
+                  data-step="${idx}" data-target="${t.id}">
+            ${t.name}
+          </button>
+        `).join('')}
+      </div>
+      <div class="flex gap-sm mt-md">
+        <button class="btn btn--primary btn--block btn--sm" 
+                data-action="confirm-step" data-step="${idx}"
+                ${!selectedTarget ? 'disabled' : ''}>
+          ✓ تأیید
+        </button>
+        <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
+          رد شدن
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Render Godfather's special step: choose between shoot and salakhi,
+   * then target selection, and role guess (salakhi only).
+   */
+  _renderGodfatherStep(idx, targets, selectedTarget) {
+    const game = this.app.game;
+
+    // Step 1: Mode selection
+    const modeButtons = `
+      <div class="flex gap-sm mb-md">
+        <button class="btn ${this.godfatherMode === 'shoot' ? 'btn--primary' : 'btn--ghost'} btn--sm btn--block"
+                data-gf-mode="shoot">
+          🔫 شلیک
+        </button>
+        <button class="btn ${this.godfatherMode === 'salakhi' ? 'btn--danger' : 'btn--ghost'} btn--sm btn--block"
+                data-gf-mode="salakhi">
+          🗡️ سلاخی
+        </button>
+      </div>
+    `;
+
+    if (!this.godfatherMode) {
+      return `
+        <div class="text-muted mb-sm" style="font-size: var(--text-sm);">ابتدا نوع اقدام را انتخاب کنید:</div>
+        ${modeButtons}
+        <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
+          رد شدن
+        </button>
+      `;
+    }
+
+    // Step 2: Target selection
+    const targetGrid = `
+      <div class="target-grid">
+        ${targets.map(t => `
+          <button class="target-btn ${selectedTarget === t.id ? 'selected' : ''}" 
+                  data-step="${idx}" data-target="${t.id}">
+            ${t.name}
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    // Step 3 (salakhi only): Role guess
+    let roleGuessUI = '';
+    if (this.godfatherMode === 'salakhi' && selectedTarget) {
+      const allRoles = Object.values(Roles.ALL).filter(r => r.team !== 'mafia');
+      roleGuessUI = `
+        <div class="mt-md">
+          <div class="text-muted mb-sm" style="font-size: var(--text-sm);">نقش حدس‌زده:</div>
+          <div class="target-grid">
+            ${allRoles.map(r => `
+              <button class="role-guess-btn ${this.salakhiGuessRoleId === r.id ? 'selected' : ''}"
+                      data-guess-role="${r.id}">
+                ${r.icon} ${r.name}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // Confirm conditions
+    const canConfirm = this.godfatherMode === 'shoot'
+      ? !!selectedTarget
+      : !!selectedTarget && !!this.salakhiGuessRoleId;
+
+    return `
+      ${modeButtons}
+      ${this.godfatherMode === 'salakhi' ? `
+        <div class="card mb-sm" style="background: rgba(220,38,38,0.1); border-color: var(--danger); font-size: var(--text-xs); padding: 8px 12px;">
+          ⚠️ در شب سلاخی مافیا شلیک ندارد. اگر حدس درست باشد هدف حذف می‌شود (دکتر و سپر تأثیری ندارد).
+        </div>
+      ` : ''}
+      ${targetGrid}
+      ${roleGuessUI}
+      <div class="flex gap-sm mt-md">
+        <button class="btn btn--primary btn--block btn--sm" 
+                data-action="confirm-step" data-step="${idx}"
+                ${!canConfirm ? 'disabled' : ''}>
+          ✓ تأیید
+        </button>
+        <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
+          رد شدن
+        </button>
+      </div>
+    `;
+  }
+
   _getActionDescription(actionType) {
     const descriptions = {
-      kill: 'هدف را برای کشتن انتخاب کنید',
+      kill: 'شلیک یا سلاخی — نوع اقدام را انتخاب کنید',
       mafiaHeal: 'یک عضو مافیا را برای نجات انتخاب کنید',
       bomb: 'روی چه کسی بمب بگذارد؟',
       spy: 'یک بازیکن را برای جاسوسی انتخاب کنید',
@@ -207,6 +316,33 @@ export class NightView extends BaseView {
         const step = Number(btn.dataset.step);
         const target = Number(btn.dataset.target);
         this.selectedTargets[step] = target;
+        // Reset role guess when target changes (salakhi)
+        if (this.godfatherMode === 'salakhi') {
+          this.salakhiGuessRoleId = null;
+        }
+        this.render();
+      });
+    });
+
+    // Godfather mode selection (shoot / salakhi)
+    this.container.querySelectorAll('[data-gf-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newMode = btn.dataset.gfMode;
+        this.godfatherMode = newMode;
+        // Reset target and guess when switching mode
+        const gfStep = game.nightSteps.findIndex(s => s.roleId === 'godfather');
+        if (gfStep >= 0) {
+          delete this.selectedTargets[gfStep];
+        }
+        this.salakhiGuessRoleId = null;
+        this.render();
+      });
+    });
+
+    // Salakhi role guess selection
+    this.container.querySelectorAll('.role-guess-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.salakhiGuessRoleId = btn.dataset.guessRole;
         this.render();
       });
     });
@@ -217,7 +353,20 @@ export class NightView extends BaseView {
         const stepIdx = Number(btn.dataset.step);
         const targetId = this.selectedTargets[stepIdx];
         if (targetId) {
-          game.recordNightAction(targetId);
+          const step = game.nightSteps[stepIdx];
+          // Pass extra data for godfather (mode + guessed role)
+          if (step?.roleId === 'godfather' && this.godfatherMode) {
+            const extra = { mode: this.godfatherMode };
+            if (this.godfatherMode === 'salakhi') {
+              extra.guessedRoleId = this.salakhiGuessRoleId;
+            }
+            game.recordNightAction(targetId, extra);
+            // Reset godfather state
+            this.godfatherMode = null;
+            this.salakhiGuessRoleId = null;
+          } else {
+            game.recordNightAction(targetId);
+          }
           this.render();
         }
       });
@@ -252,5 +401,7 @@ export class NightView extends BaseView {
   destroy() {
     this.selectedTargets = {};
     this.showDashboard = true;
+    this.godfatherMode = null;
+    this.salakhiGuessRoleId = null;
   }
 }

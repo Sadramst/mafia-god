@@ -82,7 +82,22 @@ export class DayView extends BaseView {
     container.innerHTML = `
       <div class="section">
         <h2 class="section__title">📢 اعلام نتایج شب</h2>
-        
+
+        ${results?.salakhied?.correct ? `
+          <div class="card card--mafia mb-md" style="border-color: var(--danger);">
+            <div class="font-bold mb-sm" style="color: var(--danger);">🗡️ سلاخی:</div>
+            <div class="flex items-center gap-sm">
+              <span class="dot dot--dead"></span>
+              <span class="font-bold">${game.getPlayer(results.salakhied.playerId)?.name || '—'}</span>
+              <span>سلاخی شد!</span>
+            </div>
+          </div>
+        ` : results?.salakhied && !results.salakhied.correct ? `
+          <div class="card mb-md" style="border-color: var(--warning);">
+            <div style="color: var(--warning); font-weight: 600;">🗡️ سلاخی انجام شد اما نادرست بود — کسی حذف نشد.</div>
+          </div>
+        ` : ''}
+
         ${results?.killed?.length > 0 ? `
           <div class="card card--mafia mb-md">
             <div class="font-bold mb-sm" style="color: var(--danger);">☠️ کشته‌شدگان شب:</div>
@@ -101,6 +116,15 @@ export class DayView extends BaseView {
             <div style="color: var(--success); font-weight: 600;">✨ کسی در شب نمرد!</div>
           </div>
         `}
+
+        ${results?.shielded?.length > 0 ? `
+          <div class="card mb-md" style="border-color: var(--warning);">
+            <div class="font-bold mb-sm" style="color: var(--warning);">🛡️ سپر فعال شد:</div>
+            <div class="text-secondary" style="font-size: var(--text-sm);">
+              یک نفر مورد حمله قرار گرفت اما سپرش ضربه را جذب کرد (سپر از بین رفت)
+            </div>
+          </div>
+        ` : ''}
 
         ${results?.saved?.length > 0 ? `
           <div class="card mb-md" style="border-color: var(--success);">

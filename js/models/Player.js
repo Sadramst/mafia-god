@@ -1,6 +1,8 @@
 /**
  * Player.js — Player model
  */
+import { Shield } from './Shield.js';
+
 export class Player {
   static _nextId = 1;
 
@@ -13,13 +15,40 @@ export class Player {
     this.roleId = null;      // Role key from Roles.ALL
     this.isAlive = true;
     this.deathRound = null;   // Round number when eliminated
-    this.deathCause = null;   // 'mafia' | 'vote' | 'sniper' | 'jack' | etc.
+    this.deathCause = null;   // 'mafia' | 'vote' | 'sniper' | 'jack' | 'salakhi' | etc.
     this.silenced = false;    // Silenced by matador
     this.bombed = false;      // Has bomb planted
     this.protected = false;   // Being protected by bodyguard
     this.healed = false;      // Being healed by doctor
     this.lastHealedRound = null;
     this.notes = [];          // God's private notes
+    this.shield = new Shield(false);  // One-time shield (activated based on role)
+  }
+
+  /**
+   * Initialize shield based on role definition.
+   * Called after role is assigned.
+   * @param {object} roleDef — Role definition from Roles.ALL
+   */
+  initShield(roleDef) {
+    if (roleDef?.hasShield) {
+      this.shield.activate();
+    }
+  }
+
+  /**
+   * Attempt to kill this player.
+   * Shield is checked automatically — if it absorbs the hit, player survives.
+   * @param {number} round — Current game round
+   * @param {string} cause — Kill cause type
+   * @returns {boolean} true if player actually died, false if shield saved them
+   */
+  tryKill(round, cause) {
+    if (this.shield.absorb(cause)) {
+      return false; // Shield absorbed the hit
+    }
+    this.kill(round, cause);
+    return true;
   }
 
   /** Kill this player */
@@ -66,6 +95,7 @@ export class Player {
       healed: this.healed,
       lastHealedRound: this.lastHealedRound,
       notes: this.notes,
+      shield: this.shield.toJSON(),
     };
   }
 
@@ -73,6 +103,7 @@ export class Player {
   static fromJSON(data) {
     const p = new Player(data.name);
     Object.assign(p, data);
+    p.shield = Shield.fromJSON(data.shield);
     return p;
   }
 
