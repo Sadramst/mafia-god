@@ -207,18 +207,19 @@ export class Roles {
       unique: true,
     }),
 
-    constantine: new Role({
+    sniper: new Role({
       id: 'constantine',
-      nameEn: 'Constantine',
-      nameFa: 'کنستانتین',
+      nameEn: 'Sniper',
+      nameFa: 'اسنایپر',
       team: Team.CITIZEN,
-      icon: '✝️',
-      descriptionEn: 'Once per game can revive one player who died that same night. Cannot revive: salakhi victims or Citizen Kane eliminated by God. If blocked by sorcerer → cannot revive that night. Only players who died that same night can be revived.',
-      descriptionFa: 'یک‌بار در بازی می‌تواند یک بازیکن را که در همان شب کشته شده زنده کند. نمی‌تواند کسی را که با سلاخی کشته شده یا همشهری کین که توسط خدا حذف شده احیا کند. اگر توسط جادوگر بلاک شود → نمی‌تواند آن شب احیا کند. فقط اعضای شبی که مردند قابل احیا هستند.',
-      nightAction: NightAction.REVIVE,
-      nightOrder: 15,
+      icon: '🎯',
+      descriptionEn: 'Has limited shots (default 2, configurable). Can target anyone. If target is independent → nothing happens. If target is godfather with shield → nothing happens. If target is mafia healed by Dr. Lecter → shot wasted. If target is mafia without heal/shield → killed. If target is citizen → sniper dies. Has one-time shield.',
+      descriptionFa: 'تعداد شلیک محدود دارد (پیش‌فرض ۲، قابل تنظیم). می‌تواند هر کسی را هدف بگیرد. اگر هدف مستقل باشد → هیچ اتفاقی نمی‌افتد. اگر هدف پدرخوانده باشد و هنوز سپر داشته باشد → هیچ اتفاقی نمی‌افتد. اگر هدف مافیایی باشد که دکتر لکتر هیل کرده → تیر هدر می‌رود. اگر هدف مافیا بدون هیل/سپر باشد → کشته می‌شود. اگر هدف شهروند باشد → اسنایپر خودش می‌میرد. یک‌بار سپر دارد.',
+      nightAction: NightAction.SNIPE,
+      nightOrder: 13,
       maxCount: 1,
       unique: true,
+      hasShield: true,
     }),
 
     gunner: new Role({
@@ -277,19 +278,18 @@ export class Roles {
       unique: true,
     }),
 
-    sniper: new Role({
-      id: 'sniper',
-      nameEn: 'Sniper',
-      nameFa: 'اسنایپر',
+    constantine: new Role({
+      id: 'constantine',
+      nameEn: 'Constantine',
+      nameFa: 'کنستانتین',
       team: Team.CITIZEN,
-      icon: '🎯',
-      descriptionEn: 'Has limited shots (default 2, configurable). Can target anyone. If target is independent → nothing happens. If target is godfather with shield → nothing happens. If target is mafia healed by Dr. Lecter → shot wasted. If target is mafia without heal/shield → killed. If target is citizen → sniper dies. Has one-time shield.',
-      descriptionFa: 'تعداد شلیک محدود دارد (پیش‌فرض ۲، قابل تنظیم). می‌تواند هر کسی را هدف بگیرد. اگر هدف مستقل باشد → هیچ اتفاقی نمی‌افتد. اگر هدف پدرخوانده باشد و هنوز سپر داشته باشد → هیچ اتفاقی نمی‌افتد. اگر هدف مافیایی باشد که دکتر لکتر هیل کرده → تیر هدر می‌رود. اگر هدف مافیا بدون هیل/سپر باشد → کشته می‌شود. اگر هدف شهروند باشد → اسنایپر خودش می‌میرد. یک‌بار سپر دارد.',
-      nightAction: NightAction.SNIPE,
-      nightOrder: 13,
+      icon: '✝️',
+      descriptionEn: 'Once per game can revive one player who died that same night. Cannot revive: salakhi victims or Citizen Kane eliminated by God. If blocked by sorcerer → cannot revive that night. Only players who died that same night can be revived.',
+      descriptionFa: 'یک‌بار در بازی می‌تواند یک بازیکن را که در همان شب کشته شده زنده کند. نمی‌تواند کسی را که با سلاخی کشته شده یا همشهری کین که توسط خدا حذف شده احیا کند. اگر توسط جادوگر بلاک شود → نمی‌تواند آن شب احیا کند. فقط اعضای شبی که مردند قابل احیا هستند.',
+      nightAction: NightAction.REVIVE,
+      nightOrder: 15,
       maxCount: 1,
       unique: true,
-      hasShield: true,
     }),
 
     simpleCitizen: new Role({
