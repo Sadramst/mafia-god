@@ -135,19 +135,28 @@ export class Game {
       .reduce((s, [, c]) => s + c, 0);
 
     const remaining = Math.max(0, totalPlayers - independents);
-    const recommendedMafia = Math.max(1, Math.floor(remaining / 4));
+    // Maximum mafia allowed so that at least one citizen remains and mafia <= floor((remaining-1)/2)
+    const maxMafia = Math.max(1, Math.floor((remaining - 1) / 2));
+    // A baseline recommended count (previous heuristic)
+    let recommendedMafia = Math.max(1, Math.floor(remaining / 4));
+    // Clamp recommendation into allowed range
+    recommendedMafia = Math.min(Math.max(1, recommendedMafia), Math.max(1, Math.min(maxMafia, Math.max(1, remaining - 1))));
     const recommendedCitizen = Math.max(0, remaining - recommendedMafia);
 
-    // Initialize or update desired counts
+    // Initialize or update desired counts (ensure they respect min/max)
     if (force) {
       this.desiredMafia = recommendedMafia;
       this.desiredCitizen = recommendedCitizen;
     } else {
       if (!this.desiredMafia) this.desiredMafia = recommendedMafia;
       if (!this.desiredCitizen) this.desiredCitizen = recommendedCitizen;
+      // ensure existing desired values are within bounds
+      const bounded = Math.max(1, Math.min(this.desiredMafia, maxMafia));
+      this.desiredMafia = bounded;
+      this.desiredCitizen = remaining - this.desiredMafia;
     }
 
-    return { recommendedMafia, recommendedCitizen, independents };
+    return { recommendedMafia, recommendedCitizen, independents, maxMafia };
   }
 
   /** Adjust desired mafia count (clamped) and keep citizen consistent */
@@ -157,9 +166,13 @@ export class Game {
       .filter(([id]) => Roles.get(id)?.team === 'independent')
       .reduce((s, [, c]) => s + c, 0);
     const remaining = Math.max(0, totalPlayers - independents);
-    const clamped = Math.max(0, Math.min(count, remaining));
+
+    // Enforce min 1 mafia and max floor((remaining-1)/2), but never exceed remaining-1
+    const maxMafia = Math.max(1, Math.floor((remaining - 1) / 2));
+    const upper = Math.min(maxMafia, Math.max(0, remaining - 1));
+    const clamped = Math.max(1, Math.min(count, upper));
     this.desiredMafia = clamped;
-    this.desiredCitizen = remaining - clamped;
+    this.desiredCitizen = Math.max(0, remaining - clamped);
   }
 
   /** Randomly assign roles to players */
