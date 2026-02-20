@@ -5,6 +5,7 @@
  */
 import { Player } from './Player.js';
 import { Roles } from './Roles.js';
+import { Bomb } from './Bomb.js';
 
 export class Game {
 
@@ -30,6 +31,7 @@ export class Game {
     this.blindDayDuration = 60;  // 1 minute for blind day
     this.constantineUsed = false;
     this.gunnerUsed = false;
+    this.bomb = new Bomb();          // One-time bomb mechanic
     this._lastDrWatsonTarget = null;
     this._lastDrLecterTarget = null;
     this.zodiacFrequency = 'every'; // 'every' | 'odd' | 'even'
@@ -223,6 +225,9 @@ export class Game {
 
       // Special: skip constantine if already used
       if (role.id === 'constantine' && this.constantineUsed) continue;
+
+      // Special: skip bomber if bomb already used
+      if (role.id === 'bomber' && this.bomb.isUsed) continue;
 
       // Special: skip zodiac if not their turn based on frequency
       if (role.id === 'zodiac' && !this._canZodiacShoot()) continue;
@@ -490,13 +495,14 @@ export class Game {
       }
     }
 
-    // 11. Bomber plants bomb
-    if (actions.bomber?.targetId) {
+    // 11. Bomber plants bomb (one-time, with password)
+    if (actions.bomber?.targetId && !this.bomb.isUsed) {
       const target = this.getPlayer(actions.bomber.targetId);
-      if (target) {
-        target.bombed = true;
+      const password = actions.bomber.bombPassword;
+      if (target && password) {
+        this.bomb.plant(target.id, password);
         results.bombed = actions.bomber.targetId;
-        this._addHistory('bomb', `💣 بمب روی ${target.name} کار گذاشته شد.`);
+        this._addHistory('bomb', `💣 بمب روی ${target.name} کار گذاشته شد (رمز: ${password}).`);
       }
     }
 
@@ -508,20 +514,6 @@ export class Game {
         results.revived = actions.constantine.targetId;
         this.constantineUsed = true;
         this._addHistory('revive', `✝️ ${target.name} توسط کنستانتین زنده شد.`);
-      }
-    }
-
-    // Check for bomber chain reaction
-    for (const killedId of [...results.killed]) {
-      const killedPlayer = this.getPlayer(killedId);
-      if (killedPlayer?.roleId === 'bomber') {
-        // Bomber died → find bombed player
-        const bombedPlayer = this.players.find(p => p.bombed && p.isAlive);
-        if (bombedPlayer) {
-          bombedPlayer.kill(this.round, 'bomb');
-          results.killed.push(bombedPlayer.id);
-          this._addHistory('death', `💥 ${bombedPlayer.name} با انفجار بمب کشته شد.`);
-        }
       }
     }
 
@@ -602,15 +594,6 @@ export class Game {
 
     const extra = {};
 
-    // Bomber chain
-    if (player.roleId === 'bomber') {
-      const bombedPlayer = this.players.find(p => p.bombed && p.isAlive);
-      if (bombedPlayer) {
-        bombedPlayer.kill(this.round, 'bomb');
-        this._addHistory('death', `💥 ${bombedPlayer.name} با انفجار بمب کشته شد.`);
-      }
-    }
-
     // Jack telesm chain — if voted-out player was Jack's telesm target
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
     if (jackPlayer && jackPlayer.telesm.isTriggeredBy(playerId)) {
@@ -632,6 +615,77 @@ export class Game {
     this.gunnerUsed = true;
     this._addHistory('death', `🔫 ${target.name} توسط تفنگدار کشته شد.`);
     return true;
+  }
+
+  // ──────────────────────────────────
+  //  BOMB DETERMINATION (خواب نیم‌روزی)
+  // ──────────────────────────────────
+
+  /** Check if there's an active bomb that needs determination */
+  hasBombToResolve() {
+    return this.bomb.phase === 'planted';
+  }
+
+  /** Start the خواب نیم‌روزی phase */
+  startBombSiesta() {
+    this.bomb.startSiesta();
+  }
+
+  /** Check if bodyguard is alive (can attempt bomb guess) */
+  isBodyguardAliveForBomb() {
+    return this.players.some(p => p.isAlive && p.roleId === 'bodyguard');
+  }
+
+  /**
+   * Bodyguard attempts to guess the bomb password.
+   * @param {number} guess — 1–4
+   * @returns {{ result: 'defused'|'wrong', guardianId: number }}
+   */
+  bombGuardianGuess(guess) {
+    const result = this.bomb.guardianGuess(guess);
+    const guardianId = this.players.find(p => p.isAlive && p.roleId === 'bodyguard')?.id;
+
+    if (result === 'defused') {
+      this._addHistory('bomb_defused', `🛡️💣 محافظ رمز بمب را درست حدس زد — بمب خنثی شد!`);
+      this.bomb.clear();
+    } else {
+      // Guardian dies instead of bombed player
+      const guardian = this.getPlayer(guardianId);
+      if (guardian) {
+        guardian.kill(this.round, 'bomb_guardian');
+        this._addHistory('death', `🛡️💥 محافظ رمز بمب را اشتباه زد — محافظ حذف شد.`);
+      }
+      this.bomb.clear();
+    }
+    return { result, guardianId };
+  }
+
+  /** Bodyguard chooses not to try guessing the bomb password */
+  bombGuardianSkip() {
+    this.bomb.guardianSkip();
+    this._addHistory('bomb_skip', `🛡️ محافظ تصمیم گرفت رمز بمب را حدس نزند.`);
+  }
+
+  /**
+   * Bombed player attempts to guess the bomb password.
+   * @param {number} guess — 1–4
+   * @returns {{ result: 'defused'|'exploded', targetId: number }}
+   */
+  bombTargetGuess(guess) {
+    const targetId = this.bomb.targetId;
+    const result = this.bomb.targetGuess(guess);
+
+    if (result === 'defused') {
+      this._addHistory('bomb_defused', `💣✅ ${this.getPlayer(targetId)?.name} رمز بمب را درست حدس زد — بمب خنثی شد!`);
+    } else {
+      const target = this.getPlayer(targetId);
+      if (target) {
+        target.kill(this.round, 'bomb');
+        this._addHistory('death', `💥 ${target.name} رمز بمب را اشتباه زد — حذف شد.`);
+      }
+    }
+    this.bomb.clear();
+    return { result, targetId };
   }
 
   // ──────────────────────────────────
@@ -748,6 +802,7 @@ export class Game {
       selectedRoles: this.selectedRoles,
       constantineUsed: this.constantineUsed,
       gunnerUsed: this.gunnerUsed,
+      bomb: this.bomb.toJSON(),
       dayTimerDuration: this.dayTimerDuration,
       defenseTimerDuration: this.defenseTimerDuration,
       blindDayDuration: this.blindDayDuration,
@@ -767,6 +822,7 @@ export class Game {
     this.selectedRoles = data.selectedRoles || {};
     this.constantineUsed = data.constantineUsed || false;
     this.gunnerUsed = data.gunnerUsed || false;
+    this.bomb = Bomb.fromJSON(data.bomb);
     this.dayTimerDuration = data.dayTimerDuration || 180;
     this.defenseTimerDuration = data.defenseTimerDuration || 60;
     this.blindDayDuration = data.blindDayDuration || 60;

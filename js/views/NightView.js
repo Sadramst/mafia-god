@@ -12,6 +12,7 @@ export class NightView extends BaseView {
     this.showDashboard = true;
     this.godfatherMode = null;  // null | 'shoot' | 'salakhi'
     this.salakhiGuessRoleId = null; // Guessed role ID for salakhi
+    this.bombPassword = null;  // 1–4 password for bomber
   }
 
   render() {
@@ -228,6 +229,11 @@ export class NightView extends BaseView {
       return this._renderGodfatherStep(idx, targets, selectedTarget);
     }
 
+    // ── Bomber special UI (target + password) ──
+    if (step.roleId === 'bomber') {
+      return this._renderBomberStep(idx, targets, selectedTarget);
+    }
+
     // ── Standard step UI ──
     return `
       <div class="target-grid">
@@ -340,11 +346,51 @@ export class NightView extends BaseView {
     `;
   }
 
+  /**
+   * Render Bomber's special step: target selection + password (1–4).
+   */
+  _renderBomberStep(idx, targets, selectedTarget) {
+    return `
+      <div class="card mb-sm" style="background: rgba(220,38,38,0.06); border-color: var(--danger); font-size: var(--text-xs); padding: 8px 12px;">
+        💣 بمب‌گذار یک‌بار بمب روی کسی می‌گذارد و رمز ۱ تا ۴ تعیین می‌کند. خدا رمز را به خاطر بسپارد!
+      </div>
+      <div class="target-grid">
+        ${targets.map(t => `
+          <button class="target-btn ${selectedTarget === t.id ? 'selected' : ''}" 
+                  data-step="${idx}" data-target="${t.id}">
+            ${t.name}
+          </button>
+        `).join('')}
+      </div>
+      ${selectedTarget ? `
+        <div class="mt-md">
+          <div class="text-muted mb-sm" style="font-size: var(--text-sm);">🔑 رمز بمب:</div>
+          <div class="flex gap-sm">
+            ${[1,2,3,4].map(n => `
+              <button class="btn btn--sm ${this.bombPassword === n ? 'btn--danger' : 'btn--ghost'} btn--block"
+                      data-bomb-pass="${n}">${n}</button>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+      <div class="flex gap-sm mt-md">
+        <button class="btn btn--primary btn--block btn--sm" 
+                data-action="confirm-step" data-step="${idx}"
+                ${!selectedTarget || !this.bombPassword ? 'disabled' : ''}>
+          ✓ تأیید بمب
+        </button>
+        <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
+          رد شدن
+        </button>
+      </div>
+    `;
+  }
+
   _getActionDescription(actionType) {
     const descriptions = {
       kill: 'شلیک یا سلاخی — نوع اقدام را انتخاب کنید',
       mafiaHeal: 'یک عضو مافیا را برای نجات انتخاب کنید',
-      bomb: 'روی چه کسی بمب بگذارد؟',
+      bomb: 'بمب روی چه کسی؟ رمز ۱ تا ۴ را تعیین کنید',
       spy: 'یک بازیکن را برای جاسوسی انتخاب کنید',
       silence: 'چه کسی را سکوت کند؟',
       block: 'اقدام شبانه چه کسی را خنثی کند؟',
@@ -406,6 +452,14 @@ export class NightView extends BaseView {
       });
     });
 
+    // Bomb password selection
+    this.container.querySelectorAll('[data-bomb-pass]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.bombPassword = Number(btn.dataset.bombPass);
+        this.render();
+      });
+    });
+
     // Confirm step
     this.container.querySelectorAll('[data-action="confirm-step"]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -431,6 +485,9 @@ export class NightView extends BaseView {
             // Reset godfather state
             this.godfatherMode = null;
             this.salakhiGuessRoleId = null;
+          } else if (step?.roleId === 'bomber' && this.bombPassword) {
+            game.recordNightAction(targetId, { bombPassword: this.bombPassword });
+            this.bombPassword = null;
           } else {
             game.recordNightAction(targetId);
           }
@@ -482,5 +539,6 @@ export class NightView extends BaseView {
     this.showDashboard = true;
     this.godfatherMode = null;
     this.salakhiGuessRoleId = null;
+    this.bombPassword = null;
   }
 }

@@ -18,7 +18,6 @@ export class Player {
     this.deathRound = null;   // Round number when eliminated
     this.deathCause = null;   // 'mafia' | 'vote' | 'sniper' | 'jack' | 'salakhi' | etc.
     this.silenced = false;    // Silenced by matador
-    this.bombed = false;      // Has bomb planted
     this.protected = false;   // Being protected by bodyguard
     this.healed = false;      // Being healed by doctor
     this.lastHealedRound = null;
@@ -92,7 +91,6 @@ export class Player {
       deathRound: this.deathRound,
       deathCause: this.deathCause,
       silenced: this.silenced,
-      bombed: this.bombed,
       protected: this.protected,
       healed: this.healed,
       lastHealedRound: this.lastHealedRound,

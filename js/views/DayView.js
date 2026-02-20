@@ -9,12 +9,15 @@ export class DayView extends BaseView {
 
   constructor(container, app) {
     super(container, app);
-    this.subView = 'results'; // results | discussion | voting | defense
+    this.subView = 'results'; // results | discussion | siesta | voting | defense
     this.timer = null;
     this.timerDisplay = '03:00';
     this.timerProgress = 100;
     this.votingTarget = null; // Player being voted on
     this.votedPlayers = {}; // { playerId: [voterIds] }
+    this.siestaStep = 'guardian'; // 'guardian' | 'guardian_guess' | 'target' | 'result'
+    this.siestaGuess = null; // 1–4 password guess
+    this.siestaResultData = null; // { result, guardianId?, targetId? }
   }
 
   render() {
@@ -57,6 +60,9 @@ export class DayView extends BaseView {
         <div class="tabs mb-md">
           <button class="tab ${this.subView === 'results' ? 'active' : ''}" data-sub="results">نتایج شب</button>
           <button class="tab ${this.subView === 'discussion' ? 'active' : ''}" data-sub="discussion">بحث</button>
+          ${this.app.game.hasBombToResolve() ? `
+            <button class="tab ${this.subView === 'siesta' ? 'active' : ''}" data-sub="siesta">💣 خواب نیم‌روزی</button>
+          ` : ''}
           <button class="tab ${this.subView === 'voting' ? 'active' : ''}" data-sub="voting">رأی‌گیری</button>
         </div>
 
@@ -75,6 +81,7 @@ export class DayView extends BaseView {
     const content = this.container.querySelector('#day-content');
     if (this.subView === 'results') this._renderResults(content);
     else if (this.subView === 'discussion') this._renderDiscussion(content);
+    else if (this.subView === 'siesta') this._renderSiesta(content);
     else if (this.subView === 'voting') this._renderVoting(content);
   }
 
@@ -365,7 +372,11 @@ export class DayView extends BaseView {
 
     container.querySelector('#btn-go-voting')?.addEventListener('click', () => {
       this.timer?.stop();
-      this.subView = 'voting';
+      if (this.app.game.hasBombToResolve()) {
+        this.subView = 'siesta';
+      } else {
+        this.subView = 'voting';
+      }
       this.render();
     });
   }
@@ -625,6 +636,228 @@ export class DayView extends BaseView {
     });
   }
 
+  // ─── Bomb Siesta (خواب نیم‌روزی) ───
+  _renderSiesta(container) {
+    const game = this.app.game;
+
+    // Start siesta phase if not already started
+    if (game.bomb.phase === 'planted') {
+      game.startBombSiesta();
+      this.app.saveGame();
+    }
+
+    const bombTarget = game.getPlayer(game.bomb.targetId);
+    const bodyguardAlive = game.isBodyguardAliveForBomb();
+
+    // If bodyguard is not alive, skip guardian step
+    if (!bodyguardAlive && this.siestaStep === 'guardian') {
+      this.siestaStep = 'target';
+    }
+
+    let html = '';
+
+    if (this.siestaStep === 'guardian') {
+      html = `
+        <div class="section">
+          <h2 class="section__title">💣 خواب نیم‌روزی</h2>
+          <p class="section__subtitle">همه چشم‌ها بسته! فقط محافظ بیدار است.</p>
+
+          <div class="card mb-lg" style="border-color: var(--danger);">
+            <div class="font-bold mb-sm" style="color: var(--danger);">
+              💣 بمب جلوی: <strong>${bombTarget?.name || '—'}</strong>
+            </div>
+          </div>
+
+          <div class="card mb-md" style="border-color: var(--warning);">
+            <div class="font-bold mb-sm" style="color: var(--warning);">
+              🛡️ محافظ، آیا می‌خواهید رمز بمب را حدس بزنید؟
+            </div>
+            <p class="text-secondary mb-md" style="font-size: var(--text-sm);">
+              حدس درست → بمب خنثی | حدس غلط → محافظ حذف می‌شود
+            </p>
+            <div class="flex gap-sm">
+              <button class="btn btn--primary btn--block" id="btn-guardian-yes">بله، حدس می‌زنم</button>
+              <button class="btn btn--ghost btn--block" id="btn-guardian-skip">خیر، رد می‌کنم</button>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (this.siestaStep === 'guardian_guess') {
+      html = `
+        <div class="section">
+          <h2 class="section__title">💣 خواب نیم‌روزی</h2>
+          <p class="section__subtitle">محافظ در حال حدس زدن رمز بمب...</p>
+
+          <div class="card mb-lg" style="border-color: var(--danger);">
+            <div class="font-bold" style="color: var(--danger);">
+              💣 بمب جلوی: <strong>${bombTarget?.name || '—'}</strong>
+            </div>
+          </div>
+
+          <div class="card" style="border-color: var(--warning);">
+            <div class="font-bold mb-md" style="color: var(--warning);">🛡️ محافظ، رمز را انتخاب کنید:</div>
+            <div class="target-grid">
+              ${[1, 2, 3, 4].map(n => `
+                <button class="target-btn ${this.siestaGuess === n ? 'selected' : ''}" data-siesta-guess="${n}" style="font-size: var(--text-lg); min-width: 60px;">
+                  ${n}
+                </button>
+              `).join('')}
+            </div>
+            <button class="btn btn--primary btn--block mt-lg" id="btn-guardian-confirm" ${!this.siestaGuess ? 'disabled' : ''}>
+              ✅ تأیید حدس
+            </button>
+          </div>
+        </div>
+      `;
+    } else if (this.siestaStep === 'target') {
+      html = `
+        <div class="section">
+          <h2 class="section__title">💣 خواب نیم‌روزی</h2>
+          <p class="section__subtitle">${bodyguardAlive ? 'محافظ رد کرد. ' : ''}نوبت فرد بمب‌شده است.</p>
+
+          <div class="card mb-lg" style="border-color: var(--danger);">
+            <div class="font-bold" style="color: var(--danger);">
+              💣 ${bombTarget?.name || '—'}، رمز بمب را حدس بزنید!
+            </div>
+            <p class="text-secondary mt-sm" style="font-size: var(--text-sm);">
+              حدس درست → بمب خنثی | حدس غلط → حذف می‌شوید
+            </p>
+          </div>
+
+          <div class="card" style="border-color: var(--warning);">
+            <div class="font-bold mb-md">رمز را انتخاب کنید:</div>
+            <div class="target-grid">
+              ${[1, 2, 3, 4].map(n => `
+                <button class="target-btn ${this.siestaGuess === n ? 'selected' : ''}" data-siesta-guess="${n}" style="font-size: var(--text-lg); min-width: 60px;">
+                  ${n}
+                </button>
+              `).join('')}
+            </div>
+            <button class="btn btn--primary btn--block mt-lg" id="btn-target-confirm" ${!this.siestaGuess ? 'disabled' : ''}>
+              ✅ تأیید حدس
+            </button>
+          </div>
+        </div>
+      `;
+    } else if (this.siestaStep === 'result') {
+      let resultCard = '';
+      if (this.siestaResultData.result === 'defused') {
+        resultCard = `
+          <div class="card mb-lg" style="border-color: var(--success);">
+            <div style="font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-sm);">✅</div>
+            <div class="font-bold text-center" style="color: var(--success); font-size: var(--text-lg);">
+              بمب خنثی شد!
+            </div>
+            <p class="text-center text-secondary mt-sm">رمز درست حدس زده شد.</p>
+          </div>
+        `;
+      } else if (this.siestaResultData.result === 'guardian_died') {
+        const guardian = game.getPlayer(this.siestaResultData.guardianId);
+        resultCard = `
+          <div class="card mb-lg" style="border-color: var(--danger);">
+            <div style="font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-sm);">💥</div>
+            <div class="font-bold text-center" style="color: var(--danger); font-size: var(--text-lg);">
+              محافظ اشتباه زد!
+            </div>
+            <p class="text-center text-secondary mt-sm">
+              🛡️ ${guardian?.name || '—'} (محافظ) به جای فرد بمب‌شده حذف شد.
+            </p>
+          </div>
+        `;
+      } else if (this.siestaResultData.result === 'exploded') {
+        const target = game.getPlayer(this.siestaResultData.targetId);
+        resultCard = `
+          <div class="card mb-lg" style="border-color: var(--danger);">
+            <div style="font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-sm);">💥</div>
+            <div class="font-bold text-center" style="color: var(--danger); font-size: var(--text-lg);">
+              بمب منفجر شد!
+            </div>
+            <p class="text-center text-secondary mt-sm">
+              💣 ${target?.name || '—'} رمز اشتباه زد و حذف شد.
+            </p>
+          </div>
+        `;
+      }
+
+      html = `
+        <div class="section">
+          <h2 class="section__title">💣 نتیجه خواب نیم‌روزی</h2>
+          ${resultCard}
+          <button class="btn btn--primary btn--block" id="btn-siesta-continue">
+            🗳️ ادامه به رأی‌گیری
+          </button>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+
+    // ── Event handlers ──
+
+    // Guardian yes → show password grid
+    container.querySelector('#btn-guardian-yes')?.addEventListener('click', () => {
+      this.siestaStep = 'guardian_guess';
+      this.siestaGuess = null;
+      this.render();
+    });
+
+    // Guardian skip → target's turn
+    container.querySelector('#btn-guardian-skip')?.addEventListener('click', () => {
+      game.bombGuardianSkip();
+      this.app.saveGame();
+      this.siestaStep = 'target';
+      this.siestaGuess = null;
+      this.render();
+    });
+
+    // Password selection (both guardian and target)
+    container.querySelectorAll('[data-siesta-guess]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.siestaGuess = Number(btn.dataset.siestaGuess);
+        this.render();
+      });
+    });
+
+    // Guardian confirms guess
+    container.querySelector('#btn-guardian-confirm')?.addEventListener('click', () => {
+      if (!this.siestaGuess) return;
+      const res = game.bombGuardianGuess(this.siestaGuess);
+      this.app.saveGame();
+      this.siestaResultData = {
+        result: res.result === 'wrong' ? 'guardian_died' : res.result,
+        guardianId: res.guardianId
+      };
+      if (res.result === 'wrong') {
+        const winner = game.checkWinCondition();
+        if (winner) { this.app.navigate('summary'); return; }
+      }
+      this.siestaStep = 'result';
+      this.siestaGuess = null;
+      this.render();
+    });
+
+    // Target confirms guess
+    container.querySelector('#btn-target-confirm')?.addEventListener('click', () => {
+      if (!this.siestaGuess) return;
+      const res = game.bombTargetGuess(this.siestaGuess);
+      this.app.saveGame();
+      this.siestaResultData = { result: res.result, targetId: res.targetId };
+      if (res.result === 'exploded') {
+        const winner = game.checkWinCondition();
+        if (winner) { this.app.navigate('summary'); return; }
+      }
+      this.siestaStep = 'result';
+      this.siestaGuess = null;
+      this.render();
+    });
+
+    // Continue to voting
+    container.querySelector('#btn-siesta-continue')?.addEventListener('click', () => {
+      this.subView = 'voting';
+      this.render();
+    });
+  }
+
   _hasAliveRole(roleId) {
     return this.app.game.players.some(p => p.isAlive && p.roleId === roleId);
   }
@@ -636,5 +869,8 @@ export class DayView extends BaseView {
     this._blindTimer = null;
     this.subView = 'results';
     this.votedPlayers = {};
+    this.siestaStep = 'guardian';
+    this.siestaGuess = null;
+    this.siestaResultData = null;
   }
 }
