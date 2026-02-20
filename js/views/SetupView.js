@@ -144,12 +144,6 @@ export class SetupView extends BaseView {
             : '<span style="color: var(--success)"> ✓</span>'}
         </p>
         <!-- desired counts will appear inline on team headers -->
-        <div class="card mb-md" style="display:flex; align-items:center; gap:8px;">
-          ${Settings.getLanguage() === 'en' ? ('<span class="ltr-inline">' + t(tr.setup.sniperShots) + '</span>') : ('<span>' + t(tr.setup.sniperShots) + '</span>')}
-          <button class="btn btn--ghost btn--xs" id="btn-sniper-dec-roles">−</button>
-          <strong id="roles-sniper-count" style="min-width:28px; text-align:center;">${game.sniperMaxShots}</strong>
-          <button class="btn btn--ghost btn--xs" id="btn-sniper-inc-roles">+</button>
-        </div>
     `;
 
     // ensure desired counts initialized
@@ -286,13 +280,7 @@ export class SetupView extends BaseView {
       this.render();
     });
 
-    // Roles-tab sniper shots +/- handlers (header controls)
-    container.querySelector('#btn-sniper-dec-roles')?.addEventListener('click', () => {
-      if (game.sniperMaxShots > 1) { game.sniperMaxShots--; this.render(); }
-    });
-    container.querySelector('#btn-sniper-inc-roles')?.addEventListener('click', () => {
-      if (game.sniperMaxShots < 10) { game.sniperMaxShots++; this.render(); }
-    });
+    // Sniper buttons on role card are handled by data-action listeners further down
 
     // Toggle unique roles
     container.querySelectorAll('.role-card').forEach(card => {
