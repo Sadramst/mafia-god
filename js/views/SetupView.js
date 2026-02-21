@@ -152,9 +152,10 @@ export class SetupView extends BaseView {
                 </div>
               ` : game.players.map((p, i) => `
                 <div class="player-item" data-id="${p.id}" draggable="true" style="animation-delay: ${i * 50}ms">
+                  <button class="player-drag-handle" aria-label="${t(tr.setup.dragHandle)}">≡</button>
                   <div class="player-item__number">${toEnDigits(i + 1)}</div>
-                  <div class="player-item__name">${p.name}</div>
-                  <button class="player-item__remove" data-id="${p.id}" title="${t(tr.setup.removePlayer)}">✕</button>
+                    <div class="player-item__name">${p.name}</div>
+                    <button class="player-item__remove" data-id="${p.id}" title="${t(tr.setup.removePlayer)}">✕</button>
                 </div>
               `).join('')}
         </div>
@@ -186,7 +187,11 @@ export class SetupView extends BaseView {
         const item = document.createElement('div');
         item.className = 'player-item';
         item.style.animationDelay = `${i * 50}ms`;
+        // ensure dataset id for reorder persistence
+        item.dataset.id = player.id;
+        item.setAttribute('draggable', 'true');
         item.innerHTML = `
+          <button class="player-item__drag-handle" aria-label="${t(tr.setup.dragHandle)}" title="${t(tr.setup.dragHandle)}">≡</button>
           <div class="player-item__number">${toEnDigits(i + 1)}</div>
           <div class="player-item__name">${player.name}</div>
           <button class="player-item__remove" data-id="${player.id}" title="${t(tr.setup.removePlayer)}">✕</button>
@@ -200,7 +205,7 @@ export class SetupView extends BaseView {
           try { this.app.saveGame(); } catch (e) {}
           try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success'); } catch (e) {}
         });
-        // enable drag for this new item
+        // enable drag for this new item (mouse/desktop)
         item.addEventListener('dragstart', (e) => {
           item.classList.add('dragging');
           try { e.dataTransfer.setData('text/plain', item.dataset.id); } catch (err) {}
@@ -216,6 +221,48 @@ export class SetupView extends BaseView {
             Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success');
           } catch (e) {}
         });
+
+        // Touch handlers: use the visible drag-handle for touch-based reordering
+        const handle = item.querySelector('.player-item__drag-handle');
+        if (handle) {
+          let touchDragging = false;
+          const onTouchMove = (ev) => {
+            if (!touchDragging) return;
+            ev.preventDefault();
+            const t0 = ev.touches && ev.touches[0];
+            if (!t0) return;
+            const afterElement = this._getDragAfterElement(list, t0.clientY);
+            const dragging = list.querySelector('.dragging');
+            if (!dragging) return;
+            if (afterElement == null) list.appendChild(dragging);
+            else list.insertBefore(dragging, afterElement);
+          };
+
+          handle.addEventListener('touchstart', (ev) => {
+            ev.stopPropagation();
+            touchDragging = true;
+            item.classList.add('dragging');
+            // prevent page from selecting text/scrolling while dragging
+            document.body.style.userSelect = 'none';
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+          }, { passive: true });
+
+          handle.addEventListener('touchend', (ev) => {
+            if (!touchDragging) return;
+            touchDragging = false;
+            item.classList.remove('dragging');
+            document.body.style.userSelect = '';
+            document.removeEventListener('touchmove', onTouchMove);
+            // persist order (same as dragend)
+            try {
+              const order = Array.from(list.querySelectorAll('.player-item')).map(el => Number(el.dataset.id));
+              game.players = order.map(id => game.players.find(p => p.id === id));
+              Array.from(list.querySelectorAll('.player-item__number')).forEach((n, i) => n.textContent = toEnDigits(i + 1));
+              try { this.app.saveGame(); } catch (e) {}
+              Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success');
+            } catch (e) {}
+          });
+        }
       }
       this._updatePlayersCountDisplays();
       try { this.app.saveGame(); } catch (e) {}
@@ -259,6 +306,46 @@ export class SetupView extends BaseView {
           Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success');
         } catch (e) {}
       });
+
+      // Touch handlers for existing items (use drag-handle if present)
+      const handle = item.querySelector('.player-item__drag-handle');
+      if (handle) {
+        let touchDragging = false;
+        const onTouchMove = (ev) => {
+          if (!touchDragging) return;
+          ev.preventDefault();
+          const t0 = ev.touches && ev.touches[0];
+          if (!t0) return;
+          const afterElement = this._getDragAfterElement(list, t0.clientY);
+          const dragging = list.querySelector('.dragging');
+          if (!dragging) return;
+          if (afterElement == null) list.appendChild(dragging);
+          else list.insertBefore(dragging, afterElement);
+        };
+
+        handle.addEventListener('touchstart', (ev) => {
+          ev.stopPropagation();
+          touchDragging = true;
+          item.classList.add('dragging');
+          document.body.style.userSelect = 'none';
+          document.addEventListener('touchmove', onTouchMove, { passive: false });
+        }, { passive: true });
+
+        handle.addEventListener('touchend', (ev) => {
+          if (!touchDragging) return;
+          touchDragging = false;
+          item.classList.remove('dragging');
+          document.body.style.userSelect = '';
+          document.removeEventListener('touchmove', onTouchMove);
+          try {
+            const order = Array.from(list.querySelectorAll('.player-item')).map(el => Number(el.dataset.id));
+            game.players = order.map(id => game.players.find(p => p.id === id));
+            Array.from(list.querySelectorAll('.player-item__number')).forEach((n, i) => n.textContent = toEnDigits(i + 1));
+            try { this.app.saveGame(); } catch (e) {}
+            Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success');
+          } catch (e) {}
+        });
+      }
     });
 
     // dragover to reorder
