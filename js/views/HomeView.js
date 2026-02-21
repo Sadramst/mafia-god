@@ -40,6 +40,7 @@ export class HomeView extends BaseView {
 
     // Event listeners
     this.container.querySelector('#btn-new-game')?.addEventListener('click', () => {
+      // Start a fresh game but preserve the persisted roster (player names/order)
       if (hasSave) {
         this.confirm(
           t(tr.home.newGameConfirm),
@@ -47,11 +48,19 @@ export class HomeView extends BaseView {
           () => {
             Storage.deleteSave();
             this.app.game.reset();
+            const roster = Storage.loadRoster();
+            if (roster && roster.length) {
+              roster.forEach(r => this.app.game.addPlayer(r.name));
+            }
             this.app.navigate('setup');
           }
         );
       } else {
         this.app.game.reset();
+        const roster = Storage.loadRoster();
+        if (roster && roster.length) {
+          roster.forEach(r => this.app.game.addPlayer(r.name));
+        }
         this.app.navigate('setup');
       }
     });

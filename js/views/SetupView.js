@@ -4,6 +4,7 @@
 import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
 import { t, translations as tr, toEnDigits } from '../utils/i18n.js';
+import { Storage } from '../utils/Storage.js';
 import { Settings } from '../utils/Settings.js';
 
 export class SetupView extends BaseView {
@@ -41,6 +42,10 @@ export class SetupView extends BaseView {
     if (playersTab) playersTab.innerHTML = `👥 ${t(tr.setup.playersTab)} (${game.players.length})`;
     const roleCountEl = this.container.querySelector('#role-count-display');
     if (roleCountEl) roleCountEl.textContent = game.getTotalRoleCount();
+    // remaining roles counter
+    const rem = Math.max(0, game.players.length - game.getTotalRoleCount());
+    const remEl = this.container.querySelector('#roles-remaining');
+    if (remEl) remEl.textContent = rem > 0 ? t(tr.setup.remainingRoles).replace('%d', rem) : '';
     const statsPlayerVal = this.container.querySelector('.stat-card .stat-card__value');
     if (statsPlayerVal && statsPlayerVal.textContent) statsPlayerVal.textContent = game.players.length;
   }
@@ -127,18 +132,22 @@ export class SetupView extends BaseView {
         </div>
 
         <div class="player-list" id="player-list">
-          ${game.players.length === 0 ? `
+              ${game.players.length === 0 ? `
             <div class="empty-state">
               <div class="empty-state__icon">👻</div>
               <div class="empty-state__text">${t(tr.setup.noPlayersYet)}</div>
             </div>
-          ` : game.players.map((p, i) => `
-            <div class="player-item" style="animation-delay: ${i * 50}ms">
-              <div class="player-item__number">${toEnDigits(i + 1)}</div>
-              <div class="player-item__name">${p.name}</div>
-              <button class="player-item__remove" data-id="${p.id}" title="${t(tr.setup.removePlayer)}">✕</button>
-            </div>
-          `).join('')}
+              ` : game.players.map((p, i) => `
+                <div class="player-item" data-id="${p.id}" style="animation-delay: ${i * 50}ms">
+                  <div class="player-item__number">${toEnDigits(i + 1)}</div>
+                  <div class="player-item__name">${p.name}</div>
+                  <div class="player-item__actions">
+                    <button class="btn btn--ghost btn--xs player-move-up" title="${t(tr.setup.moveUp)}">↑</button>
+                    <button class="btn btn--ghost btn--xs player-move-down" title="${t(tr.setup.moveDown)}">↓</button>
+                    <button class="player-item__remove" data-id="${p.id}" title="${t(tr.setup.removePlayer)}">✕</button>
+                  </div>
+                </div>
+              `).join('')}
         </div>
       </div>
     `;
@@ -175,13 +184,21 @@ export class SetupView extends BaseView {
         `;
         list.appendChild(item);
         // attach remove handler for this item
+        // remove
         item.querySelector('.player-item__remove').addEventListener('click', () => {
           game.removePlayer(Number(player.id));
           item.remove();
           this._updatePlayersCountDisplays();
+          try { this.app.saveGame(); } catch (e) {}
+          try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); } catch (e) {}
         });
+        // move up/down
+        item.querySelector('.player-move-up')?.addEventListener('click', () => { this._movePlayer(item, -1); });
+        item.querySelector('.player-move-down')?.addEventListener('click', () => { this._movePlayer(item, 1); });
       }
       this._updatePlayersCountDisplays();
+      try { this.app.saveGame(); } catch (e) {}
+      try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); } catch (e) {}
     };
 
     addBtn.addEventListener('click', addPlayer);
@@ -201,8 +218,47 @@ export class SetupView extends BaseView {
         game.removePlayer(id);
         if (parent) parent.remove();
         this._updatePlayersCountDisplays();
+        try { this.app.saveGame(); } catch (e) {}
+        try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); } catch (e) {}
       });
     });
+
+    // Move up/down handlers for existing list
+    container.querySelectorAll('.player-move-up').forEach(btn => btn.addEventListener('click', (e) => {
+      const item = btn.closest('.player-item');
+      this._movePlayer(item, -1);
+    }));
+    container.querySelectorAll('.player-move-down').forEach(btn => btn.addEventListener('click', (e) => {
+      const item = btn.closest('.player-item');
+      this._movePlayer(item, 1);
+    }));
+  }
+
+  /** Move player DOM item up (-1) or down (+1) and persist order */
+  _movePlayer(item, dir) {
+    if (!item) return;
+    const id = Number(item.dataset.id);
+    const list = this.container.querySelector('#player-list');
+    const game = this.app.game;
+    const idx = game.players.findIndex(p => p.id === id);
+    if (idx === -1) return;
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= game.players.length) return;
+    // swap in model
+    const tmp = game.players[newIdx];
+    game.players[newIdx] = game.players[idx];
+    game.players[idx] = tmp;
+    // swap DOM nodes
+    const sibling = dir === -1 ? item.previousElementSibling : item.nextElementSibling;
+    if (sibling) {
+      if (dir === -1) list.insertBefore(item, sibling);
+      else list.insertBefore(sibling, item);
+    }
+    // update numbers
+    Array.from(list.querySelectorAll('.player-item__number')).forEach((n, i) => n.textContent = i + 1);
+    this._updatePlayersCountDisplays();
+    try { this.app.saveGame(); } catch (e) {}
+    try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); } catch (e) {}
   }
 
   // ─── Roles Tab ───
@@ -221,6 +277,13 @@ export class SetupView extends BaseView {
           ${game.getTotalRoleCount() !== game.players.length 
             ? `<span style="color: var(--danger)"> ${t(tr.setup.shouldBe).replace('%d', game.players.length)}</span>` 
             : '<span style="color: var(--success)"> ✓</span>'}
+          <!-- remaining roles helper -->
+          <span id="roles-remaining" style="margin-left:10px; font-weight:600; color: var(--muted);">
+            ${(() => {
+              const rem = Math.max(0, game.players.length - game.getTotalRoleCount());
+              return rem > 0 ? t(tr.setup.remainingRoles).replace('%d', rem) : '';
+            })()}
+          </span>
         </p>
         <!-- desired counts will appear inline on team headers -->
     `;
@@ -449,6 +512,8 @@ export class SetupView extends BaseView {
         if (desiredMafiaAssign) desiredMafiaAssign.textContent = game.desiredMafia;
         const desiredCitizenAssign = this.container.querySelector('#desired-citizen');
         if (desiredCitizenAssign) desiredCitizenAssign.textContent = game.desiredCitizen;
+        // refresh remaining roles / counts
+        this._updatePlayersCountDisplays();
       });
     });
     // +/- buttons for non-unique roles (in-place, respecting team and total limits)
@@ -515,6 +580,8 @@ export class SetupView extends BaseView {
           if (game.players.length >= 8 && game.getTotalRoleCount() === game.players.length) assignTab.classList.remove('disabled');
           else assignTab.classList.add('disabled');
         }
+        // refresh remaining roles / counts
+        this._updatePlayersCountDisplays();
       });
     });
     container.querySelectorAll('[data-action="blank-dec"]').forEach(btn => {

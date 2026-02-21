@@ -4,6 +4,7 @@
 export class Storage {
   static KEY = 'mafia_god_save';
   static HISTORY_KEY = 'mafia_god_history';
+  static ROSTER_KEY = 'mafia_god_roster';
 
   /** Save current game state */
   static saveGame(gameData) {
@@ -44,6 +45,31 @@ export class Storage {
       if (history.length > 50) history.length = 50;
       localStorage.setItem(Storage.HISTORY_KEY, JSON.stringify(history));
     } catch { /* ignore */ }
+  }
+
+  /** Persist last used player roster (array of {id,name}) */
+  static saveRoster(roster) {
+    try {
+      localStorage.setItem(Storage.ROSTER_KEY, JSON.stringify(roster));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Load persisted roster */
+  static loadRoster() {
+    try {
+      const data = localStorage.getItem(Storage.ROSTER_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Delete roster */
+  static deleteRoster() {
+    localStorage.removeItem(Storage.ROSTER_KEY);
   }
 
   /** Get game history */

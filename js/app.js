@@ -18,6 +18,16 @@ export class App {
 
   constructor() {
     this.game = new Game();
+    // Attempt to restore saved game (players/settings) for this client
+    try {
+      const saved = Storage.loadGame();
+      if (saved) this.game.loadFromJSON(saved);
+      else {
+        // if no full save, try to restore roster-only so players persist between hands
+        const roster = Storage.loadRoster();
+        if (roster && roster.length) roster.forEach(r => this.game.addPlayer(r.name));
+      }
+    } catch (e) { /* ignore load errors */ }
     this.currentView = null;
     this.currentRoute = 'home';
     this._nightResults = null;
