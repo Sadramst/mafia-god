@@ -26,7 +26,10 @@ export class App {
         // if no full save, try to restore roster-only so players persist between hands
         const roster = Storage.loadRoster();
         if (roster && roster.length) {
-          roster.forEach(r => this.game.addPlayer(r.name));
+          roster.forEach(r => {
+            if (r.nameEn || r.nameFa) this.game.addPlayer({ en: r.nameEn || r.name, fa: r.nameFa || r.name });
+            else this.game.addPlayer(r.name || r);
+          });
           this._rosterLoaded = true;
         }
       }
