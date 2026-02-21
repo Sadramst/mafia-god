@@ -85,6 +85,12 @@ export class HomeView extends BaseView {
     this.container.querySelector('#btn-settings')?.addEventListener('click', () => {
       this._showSettings();
     });
+
+    // Notify user if roster-only restore occurred at startup
+    if (this.app && this.app._rosterLoaded && this.app.game.players.length > 0) {
+      this.toast(t(tr.setup.rosterLoaded).replace('%d', this.app.game.players.length), 'info');
+      this.app._rosterLoaded = false;
+    }
   }
 
   _showHistory() {
@@ -193,6 +199,19 @@ export class HomeView extends BaseView {
         this.app.showToast(t(tr.settings.saved), 'success');
         this.render();
       }
+    });
+
+    // Clear roster control
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'btn btn--ghost btn--block mt-md';
+    clearBtn.textContent = t(tr.setup.clearRosterConfirm);
+    const section = this.container.querySelector('.section');
+    if (section) section.appendChild(clearBtn);
+    clearBtn.addEventListener('click', () => {
+      this.confirm(t(tr.setup.clearRosterConfirm), '', () => {
+        Storage.deleteRoster();
+        this.toast(t(tr.setup.clearRosterCleared), 'success');
+      });
     });
   }
 }

@@ -15,6 +15,19 @@ export class SetupView extends BaseView {
     this._renderScheduled = false;
   }
 
+  _getDragAfterElement(list, y) {
+    const draggableElements = [...list.querySelectorAll('.player-item:not(.dragging)')];
+    let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+    for (const child of draggableElements) {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        closest = { offset, element: child };
+      }
+    }
+    return closest.element;
+  }
+
   /** Schedule a single render on the next animation frame and preserve input focus/selection */
   _requestRender() {
     if (this._renderScheduled) return;
@@ -133,19 +146,15 @@ export class SetupView extends BaseView {
 
         <div class="player-list" id="player-list">
               ${game.players.length === 0 ? `
-            <div class="empty-state">
-              <div class="empty-state__icon">👻</div>
-              <div class="empty-state__text">${t(tr.setup.noPlayersYet)}</div>
-            </div>
+                <div class="empty-state">
+                  <div class="empty-state__icon">👻</div>
+                  <div class="empty-state__text">${t(tr.setup.noPlayersYet)}</div>
+                </div>
               ` : game.players.map((p, i) => `
-                <div class="player-item" data-id="${p.id}" style="animation-delay: ${i * 50}ms">
+                <div class="player-item" data-id="${p.id}" draggable="true" style="animation-delay: ${i * 50}ms">
                   <div class="player-item__number">${toEnDigits(i + 1)}</div>
                   <div class="player-item__name">${p.name}</div>
-                  <div class="player-item__actions">
-                    <button class="btn btn--ghost btn--xs player-move-up" title="${t(tr.setup.moveUp)}">↑</button>
-                    <button class="btn btn--ghost btn--xs player-move-down" title="${t(tr.setup.moveDown)}">↓</button>
-                    <button class="player-item__remove" data-id="${p.id}" title="${t(tr.setup.removePlayer)}">✕</button>
-                  </div>
+                  <button class="player-item__remove" data-id="${p.id}" title="${t(tr.setup.removePlayer)}">✕</button>
                 </div>
               `).join('')}
         </div>
@@ -184,17 +193,29 @@ export class SetupView extends BaseView {
         `;
         list.appendChild(item);
         // attach remove handler for this item
-        // remove
         item.querySelector('.player-item__remove').addEventListener('click', () => {
           game.removePlayer(Number(player.id));
           item.remove();
           this._updatePlayersCountDisplays();
           try { this.app.saveGame(); } catch (e) {}
-          try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); } catch (e) {}
+          try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success'); } catch (e) {}
         });
-        // move up/down
-        item.querySelector('.player-move-up')?.addEventListener('click', () => { this._movePlayer(item, -1); });
-        item.querySelector('.player-move-down')?.addEventListener('click', () => { this._movePlayer(item, 1); });
+        // enable drag for this new item
+        item.addEventListener('dragstart', (e) => {
+          item.classList.add('dragging');
+          try { e.dataTransfer.setData('text/plain', item.dataset.id); } catch (err) {}
+        });
+        item.addEventListener('dragend', () => {
+          item.classList.remove('dragging');
+          // persist order
+          try {
+            const order = Array.from(list.querySelectorAll('.player-item')).map(el => Number(el.dataset.id));
+            game.players = order.map(id => game.players.find(p => p.id === id));
+            Array.from(list.querySelectorAll('.player-item__number')).forEach((n, i) => n.textContent = toEnDigits(i + 1));
+            try { this.app.saveGame(); } catch (e) {}
+            Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success');
+          } catch (e) {}
+        });
       }
       this._updatePlayersCountDisplays();
       try { this.app.saveGame(); } catch (e) {}
@@ -209,57 +230,49 @@ export class SetupView extends BaseView {
     // Focus input
     setTimeout(() => input.focus(), 100);
 
-    // Remove players
-    container.querySelectorAll('.player-item__remove').forEach(btn => {
-      btn.addEventListener('click', () => {
-        // remove DOM node and update counts without full re-render
-        const id = Number(btn.dataset.id);
-        const parent = btn.closest('.player-item');
+    // Remove players and enable drag on existing items
+    const list = container.querySelector('#player-list');
+    container.querySelectorAll('.player-item').forEach(item => {
+      // remove button
+      item.querySelector('.player-item__remove')?.addEventListener('click', () => {
+        const id = Number(item.dataset.id);
         game.removePlayer(id);
-        if (parent) parent.remove();
+        item.remove();
         this._updatePlayersCountDisplays();
         try { this.app.saveGame(); } catch (e) {}
-        try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); } catch (e) {}
+        try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success'); } catch (e) {}
+      });
+
+      // drag handlers
+      item.setAttribute('draggable', 'true');
+      item.addEventListener('dragstart', (e) => {
+        item.classList.add('dragging');
+        try { e.dataTransfer.setData('text/plain', item.dataset.id); } catch (err) {}
+      });
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        try {
+          const order = Array.from(list.querySelectorAll('.player-item')).map(el => Number(el.dataset.id));
+          game.players = order.map(id => game.players.find(p => p.id === id));
+          Array.from(list.querySelectorAll('.player-item__number')).forEach((n, i) => n.textContent = toEnDigits(i + 1));
+          try { this.app.saveGame(); } catch (e) {}
+          Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success');
+        } catch (e) {}
       });
     });
 
-    // Move up/down handlers for existing list
-    container.querySelectorAll('.player-move-up').forEach(btn => btn.addEventListener('click', (e) => {
-      const item = btn.closest('.player-item');
-      this._movePlayer(item, -1);
-    }));
-    container.querySelectorAll('.player-move-down').forEach(btn => btn.addEventListener('click', (e) => {
-      const item = btn.closest('.player-item');
-      this._movePlayer(item, 1);
-    }));
+    // dragover to reorder
+    list?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const afterElement = this._getDragAfterElement(list, e.clientY);
+      const dragging = list.querySelector('.dragging');
+      if (!dragging) return;
+      if (afterElement == null) list.appendChild(dragging);
+      else list.insertBefore(dragging, afterElement);
+    });
   }
 
-  /** Move player DOM item up (-1) or down (+1) and persist order */
-  _movePlayer(item, dir) {
-    if (!item) return;
-    const id = Number(item.dataset.id);
-    const list = this.container.querySelector('#player-list');
-    const game = this.app.game;
-    const idx = game.players.findIndex(p => p.id === id);
-    if (idx === -1) return;
-    const newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= game.players.length) return;
-    // swap in model
-    const tmp = game.players[newIdx];
-    game.players[newIdx] = game.players[idx];
-    game.players[idx] = tmp;
-    // swap DOM nodes
-    const sibling = dir === -1 ? item.previousElementSibling : item.nextElementSibling;
-    if (sibling) {
-      if (dir === -1) list.insertBefore(item, sibling);
-      else list.insertBefore(sibling, item);
-    }
-    // update numbers
-    Array.from(list.querySelectorAll('.player-item__number')).forEach((n, i) => n.textContent = i + 1);
-    this._updatePlayersCountDisplays();
-    try { this.app.saveGame(); } catch (e) {}
-    try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); } catch (e) {}
-  }
+
 
   // ─── Roles Tab ───
   _renderRolesTab(container) {
