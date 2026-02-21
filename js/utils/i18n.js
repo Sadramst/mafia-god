@@ -130,6 +130,7 @@ export const translations = {
     suggestedPlayersTitle: { fa: 'اسامی پیشنهادی', en: 'Suggested players' },
     person: { fa: 'نفر', en: 'people' },
     zodiacRequiresBodyguard: { fa: 'زودیاک نیاز به محافظ دارد — محافظ به‌طور خودکار اضافه شد.', en: 'Zodiac requires Bodyguard — Bodyguard was added automatically.' },
+    cannotRemoveBodyguardWhenZodiac: { fa: 'در حالی که زودیاک انتخاب شده، نمی‌توان محافظ را حذف کرد.', en: 'Cannot remove Bodyguard while Zodiac is selected.' },
     roleInfoTooltip: { fa: 'توضیحات', en: 'Info' },
     jackImmune: { fa: '🔪 جک', en: '🔪 Jack' },
     zodiacImmune: { fa: '♈ زودیاک', en: '♈ Zodiac' },

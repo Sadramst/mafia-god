@@ -627,6 +627,11 @@ export class SetupView extends BaseView {
           if (role.unique) game.selectedRoles[roleId] = 1;
           else game.selectedRoles[roleId] = (game.selectedRoles[roleId] || 0) + 1;
         } else {
+          // Prevent removing Bodyguard while Zodiac is selected
+          if (roleId === 'bodyguard' && game.selectedRoles && game.selectedRoles['zodiac']) {
+            this.toast(t(tr.setup.cannotRemoveBodyguardWhenZodiac), 'error');
+            return;
+          }
           // deselect: remove entirely
           delete game.selectedRoles[roleId];
         }
