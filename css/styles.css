@@ -100,6 +100,24 @@
   text-align: left;
 }
 
+/* Prevent accidental text selection across the app (double-click/drag) while
+   still allowing form controls to be selected/edited. This makes the app feel
+   more app-like on mobile and avoids unwanted selection when interacting. */
+html, body, #app, .view, .section, .tabs, .player-list, .player-item, .role-grid, .role-card, .suggested-players, .bottom-nav, .nav-item {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Keep inputs, textareas, selects and buttons selectable/editable */
+input, textarea, select, button, a {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
 /* ---------- Reset ---------- */
 *, *::before, *::after {
   margin: 0;
