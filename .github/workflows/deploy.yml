@@ -1,0 +1,41 @@
+name: Deploy to configured server
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Optional build (runs only if package.json present)
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+            npm run build || true
+          fi
+
+      - name: Deploy files to remote server via SCP
+        uses: appleboy/scp-action@v0.1.6
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          source: |
+            .
+          target: ${{ secrets.TARGET_DIR }}
+          # exclude some local-only folders
+          exclude: |
+            .git
+            .github
+            node_modules
+            **/*.log
+
+      - name: Finished
+        run: echo "Deployment to ${{ secrets.SSH_HOST }}:${{ secrets.TARGET_DIR }} finished."
