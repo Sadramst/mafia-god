@@ -247,5 +247,18 @@ export class App {
 
 // ─── Bootstrap ───
 document.addEventListener('DOMContentLoaded', () => {
+  // Prevent accidental double-tap to zoom on mobile which makes the UI feel "not active"
+  // This uses a short-tap timing heuristic; listener must be non-passive to allow preventDefault.
+  (function preventDoubleTapZoom() {
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (e) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, { passive: false });
+  })();
+
   window.app = new App();
 });

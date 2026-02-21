@@ -128,6 +128,9 @@ body {
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Improve touch behavior: avoid double-tap zoom and enable browser optimizations for tap gestures */
+  touch-action: manipulation;
+  -ms-touch-action: manipulation;
 }
 
 /* Full-screen background that covers everything including iOS safe areas */
