@@ -174,15 +174,20 @@ export class SetupView extends BaseView {
     const input = container.querySelector('#player-name-input');
     const addBtn = container.querySelector('#btn-add-player');
 
-    const addPlayer = () => {
-      const name = input.value.trim();
-      if (!name) return;
-      // Check duplicates
-      if (game.players.some(p => p.name === name)) {
+    const addPlayer = (nameOrObj) => {
+      let en = null, fa = null;
+      if (!nameOrObj) {
+        en = input.value.trim();
+        fa = en;
+      } else if (typeof nameOrObj === 'string') { en = nameOrObj.trim(); fa = en; }
+      else { en = (nameOrObj.en || '').toString().trim(); fa = (nameOrObj.fa || nameOrObj.en || '').toString().trim(); }
+      if (!en) return;
+      // Check duplicates (either language)
+      if (game.players.some(p => (p.nameEn && p.nameEn === en) || (p.nameFa && p.nameFa === fa) || p.name === en || p.name === fa)) {
         this.toast(t(tr.setup.playerExists), 'error');
         return;
       }
-      const player = game.addPlayer(name);
+      const player = game.addPlayer({ en, fa });
       input.value = '';
       input.focus();
       // append DOM node instead of full re-render to reduce flicker
@@ -211,7 +216,7 @@ export class SetupView extends BaseView {
           item.remove();
           this._updatePlayersCountDisplays();
           try { this.app.saveGame(); } catch (e) {}
-          try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success'); } catch (e) {}
+          try { Storage.saveRoster(game.players.map(p => ({ id: p.id, nameEn: p.nameEn, nameFa: p.nameFa }))); this.toast(t(tr.setup.rosterSaved), 'success'); } catch (e) {}
         });
         // enable drag for this new item (mouse/desktop)
         item.addEventListener('dragstart', (e) => {
@@ -226,7 +231,7 @@ export class SetupView extends BaseView {
             game.players = order.map(id => game.players.find(p => p.id === id));
             Array.from(list.querySelectorAll('.player-item__number')).forEach((n, i) => n.textContent = toEnDigits(i + 1));
             try { this.app.saveGame(); } catch (e) {}
-            Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success');
+            Storage.saveRoster(game.players.map(p => ({ id: p.id, nameEn: p.nameEn, nameFa: p.nameFa }))); this.toast(t(tr.setup.rosterSaved), 'success');
           } catch (e) {}
         });
 
@@ -267,14 +272,14 @@ export class SetupView extends BaseView {
               game.players = order.map(id => game.players.find(p => p.id === id));
               Array.from(list.querySelectorAll('.player-item__number')).forEach((n, i) => n.textContent = toEnDigits(i + 1));
               try { this.app.saveGame(); } catch (e) {}
-              Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success');
+              Storage.saveRoster(game.players.map(p => ({ id: p.id, nameEn: p.nameEn, nameFa: p.nameFa }))); this.toast(t(tr.setup.rosterSaved), 'success');
             } catch (e) {}
           });
         }
       }
       this._updatePlayersCountDisplays();
       try { this.app.saveGame(); } catch (e) {}
-      try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); } catch (e) {}
+      try { Storage.saveRoster(game.players.map(p => ({ id: p.id, nameEn: p.nameEn, nameFa: p.nameFa }))); } catch (e) {}
     };
 
     addBtn.addEventListener('click', addPlayer);
@@ -308,8 +313,7 @@ export class SetupView extends BaseView {
         b.dataset.en = s.en; b.dataset.fa = s.fa;
         b.innerHTML = `<span class="ltr-inline">${s.en}</span> · <span dir="rtl">${s.fa}</span>`;
         b.addEventListener('click', () => {
-          input.value = s.en;
-          addPlayer();
+          addPlayer({ en: s.en, fa: s.fa });
           try { this.toast(`${s.en} · ${s.fa}`, 'success'); } catch (e) {}
         });
         suggestedWrap.appendChild(b);
@@ -325,8 +329,8 @@ export class SetupView extends BaseView {
         game.removePlayer(id);
         item.remove();
         this._updatePlayersCountDisplays();
-        try { this.app.saveGame(); } catch (e) {}
-        try { Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success'); } catch (e) {}
+          try { this.app.saveGame(); } catch (e) {}
+          try { Storage.saveRoster(game.players.map(p => ({ id: p.id, nameEn: p.nameEn, nameFa: p.nameFa }))); this.toast(t(tr.setup.rosterSaved), 'success'); } catch (e) {}
       });
 
       // drag handlers
@@ -342,7 +346,7 @@ export class SetupView extends BaseView {
           game.players = order.map(id => game.players.find(p => p.id === id));
           Array.from(list.querySelectorAll('.player-item__number')).forEach((n, i) => n.textContent = toEnDigits(i + 1));
           try { this.app.saveGame(); } catch (e) {}
-          Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success');
+          Storage.saveRoster(game.players.map(p => ({ id: p.id, nameEn: p.nameEn, nameFa: p.nameFa }))); this.toast(t(tr.setup.rosterSaved), 'success');
         } catch (e) {}
       });
 
@@ -381,7 +385,7 @@ export class SetupView extends BaseView {
             game.players = order.map(id => game.players.find(p => p.id === id));
             Array.from(list.querySelectorAll('.player-item__number')).forEach((n, i) => n.textContent = toEnDigits(i + 1));
             try { this.app.saveGame(); } catch (e) {}
-            Storage.saveRoster(game.players.map(p => ({ id: p.id, name: p.name }))); this.toast(t(tr.setup.rosterSaved), 'success');
+            Storage.saveRoster(game.players.map(p => ({ id: p.id, nameEn: p.nameEn, nameFa: p.nameFa }))); this.toast(t(tr.setup.rosterSaved), 'success');
           } catch (e) {}
         });
       }

@@ -3,16 +3,27 @@
  */
 import { Shield } from './Shield.js';
 import { Curse } from './Curse.js';
+import { Settings } from '../utils/Settings.js';
 
 export class Player {
   static _nextId = 1;
 
   /**
-   * @param {string} name — Player display name
+   * @param {string|object} nameOrObj — Player display name or { en, fa }
    */
-  constructor(name) {
+  constructor(nameOrObj) {
     this.id = Player._nextId++;
-    this.name = name.trim();
+    // support either a simple string or an object with en/fa
+    if (typeof nameOrObj === 'string') {
+      this.nameEn = nameOrObj.trim();
+      this.nameFa = nameOrObj.trim();
+    } else if (nameOrObj && typeof nameOrObj === 'object') {
+      this.nameEn = (nameOrObj.en || nameOrObj.name || '').toString().trim();
+      this.nameFa = (nameOrObj.fa || nameOrObj.name || '').toString().trim();
+    } else {
+      this.nameEn = 'Player';
+      this.nameFa = 'بازیکن';
+    }
     this.roleId = null;      // Role key from Roles.ALL
     this.isAlive = true;
     this.deathRound = null;   // Round number when eliminated
@@ -24,6 +35,18 @@ export class Player {
     this.notes = [];          // God's private notes
     this.shield = new Shield(false);  // One-time shield (activated based on role)
     this.curse = new Curse();          // Jack's curse (only used if role is jack)
+  }
+
+  /** Return localized display name based on Settings */
+  getDisplayName(lang) {
+    const language = lang || Settings.getLanguage();
+    if (language === 'fa') return this.nameFa || this.nameEn || '';
+    return this.nameEn || this.nameFa || '';
+  }
+
+  /** Backwards-compatible `name` getter returns localized name */
+  get name() {
+    return this.getDisplayName();
   }
 
   /**
@@ -87,7 +110,8 @@ export class Player {
   toJSON() {
     return {
       id: this.id,
-      name: this.name,
+      nameEn: this.nameEn,
+      nameFa: this.nameFa,
       roleId: this.roleId,
       isAlive: this.isAlive,
       deathRound: this.deathRound,
@@ -104,7 +128,8 @@ export class Player {
 
   /** Deserialize from storage */
   static fromJSON(data) {
-    const p = new Player(data.name);
+    const p = new Player({ en: data.nameEn || data.name, fa: data.nameFa || data.name });
+    // restore id and other fields
     Object.assign(p, data);
     p.shield = Shield.fromJSON(data.shield);
     p.curse = Curse.fromJSON(data.curse ?? data.telesm);

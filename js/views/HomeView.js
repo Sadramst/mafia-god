@@ -50,7 +50,10 @@ export class HomeView extends BaseView {
             this.app.game.reset();
             const roster = Storage.loadRoster();
             if (roster && roster.length) {
-              roster.forEach(r => this.app.game.addPlayer(r.name));
+              roster.forEach(r => {
+                if (r.nameEn || r.nameFa) this.app.game.addPlayer({ en: r.nameEn || r.name, fa: r.nameFa || r.name });
+                else this.app.game.addPlayer(r.name || r);
+              });
             }
             this.app.navigate('setup');
           }
@@ -59,7 +62,10 @@ export class HomeView extends BaseView {
         this.app.game.reset();
         const roster = Storage.loadRoster();
         if (roster && roster.length) {
-          roster.forEach(r => this.app.game.addPlayer(r.name));
+          roster.forEach(r => {
+            if (r.nameEn || r.nameFa) this.app.game.addPlayer({ en: r.nameEn || r.name, fa: r.nameFa || r.name });
+            else this.app.game.addPlayer(r.name || r);
+          });
         }
         this.app.navigate('setup');
       }

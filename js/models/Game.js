@@ -63,9 +63,11 @@ export class Game {
   // ──────────────────────────────────
 
   /** Add a player by name */
-  addPlayer(name) {
-    if (!name || !name.trim()) return null;
-    const player = new Player(name);
+  addPlayer(nameOrObj) {
+    if (!nameOrObj) return null;
+    // allow passing either a string or { en, fa }
+    if (typeof nameOrObj === 'string' && !nameOrObj.trim()) return null;
+    const player = new Player(nameOrObj);
     this.players.push(player);
     return player;
   }
