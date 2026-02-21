@@ -14,6 +14,8 @@ export class Curse {
   constructor() {
     /** @type {number|null} Current curse target player ID */
     this._targetId = null;
+    /** @type {number|null} Last night's curse target (used to prevent re-targeting) */
+    this._lastTargetId = null;
   }
 
   /** Whether a curse is currently active */
@@ -38,7 +40,14 @@ export class Curse {
    * Clear the curse (called at the start of each night or when Jack dies).
    */
   clear() {
+    // Preserve last target so Jack cannot target the same player next night
+    this._lastTargetId = this._targetId;
     this._targetId = null;
+  }
+
+  /** ID of the last night's target (if any) */
+  get lastTargetId() {
+    return this._lastTargetId;
   }
 
   /**
@@ -52,13 +61,14 @@ export class Curse {
 
   /** Serialize for storage */
   toJSON() {
-    return { targetId: this._targetId };
+    return { targetId: this._targetId, lastTargetId: this._lastTargetId };
   }
 
   /** Deserialize from storage */
   static fromJSON(data) {
     const t = new Curse();
     t._targetId = data?.targetId ?? null;
+    t._lastTargetId = data?.lastTargetId ?? null;
     return t;
   }
 }

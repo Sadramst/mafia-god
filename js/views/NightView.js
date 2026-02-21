@@ -222,8 +222,14 @@ export class NightView extends BaseView {
 
     // ── Jack curse ──
     if (step.actionType === 'curse') {
-      // Jack can target any alive player except himself
-      const curseTargets = game.getAlivePlayers().filter(p => !step.actors.includes(p.id));
+      // Jack can target any alive player except himself and the person he targeted last night
+      const jackPlayer = game.players.find(p => p.isAlive && p.roleId === 'jack');
+      const lastTarget = jackPlayer?.curse?.lastTargetId ?? null;
+      const curseTargets = game.getAlivePlayers().filter(p => {
+        if (step.actors.includes(p.id)) return false; // exclude actor (Jack himself)
+        if (lastTarget && p.id === lastTarget) return false; // exclude last night's target
+        return true;
+      });
       return `
         <div class="card mb-sm" style="background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.3); font-size: var(--text-xs); padding: 8px 12px;">
           🔪 جک طلسم خود را روی یک نفر می‌گذارد. اگر آن فرد کشته شود یا رأی بگیرد، جک هم حذف می‌شود.
