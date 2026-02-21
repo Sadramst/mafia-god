@@ -142,7 +142,15 @@ export class NightView extends BaseView {
       } else if (step.roleId === 'drWatson') {
         targets = targets.filter(p => game.canDrWatsonHeal(p.id));
       } else if (step.roleId === 'constantine') {
-        targets = game.getRevivablePlayers();
+        // Constantine: allow selecting already-dead revivable players
+        // or players who are currently targeted to be killed this night
+        // (exclude salakhi victims — those are not revivable)
+        const deadRevivable = game.getRevivablePlayers();
+        const pending = game.getPendingKillTargets();
+        // merge and dedupe by id — Constantine may pick a pending victim
+        const map = new Map();
+        deadRevivable.concat(pending).forEach(p => { if (p) map.set(p.id, p); });
+        targets = Array.from(map.values());
       } else if (step.roleId === 'jadoogar') {
         // Jadoogar can only target citizens and independents, not same person as last night
         targets = targets.filter(p => {

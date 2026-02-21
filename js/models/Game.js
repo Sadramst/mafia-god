@@ -1161,6 +1161,33 @@ export class Game {
     );
   }
 
+  /**
+   * Get players who are currently targeted by kill-like night actions
+   * (godfather shoot, zodiac, sniper, etc.) and therefore may die
+   * when the night is resolved. Excludes salakhi-mode godfather targets
+   * (salakhi victims are not revivable).
+   * Returns array of Player objects (may be alive at the moment).
+   */
+  getPendingKillTargets() {
+    const actions = this.nightActions || {};
+    const ids = new Set();
+
+    // Godfather regular shoot (exclude salakhi mode)
+    if (actions.godfather && actions.godfather.targetId && actions.godfather.mode !== 'salakhi') {
+      ids.add(actions.godfather.targetId);
+    }
+
+    // Zodiac kill
+    if (actions.zodiac && actions.zodiac.targetId) ids.add(actions.zodiac.targetId);
+
+    // Sniper
+    if (actions.sniper && actions.sniper.targetId) ids.add(actions.sniper.targetId);
+
+    // Gunner morning shots are applied in the morning, not here — skip
+
+    return [...ids].map(id => this.getPlayer(id)).filter(p => p && p.isRevivable);
+  }
+
   /** Get players by team (alive only) */
   getTeamPlayers(team) {
     return this.players.filter(p => p.isAlive && Roles.get(p.roleId)?.team === team);
