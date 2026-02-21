@@ -144,6 +144,14 @@ export class SetupView extends BaseView {
           </button>
         </div>
 
+        <!-- Suggested players (bilingual) -->
+        <div class="suggested-players" style="margin-top: 10px;">
+          <div style="font-size: var(--text-sm); color: var(--muted); margin-bottom:6px;">${t(tr.setup.suggestedPlayersTitle)}</div>
+          <div class="flex" style="flex-wrap: wrap; gap:6px;">
+            <!-- buttons inserted by script to keep translations and directionality correct -->
+          </div>
+        </div>
+
         <div class="player-list" id="player-list">
               ${game.players.length === 0 ? `
                 <div class="empty-state">
@@ -152,7 +160,7 @@ export class SetupView extends BaseView {
                 </div>
               ` : game.players.map((p, i) => `
                 <div class="player-item" data-id="${p.id}" draggable="true" style="animation-delay: ${i * 50}ms">
-                  <button class="player-drag-handle" aria-label="${t(tr.setup.dragHandle)}">≡</button>
+                  <button class="player-item__drag-handle" aria-label="${t(tr.setup.dragHandle)}" title="${t(tr.setup.dragHandle)}">≡</button>
                   <div class="player-item__number">${toEnDigits(i + 1)}</div>
                     <div class="player-item__name">${p.name}</div>
                     <button class="player-item__remove" data-id="${p.id}" title="${t(tr.setup.removePlayer)}">✕</button>
@@ -276,6 +284,37 @@ export class SetupView extends BaseView {
 
     // Focus input
     setTimeout(() => input.focus(), 100);
+
+    // Populate suggested players (English + Farsi) — clicking adds the English name
+    const suggestedWrap = container.querySelector('.suggested-players .flex');
+    if (suggestedWrap) {
+      const suggestedPlayers = [
+        { en: 'Sadra', fa: 'صدرا' },
+        { en: 'Niloofar', fa: 'نیلوفر' },
+        { en: 'Pooriya', fa: 'پوریا' },
+        { en: 'Matin', fa: 'متین' },
+        { en: 'Matineh', fa: 'متینه' },
+        { en: 'Ariyan', fa: 'آریان' },
+        { en: 'Arvin', fa: 'آروین' },
+        { en: 'Ehsan', fa: 'احسان' },
+        { en: 'Zahra', fa: 'زهرا' },
+        { en: 'Meisam', fa: 'میثم' },
+        { en: 'Maryam', fa: 'مریم' },
+        { en: 'Mahdyar', fa: 'مهدیار' }
+      ];
+      suggestedPlayers.forEach(s => {
+        const b = document.createElement('button');
+        b.className = 'btn btn--ghost btn--xs suggested-player';
+        b.dataset.en = s.en; b.dataset.fa = s.fa;
+        b.innerHTML = `<span class="ltr-inline">${s.en}</span> · <span dir="rtl">${s.fa}</span>`;
+        b.addEventListener('click', () => {
+          input.value = s.en;
+          addPlayer();
+          try { this.toast(`${s.en} · ${s.fa}`, 'success'); } catch (e) {}
+        });
+        suggestedWrap.appendChild(b);
+      });
+    }
 
     // Remove players and enable drag on existing items
     const list = container.querySelector('#player-list');

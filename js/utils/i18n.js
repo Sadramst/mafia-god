@@ -126,6 +126,8 @@ export const translations = {
     rosterLoaded: { fa: 'فهرست بازی‌کنان بارگذاری شد (%d)', en: 'Loaded roster (%d)' },
     clearRosterConfirm: { fa: 'پاک‌کردن فهرست بازیکنان؟', en: 'Clear saved roster?' },
     clearRosterCleared: { fa: 'فهرست بازیکنان پاک شد', en: 'Roster cleared' },
+    dragHandle: { fa: 'جابجایی', en: 'Reorder' },
+    suggestedPlayersTitle: { fa: 'اسامی پیشنهادی', en: 'Suggested players' },
     person: { fa: 'نفر', en: 'people' },
     roleInfoTooltip: { fa: 'توضیحات', en: 'Info' },
     jackImmune: { fa: '🔪 جک', en: '🔪 Jack' },
