@@ -307,14 +307,16 @@ export class SetupView extends BaseView {
         { en: 'Maryam', fa: 'مریم' },
         { en: 'Mahdyar', fa: 'مهدیار' }
       ];
+      const lang = Settings.getLanguage();
       suggestedPlayers.forEach(s => {
         const b = document.createElement('button');
         b.className = 'btn btn--ghost btn--xs suggested-player';
         b.dataset.en = s.en; b.dataset.fa = s.fa;
-        b.innerHTML = `<span class="ltr-inline">${s.en}</span> · <span dir="rtl">${s.fa}</span>`;
+        // show only the current language to avoid bilingual duplication
+        b.innerHTML = lang === 'en' ? (`<span class="ltr-inline">${s.en}</span>`) : (`<span dir="rtl">${s.fa}</span>`);
         b.addEventListener('click', () => {
           addPlayer({ en: s.en, fa: s.fa });
-          try { this.toast(`${s.en} · ${s.fa}`, 'success'); } catch (e) {}
+          try { this.toast(lang === 'en' ? s.en : s.fa, 'success'); } catch (e) {}
         });
         suggestedWrap.appendChild(b);
       });
