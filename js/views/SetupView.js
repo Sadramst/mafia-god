@@ -631,6 +631,23 @@ export class SetupView extends BaseView {
           delete game.selectedRoles[roleId];
         }
 
+        // Special rule: if Zodiac is selected, ensure Bodyguard (محافظ) is present
+        if (selecting && roleId === 'zodiac') {
+          // if bodyguard not already selected, auto-add it
+          if (!game.selectedRoles['bodyguard']) {
+            game.selectedRoles['bodyguard'] = 1;
+            // update the bodyguard card if visible
+            const bgCard = this.container.querySelector('.role-card[data-role="bodyguard"]');
+            if (bgCard) {
+              bgCard.classList.add('selected');
+              const val = bgCard.querySelector('.role-card__count-value');
+              if (val) val.textContent = 1;
+            }
+            // inform the user
+            this.toast(t(tr.setup.zodiacRequiresBodyguard), 'info');
+          }
+        }
+
         // If independent-role selection changed, recompute recommended counts (force overwrite)
         if (role.team === 'independent' && game.computeRecommendedCounts) {
           game.computeRecommendedCounts(true);

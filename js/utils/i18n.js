@@ -129,6 +129,7 @@ export const translations = {
     dragHandle: { fa: 'جابجایی', en: 'Reorder' },
     suggestedPlayersTitle: { fa: 'اسامی پیشنهادی', en: 'Suggested players' },
     person: { fa: 'نفر', en: 'people' },
+    zodiacRequiresBodyguard: { fa: 'زودیاک نیاز به محافظ دارد — محافظ به‌طور خودکار اضافه شد.', en: 'Zodiac requires Bodyguard — Bodyguard was added automatically.' },
     roleInfoTooltip: { fa: 'توضیحات', en: 'Info' },
     jackImmune: { fa: '🔪 جک', en: '🔪 Jack' },
     zodiacImmune: { fa: '♈ زودیاک', en: '♈ Zodiac' },
