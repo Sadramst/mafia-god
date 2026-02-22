@@ -16,7 +16,11 @@ export class DayView extends BaseView {
     this.timerDisplay = '03:00';
     this.timerProgress = 100;
     this.votingTarget = null; // Player being voted on
-    this.votedPlayers = {}; // { playerId: [voterIds] }
+    this.votedPlayers = {}; // { playerId: [voterIds] } (legacy - not used in simplified voting)
+    this.voteCounts = {}; // { playerId: number } — numeric votes per player for first stage
+    this.votingPhase = 'first'; // 'first' | 'second'
+    this.runoffCandidates = []; // players who passed threshold
+    this.runoffVoteCounts = {}; // numeric votes for runoff stage
     this.siestaStep = 'guardian'; // 'guardian' | 'guardian_guess' | 'target' | 'result'
     this.siestaGuess = null; // 1–4 password guess
     this.siestaResultData = null; // { result, guardianId?, targetId? }
@@ -489,137 +493,154 @@ export class DayView extends BaseView {
     const game = this.app.game;
     const alivePlayers = game.getAlivePlayers();
 
-    // Calculate vote tallies
-    const tally = {};
-    for (const [playerId, voters] of Object.entries(this.votedPlayers)) {
-      let count = 0;
-      for (const voterId of voters) {
-        const voter = game.getPlayer(voterId);
-        count += 1;
-      }
-      tally[playerId] = count;
-    }
-    const maxVotes = Math.max(0, ...Object.values(tally));
+    const aliveCount = alivePlayers.length;
+    const threshold = Math.floor((Math.max(0, aliveCount - 1)) / 2) + 1; // 50% + 1 of (alive-1)
 
-    container.innerHTML = `
-      <div class="section">
-        <h2 class="section__title">🗳️ رأی‌گیری</h2>
-        <p class="section__subtitle">روی هر بازیکن ضربه بزنید تا رأی‌دهندگان را مدیریت کنید</p>
+    // First stage: numeric votes per player
+    if (this.votingPhase === 'first') {
+      container.innerHTML = `
+        <div class="section">
+          <h2 class="section__title">🗳️ ${t('day.votingTitle')}</h2>
+          <p class="section__subtitle">${t('day.enterVotesHelp')}</p>
 
-        <div class="player-list">
-          ${alivePlayers.map(p => {
-            const votes = tally[p.id] || 0;
-            const voters = this.votedPlayers[p.id] || [];
-            const percentage = maxVotes > 0 ? (votes / alivePlayers.length * 100) : 0;
-            
-            return `
+          <div class="card mb-md">
+            <div class="font-bold mb-sm">${t('day.votingStageFirst')}</div>
+            <div class="text-secondary" style="font-size: var(--text-sm);">${t('day.thresholdInfo', threshold)}</div>
+          </div>
+
+          <div class="player-list">
+            ${alivePlayers.map(p => `
               <div class="vote-card" data-vote-player="${p.id}">
-                <div class="vote-card__info">
-                  <span class="font-bold">${p.name}</span>
-                </div>
+                <div class="vote-card__info"><span class="font-bold">${p.name}</span></div>
                 <div class="vote-card__count">
-                  <span>${votes}</span>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted);">رأی</span>
+                  <input type="number" class="vote-input" data-player-id="${p.id}" value="${this.voteCounts[p.id] || 0}" min="0" max="${Math.max(0, aliveCount - 1)}" />
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">${t('day.vote')}</div>
                 </div>
               </div>
-              ${voters.length > 0 ? `
-                <div style="padding: 4px 16px 8px; font-size: var(--text-xs); color: var(--text-secondary);">
-                  رأی‌دهندگان: ${voters.map(vid => game.getPlayer(vid)?.name).filter(Boolean).join('، ')}
-                </div>
-              ` : ''}
-              <div class="vote-bar">
-                <div class="vote-bar__fill" style="width: ${percentage}%"></div>
-              </div>
-            `;
-          }).join('')}
+            `).join('')}
+          </div>
+
+          <div class="mt-md">
+            <button class="btn btn--primary btn--block" id="btn-continue-runoff" ${this._hasAnyAboveThreshold(threshold) ? '' : 'disabled'}>${t('day.continueToRunoff')}</button>
+            <button class="btn btn--secondary btn--block mt-sm" id="btn-no-eliminate">${t('day.noElimination')}</button>
+            <button class="btn btn--ghost btn--block mt-sm" id="btn-back-discussion">${t('day.backToDiscussion')}</button>
+          </div>
         </div>
+      `;
 
-        <!-- Vote recording -->
-        <div class="card mt-lg" id="vote-recorder" style="display: none;">
-          <div class="font-bold mb-sm" id="vote-target-name"></div>
-          <p class="text-secondary mb-md" style="font-size: var(--text-sm);">چه کسانی به این بازیکن رأی دادند؟</p>
-          <div class="target-grid" id="voter-grid"></div>
-          <button class="btn btn--ghost btn--block btn--sm mt-md" id="btn-close-voter">بستن</button>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="flex gap-sm">
-          <button class="btn btn--danger btn--block" id="btn-eliminate" ${maxVotes === 0 ? 'disabled' : ''}>
-            ⚖️ اعدام بازیکن با بیشترین رأی
-          </button>
-          <button class="btn btn--secondary btn--block" id="btn-no-eliminate">
-            ✋ بدون اعدام
-          </button>
-        </div>
-
-        <button class="btn btn--ghost btn--block mt-md" id="btn-back-discussion">
-          ← بازگشت به بحث
-        </button>
-      </div>
-    `;
-
-    // Open vote recorder for a player
-    container.querySelectorAll('.vote-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const playerId = Number(card.dataset.votePlayer);
-        this._showVoteRecorder(container, playerId);
+      // wire inputs
+      container.querySelectorAll('.vote-input').forEach(inp => {
+        inp.addEventListener('input', e => {
+          const id = Number(inp.dataset.playerId);
+          const v = Math.max(0, Number(inp.value) || 0);
+          this.voteCounts[id] = v;
+          // enable/disable continue
+          const btn = container.querySelector('#btn-continue-runoff');
+          if (btn) btn.disabled = !this._hasAnyAboveThreshold(threshold);
+        });
       });
-    });
 
-    // Eliminate
-    container.querySelector('#btn-eliminate')?.addEventListener('click', () => {
-      // Find player with most votes
-      let maxVotePlayer = null;
-      let maxCount = 0;
-      for (const [pid, count] of Object.entries(tally)) {
-        if (count > maxCount) {
-          maxCount = count;
-          maxVotePlayer = Number(pid);
+      container.querySelector('#btn-continue-runoff')?.addEventListener('click', () => {
+        // compute candidates
+        this.runoffCandidates = alivePlayers.filter(p => (this.voteCounts[p.id] || 0) >= threshold).map(p => p.id);
+        this.runoffVoteCounts = {};
+        this.votingPhase = 'second';
+        this.render();
+      });
+
+      container.querySelector('#btn-no-eliminate')?.addEventListener('click', () => this._goToNextNight());
+      container.querySelector('#btn-back-discussion')?.addEventListener('click', () => { this.subView = 'discussion'; this.render(); });
+      return;
+    }
+
+    // Second stage (runoff) — only candidates
+    if (this.votingPhase === 'second') {
+      const candidates = alivePlayers.filter(p => this.runoffCandidates.includes(p.id));
+      container.innerHTML = `
+        <div class="section">
+          <h2 class="section__title">${t('day.runoffTitle')}</h2>
+          <p class="section__subtitle">${t('day.enterVotesHelp')}</p>
+
+          <div class="card mb-md">
+            <div class="font-bold mb-sm">${t('day.runoffTitle')}</div>
+            <div class="text-secondary" style="font-size: var(--text-sm);">${t('day.votingSubtitle')}</div>
+          </div>
+
+          <div class="player-list">
+            ${candidates.map(p => `
+              <div class="vote-card" data-vote-player="${p.id}">
+                <div class="vote-card__info"><span class="font-bold">${p.name}</span></div>
+                <div class="vote-card__count">
+                  <input type="number" class="runoff-input" data-player-id="${p.id}" value="${this.runoffVoteCounts[p.id] || 0}" min="0" max="${Math.max(0, aliveCount - 1)}" />
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">${t('day.vote')}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="mt-md">
+            <button class="btn btn--danger btn--block" id="btn-execute-runoff">${t('day.executeRunoff')}</button>
+            <button class="btn btn--ghost btn--block mt-sm" id="btn-cancel-runoff">${t('day.backToDiscussion')}</button>
+          </div>
+        </div>
+      `;
+
+      container.querySelectorAll('.runoff-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const id = Number(inp.dataset.playerId);
+          const v = Math.max(0, Number(inp.value) || 0);
+          this.runoffVoteCounts[id] = v;
+        });
+      });
+
+      container.querySelector('#btn-execute-runoff')?.addEventListener('click', () => {
+        // find max
+        let maxCount = -1;
+        let winners = [];
+        for (const id of Object.keys(this.runoffVoteCounts)) {
+          const c = this.runoffVoteCounts[id] || 0;
+          if (c > maxCount) { maxCount = c; winners = [Number(id)]; }
+          else if (c === maxCount) winners.push(Number(id));
         }
-      }
-      if (maxVotePlayer) {
-        const target = game.getPlayer(maxVotePlayer);
 
-        // Check vote immunity before confirming
-        if (game.isVoteImmune(maxVotePlayer)) {
-          this.app.showToast(`${target?.name} مصونیت از رأی دارد و قابل اعدام نیست!`, 'error');
+        if (winners.length === 0) {
+          this.app.showToast(t('day.runoffTie'), 'info');
+          return;
+        }
+        if (winners.length > 1) {
+          this.app.showToast(t('day.runoffTie'), 'info');
+          // tie — no execution
+          this.votingPhase = 'first';
+          this.voteCounts = {};
+          this.runoffCandidates = [];
+          this.runoffVoteCounts = {};
+          this.render();
           return;
         }
 
-        this.confirm(
-          'تأیید اعدام',
-          `آیا ${target?.name} اعدام شود؟`,
-          () => {
-            const extra = game.eliminateByVote(maxVotePlayer);
-            this.app.saveGame();
+        const targetId = winners[0];
+        if (game.isVoteImmune(targetId)) {
+          const target = game.getPlayer(targetId);
+          this.app.showToast(t('day.immuneVote', target?.name), 'error');
+          return;
+        }
 
-            // Show curse chain notification
-            if (extra.jackCurseTriggered) {
-              this.app.showToast('🔪 طلسم جک فعال شد — جک هم حذف شد!', 'info');
-            }
+        this.confirm(t('day.confirmExecution'), t('day.executeConfirm', game.getPlayer(targetId)?.name), () => {
+          const extra = game.eliminateByVote(targetId);
+          this.app.saveGame();
+          if (extra.jackCurseTriggered) this.app.showToast('🔪 طلسم جک فعال شد — جک هم حذف شد!', 'info');
+          const winner = game.checkWinCondition();
+          if (winner) this.app.navigate('summary');
+          else this._goToNextNight();
+        });
+      });
 
-            const winner = game.checkWinCondition();
-            if (winner) {
-              this.app.navigate('summary');
-            } else {
-              this._goToNextNight();
-            }
-          }
-        );
-      }
-    });
-
-    // No elimination
-    container.querySelector('#btn-no-eliminate')?.addEventListener('click', () => {
-      this._goToNextNight();
-    });
-
-    // Back to discussion
-    container.querySelector('#btn-back-discussion')?.addEventListener('click', () => {
-      this.subView = 'discussion';
-      this.render();
-    });
+      container.querySelector('#btn-cancel-runoff')?.addEventListener('click', () => {
+        this.votingPhase = 'first';
+        this.render();
+      });
+      return;
+    }
   }
 
   _showVoteRecorder(container, playerId) {
@@ -668,6 +689,13 @@ export class DayView extends BaseView {
     container.querySelector('#btn-close-voter')?.addEventListener('click', () => {
       recorder.style.display = 'none';
     });
+  }
+
+  _hasAnyAboveThreshold(threshold) {
+    for (const [pid, cnt] of Object.entries(this.voteCounts || {})) {
+      if ((cnt || 0) >= threshold) return true;
+    }
+    return false;
   }
 
   _goToNextNight() {
