@@ -500,12 +500,12 @@ export class DayView extends BaseView {
     if (this.votingPhase === 'first') {
       container.innerHTML = `
         <div class="section">
-          <h2 class="section__title">🗳️ ${t('day.votingTitle')}</h2>
-          <p class="section__subtitle">${t('day.enterVotesHelp')}</p>
+          <h2 class="section__title">🗳️ ${t(tr.day.votingTitle)}</h2>
+          <p class="section__subtitle">${t(tr.day.enterVotesHelp)}</p>
 
           <div class="card mb-md">
-            <div class="font-bold mb-sm">${t('day.votingStageFirst')}</div>
-            <div class="text-secondary" style="font-size: var(--text-sm);">${t('day.thresholdInfo', threshold)}</div>
+            <div class="font-bold mb-sm">${t(tr.day.votingStageFirst)}</div>
+            <div class="text-secondary" style="font-size: var(--text-sm);">${t(tr.day.thresholdInfo).replace('%d', threshold)}</div>
           </div>
 
           <div class="player-list">
@@ -516,16 +516,16 @@ export class DayView extends BaseView {
                       <button class="vote-decr" data-player-id="${p.id}">−</button>
                       <span class="vote-value" data-player-id="${p.id}">${this.voteCounts[p.id] || 0}</span>
                       <button class="vote-incr" data-player-id="${p.id}">+</button>
-                      <div style="font-size: var(--text-xs); color: var(--text-muted);">${t('day.vote')}</div>
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">${t(tr.day.vote)}</div>
                     </div>
                   </div>
                 `).join('')}
               </div>
 
           <div class="mt-md">
-            <button class="btn btn--primary btn--block" id="btn-continue-runoff" ${this._hasAnyAboveThreshold(threshold) ? '' : 'disabled'}>${t('day.continueToRunoff')}</button>
-            <button class="btn btn--secondary btn--block mt-sm" id="btn-no-eliminate">${t('day.noElimination')}</button>
-            <button class="btn btn--ghost btn--block mt-sm" id="btn-back-discussion">${t('day.backToDiscussion')}</button>
+            <button class="btn btn--primary btn--block" id="btn-continue-runoff" ${this._hasAnyAboveThreshold(threshold) ? '' : 'disabled'}>${t(tr.day.continueToRunoff)}</button>
+            <button class="btn btn--secondary btn--block mt-sm" id="btn-no-eliminate">${t(tr.day.noElimination)}</button>
+            <button class="btn btn--ghost btn--block mt-sm" id="btn-back-discussion">${t(tr.day.backToDiscussion)}</button>
           </div>
         </div>
       `;
@@ -569,12 +569,12 @@ export class DayView extends BaseView {
       const candidates = alivePlayers.filter(p => this.runoffCandidates.includes(p.id));
       container.innerHTML = `
         <div class="section">
-          <h2 class="section__title">${t('day.runoffTitle')}</h2>
-          <p class="section__subtitle">${t('day.enterVotesHelp')}</p>
+          <h2 class="section__title">${t(tr.day.runoffTitle)}</h2>
+          <p class="section__subtitle">${t(tr.day.enterVotesHelp)}</p>
 
           <div class="card mb-md">
-            <div class="font-bold mb-sm">${t('day.runoffTitle')}</div>
-            <div class="text-secondary" style="font-size: var(--text-sm);">${t('day.votingSubtitle')}</div>
+            <div class="font-bold mb-sm">${t(tr.day.runoffTitle)}</div>
+            <div class="text-secondary" style="font-size: var(--text-sm);">${t(tr.day.votingSubtitle)}</div>
           </div>
 
           <div class="player-list">
@@ -585,15 +585,15 @@ export class DayView extends BaseView {
                   <button class="runoff-decr" data-player-id="${p.id}">−</button>
                   <span class="runoff-value" data-player-id="${p.id}">${this.runoffVoteCounts[p.id] || 0}</span>
                   <button class="runoff-incr" data-player-id="${p.id}">+</button>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">${t('day.vote')}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">${t(tr.day.vote)}</div>
                 </div>
               </div>
             `).join('')}
           </div>
 
           <div class="mt-md">
-            <button class="btn btn--danger btn--block" id="btn-execute-runoff">${t('day.executeRunoff')}</button>
-            <button class="btn btn--ghost btn--block mt-sm" id="btn-cancel-runoff">${t('day.backToDiscussion')}</button>
+            <button class="btn btn--danger btn--block" id="btn-execute-runoff">${t(tr.day.executeRunoff)}</button>
+            <button class="btn btn--ghost btn--block mt-sm" id="btn-cancel-runoff">${t(tr.day.backToDiscussion)}</button>
           </div>
         </div>
       `;
@@ -628,18 +628,69 @@ export class DayView extends BaseView {
         }
 
         if (winners.length === 0) {
-          this.app.showToast(t('day.runoffTie'), 'info');
+          this.app.showToast(t(tr.day.runoffTie), 'info');
           return;
         }
         if (winners.length > 1) {
-          // tie: pick random candidate and ask God to confirm execution
+          // If exactly two candidates tied, offer Shir/Khat (heads/tails) to God
+          if (winners.length === 2) {
+            const [a, b] = winners;
+            const nameA = game.getPlayer(a)?.name || '—';
+            const nameB = game.getPlayer(b)?.name || '—';
+
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+              <div class="modal">
+                <div class="modal__title">${t(tr.day.coinTossTitle)}</div>
+                <div class="modal__body">${t(tr.day.coinTossChoose)}<br><strong>${nameA} ↔ ${nameB}</strong></div>
+                <div class="modal__actions">
+                  <button class="btn btn--primary btn--block" id="modal-shir">${t(tr.day.shir)}</button>
+                  <button class="btn btn--ghost btn--block" id="modal-khat">${t(tr.day.khat)}</button>
+                </div>
+              </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            const doCoin = (chosenSide) => {
+              const coin = Math.random() < 0.5 ? 'shir' : 'khat';
+              const pickedId = (coin === chosenSide) ? a : b;
+              const pickedName = game.getPlayer(pickedId)?.name || '—';
+              overlay.remove();
+
+              const coinLabel = coin === 'shir' ? t(tr.day.shir) : t(tr.day.khat);
+              const title2 = t(tr.day.coinTossTitle);
+              const body2 = t(tr.day.coinTossResult).replace('%s', coinLabel).replace('%s', pickedName) + '\n\n' + t(tr.day.executeConfirm).replace('%s', pickedName);
+
+              // Let God confirm execution — do not auto-execute
+              this.confirm(title2, body2, () => {
+                if (game.isVoteImmune(pickedId)) { this.app.showToast(t(tr.day.immuneVote).replace('%s', pickedName), 'error'); return; }
+                const extra = game.eliminateByVote(pickedId);
+                this.app.saveGame();
+                if (extra.jackCurseTriggered) this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
+                const winner = game.checkWinCondition();
+                if (winner) this.app.navigate('summary'); else this._goToNextNight();
+              });
+            };
+
+            overlay.querySelector('#modal-shir')?.addEventListener('click', () => doCoin('shir'));
+            overlay.querySelector('#modal-khat')?.addEventListener('click', () => doCoin('khat'));
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+            return;
+          }
+
+          // fallback: random pick and ask God to confirm execution
           const pick = winners[Math.floor(Math.random() * winners.length)];
           const pickName = game.getPlayer(pick)?.name || '—';
-          this.confirm('مساوی — تقسیم سرنوشت', `مساوی بین: ${winners.map(id => game.getPlayer(id)?.name).filter(Boolean).join('، ')}. انتخاب تصادفی: ${pickName}. آیا این بازیکن اعدام شود؟`, () => {
-            if (game.isVoteImmune(pick)) { this.app.showToast(t('day.immuneVote', game.getPlayer(pick)?.name), 'error'); return; }
+          const tieList = winners.map(id => game.getPlayer(id)?.name).filter(Boolean).join('، ');
+          const title = t(tr.day.runoffTie);
+          const body = `${tieList}. ${t(tr.day.executeConfirm).replace('%s', pickName)}`;
+          this.confirm(title, body, () => {
+            if (game.isVoteImmune(pick)) { this.app.showToast(t(tr.day.immuneVote).replace('%s', game.getPlayer(pick)?.name), 'error'); return; }
             const extra = game.eliminateByVote(pick);
             this.app.saveGame();
-            if (extra.jackCurseTriggered) this.app.showToast('🔪 طلسم جک فعال شد — جک هم حذف شد!', 'info');
+            if (extra.jackCurseTriggered) this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
             const winner = game.checkWinCondition();
             if (winner) this.app.navigate('summary'); else this._goToNextNight();
           });
@@ -649,14 +700,14 @@ export class DayView extends BaseView {
         const targetId = winners[0];
         if (game.isVoteImmune(targetId)) {
           const target = game.getPlayer(targetId);
-          this.app.showToast(t('day.immuneVote', target?.name), 'error');
+          this.app.showToast(t(tr.day.immuneVote).replace('%s', target?.name), 'error');
           return;
         }
 
-        this.confirm(t('day.confirmExecution'), t('day.executeConfirm', game.getPlayer(targetId)?.name), () => {
+        this.confirm(t(tr.day.confirmExecution), t(tr.day.executeConfirm).replace('%s', game.getPlayer(targetId)?.name), () => {
           const extra = game.eliminateByVote(targetId);
           this.app.saveGame();
-          if (extra.jackCurseTriggered) this.app.showToast('🔪 طلسم جک فعال شد — جک هم حذف شد!', 'info');
+          if (extra.jackCurseTriggered) this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
           const winner = game.checkWinCondition();
           if (winner) this.app.navigate('summary');
           else this._goToNextNight();

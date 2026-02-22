@@ -1073,6 +1073,7 @@ html[dir="ltr"] .input { direction: ltr; text-align: left; }
   justify-content: center;
   padding: var(--space-xl);
   border: 2px solid var(--border);
+  overflow: hidden;
 }
 
 .reveal-card__front {
@@ -1104,7 +1105,17 @@ html[dir="ltr"] .input { direction: ltr; text-align: left; }
 .reveal-card__back-icon { font-size: 56px; }
 .reveal-card__back-role { font-size: var(--text-xl); font-weight: 800; }
 .reveal-card__back-team { font-size: var(--text-sm); opacity: 0.7; }
-.reveal-card__back-desc { font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.6; }
+.reveal-card__back-desc {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  /* Keep long role descriptions inside the card and make them scrollable */
+  flex: 1 1 auto;
+  width: 100%;
+  overflow-y: auto;
+  text-align: center;
+  padding-right: 6px; /* small spacing for scrollbar */
+}
 
 /* ---------- History / Timeline ---------- */
 .timeline {
