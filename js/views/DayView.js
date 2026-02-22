@@ -509,16 +509,18 @@ export class DayView extends BaseView {
           </div>
 
           <div class="player-list">
-            ${alivePlayers.map(p => `
-              <div class="vote-card" data-vote-player="${p.id}">
-                <div class="vote-card__info"><span class="font-bold">${p.name}</span></div>
-                <div class="vote-card__count">
-                  <input type="number" class="vote-input" data-player-id="${p.id}" value="${this.voteCounts[p.id] || 0}" min="0" max="${Math.max(0, aliveCount - 1)}" />
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">${t('day.vote')}</div>
-                </div>
+                ${alivePlayers.map(p => `
+                  <div class="vote-card" data-vote-player="${p.id}">
+                    <div class="vote-card__info"><span class="font-bold">${p.name}</span></div>
+                    <div class="vote-card__count vote-counter">
+                      <button class="vote-decr" data-player-id="${p.id}">−</button>
+                      <span class="vote-value" data-player-id="${p.id}">${this.voteCounts[p.id] || 0}</span>
+                      <button class="vote-incr" data-player-id="${p.id}">+</button>
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">${t('day.vote')}</div>
+                    </div>
+                  </div>
+                `).join('')}
               </div>
-            `).join('')}
-          </div>
 
           <div class="mt-md">
             <button class="btn btn--primary btn--block" id="btn-continue-runoff" ${this._hasAnyAboveThreshold(threshold) ? '' : 'disabled'}>${t('day.continueToRunoff')}</button>
@@ -528,15 +530,24 @@ export class DayView extends BaseView {
         </div>
       `;
 
-      // wire inputs
-      container.querySelectorAll('.vote-input').forEach(inp => {
-        inp.addEventListener('input', e => {
-          const id = Number(inp.dataset.playerId);
-          const v = Math.max(0, Number(inp.value) || 0);
+      // wire +/- buttons
+      container.querySelectorAll('.vote-incr').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.dataset.playerId);
+          const max = Math.max(0, aliveCount - 1);
+          const v = Math.min(max, (this.voteCounts[id] || 0) + 1);
           this.voteCounts[id] = v;
-          // enable/disable continue
-          const btn = container.querySelector('#btn-continue-runoff');
-          if (btn) btn.disabled = !this._hasAnyAboveThreshold(threshold);
+          container.querySelector(`.vote-value[data-player-id="${id}"]`).textContent = v;
+          const cbtn = container.querySelector('#btn-continue-runoff'); if (cbtn) cbtn.disabled = !this._hasAnyAboveThreshold(threshold);
+        });
+      });
+      container.querySelectorAll('.vote-decr').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.dataset.playerId);
+          const v = Math.max(0, (this.voteCounts[id] || 0) - 1);
+          this.voteCounts[id] = v;
+          container.querySelector(`.vote-value[data-player-id="${id}"]`).textContent = v;
+          const cbtn = container.querySelector('#btn-continue-runoff'); if (cbtn) cbtn.disabled = !this._hasAnyAboveThreshold(threshold);
         });
       });
 
@@ -570,8 +581,10 @@ export class DayView extends BaseView {
             ${candidates.map(p => `
               <div class="vote-card" data-vote-player="${p.id}">
                 <div class="vote-card__info"><span class="font-bold">${p.name}</span></div>
-                <div class="vote-card__count">
-                  <input type="number" class="runoff-input" data-player-id="${p.id}" value="${this.runoffVoteCounts[p.id] || 0}" min="0" max="${Math.max(0, aliveCount - 1)}" />
+                <div class="vote-card__count vote-counter">
+                  <button class="runoff-decr" data-player-id="${p.id}">−</button>
+                  <span class="runoff-value" data-player-id="${p.id}">${this.runoffVoteCounts[p.id] || 0}</span>
+                  <button class="runoff-incr" data-player-id="${p.id}">+</button>
                   <div style="font-size: var(--text-xs); color: var(--text-muted);">${t('day.vote')}</div>
                 </div>
               </div>
@@ -585,11 +598,22 @@ export class DayView extends BaseView {
         </div>
       `;
 
-      container.querySelectorAll('.runoff-input').forEach(inp => {
-        inp.addEventListener('input', () => {
-          const id = Number(inp.dataset.playerId);
-          const v = Math.max(0, Number(inp.value) || 0);
+      // wire +/- for runoff
+      container.querySelectorAll('.runoff-incr').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.dataset.playerId);
+          const max = Math.max(0, aliveCount - 1);
+          const v = Math.min(max, (this.runoffVoteCounts[id] || 0) + 1);
           this.runoffVoteCounts[id] = v;
+          container.querySelector(`.runoff-value[data-player-id="${id}"]`).textContent = v;
+        });
+      });
+      container.querySelectorAll('.runoff-decr').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.dataset.playerId);
+          const v = Math.max(0, (this.runoffVoteCounts[id] || 0) - 1);
+          this.runoffVoteCounts[id] = v;
+          container.querySelector(`.runoff-value[data-player-id="${id}"]`).textContent = v;
         });
       });
 
@@ -608,13 +632,17 @@ export class DayView extends BaseView {
           return;
         }
         if (winners.length > 1) {
-          this.app.showToast(t('day.runoffTie'), 'info');
-          // tie — no execution
-          this.votingPhase = 'first';
-          this.voteCounts = {};
-          this.runoffCandidates = [];
-          this.runoffVoteCounts = {};
-          this.render();
+          // tie: pick random candidate and ask God to confirm execution
+          const pick = winners[Math.floor(Math.random() * winners.length)];
+          const pickName = game.getPlayer(pick)?.name || '—';
+          this.confirm('مساوی — تقسیم سرنوشت', `مساوی بین: ${winners.map(id => game.getPlayer(id)?.name).filter(Boolean).join('، ')}. انتخاب تصادفی: ${pickName}. آیا این بازیکن اعدام شود؟`, () => {
+            if (game.isVoteImmune(pick)) { this.app.showToast(t('day.immuneVote', game.getPlayer(pick)?.name), 'error'); return; }
+            const extra = game.eliminateByVote(pick);
+            this.app.saveGame();
+            if (extra.jackCurseTriggered) this.app.showToast('🔪 طلسم جک فعال شد — جک هم حذف شد!', 'info');
+            const winner = game.checkWinCondition();
+            if (winner) this.app.navigate('summary'); else this._goToNextNight();
+          });
           return;
         }
 
