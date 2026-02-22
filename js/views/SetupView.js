@@ -68,7 +68,9 @@ export class SetupView extends BaseView {
     // find the nearest font-bold sibling used to show value
     const bullets = btn.closest('.role-card__bullets');
     if (!bullets) return;
-    const valueEl = bullets.querySelector('.font-bold');
+    // Prefer the closest row (.flex) to the clicked button so each +/- updates its own value
+    const row = btn.closest('.flex') || bullets;
+    const valueEl = row.querySelector('.font-bold') || bullets.querySelector('.font-bold');
     if (valueEl) valueEl.textContent = newValue;
     // also update Assign tab values if present by matching role id
     const roleCard = btn.closest('.role-card');
