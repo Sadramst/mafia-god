@@ -96,7 +96,7 @@ export class SummaryView extends BaseView {
 
     this.container.innerHTML = `
       <div class="view">
-        <h2 class="section__title">📜 گزارش بازی</h2>
+        <h2 class="section__title">${t(tr.summary.gameReport)}</h2>
         
         <!-- Stats -->
         <div class="stats-row">
