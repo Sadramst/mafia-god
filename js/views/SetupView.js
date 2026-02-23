@@ -141,7 +141,7 @@ export class SetupView extends BaseView {
           <input type="text" class="input" id="player-name-input" 
                  placeholder="${t(tr.setup.playerName)}" maxlength="20"
                  autocomplete="off" enterkeyhint="done">
-          <button class="btn btn--primary" id="btn-add-player">
+          <button type="button" class="btn btn--primary" id="btn-add-player">
             ${t(tr.setup.addButton)}
           </button>
         </div>
@@ -284,8 +284,8 @@ export class SetupView extends BaseView {
       try { Storage.saveRoster(game.players.map(p => ({ id: p.id, nameEn: p.nameEn, nameFa: p.nameFa }))); } catch (e) {}
     };
 
-    addBtn.addEventListener('click', addPlayer);
-    input.addEventListener('keydown', (e) => {
+    if (addBtn) addBtn.addEventListener('click', addPlayer);
+    if (input) input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') addPlayer();
     });
 
