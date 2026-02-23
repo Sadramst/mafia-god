@@ -195,26 +195,26 @@ export class DayView extends BaseView {
 
     container.innerHTML = `
       <div class="section">
-        <h2 class="section__title">📢 اعلام نتایج شب</h2>
+        <h2 class="section__title">📢 ${t(tr.day.announceResults)}</h2>
 
         ${results?.salakhied?.correct ? `
           <div class="card card--mafia mb-md" style="border-color: var(--danger);">
-            <div class="font-bold mb-sm" style="color: var(--danger);">🗡️ سلاخی:</div>
+            <div class="font-bold mb-sm" style="color: var(--danger);">${t(tr.day.salakhiLabel)}</div>
             <div class="flex items-center gap-sm">
               <span class="dot dot--dead"></span>
               <span class="font-bold">${game.getPlayer(results.salakhied.playerId)?.name || '—'}</span>
-              <span>سلاخی شد!</span>
+              <span>${t(tr.day.salakhied)}</span>
             </div>
           </div>
         ` : results?.salakhied && !results.salakhied.correct ? `
           <div class="card mb-md" style="border-color: var(--warning);">
-            <div style="color: var(--warning); font-weight: 600;">🗡️ سلاخی انجام شد اما نادرست بود — کسی حذف نشد.</div>
+            <div style="color: var(--warning); font-weight: 600;">${t(tr.day.salakhiFailed)}</div>
           </div>
         ` : ''}
 
         ${results?.killed?.length > 0 ? `
           <div class="card card--mafia mb-md">
-            <div class="font-bold mb-sm" style="color: var(--danger);">☠️ کشته‌شدگان شب:</div>
+            <div class="font-bold mb-sm" style="color: var(--danger);">${t(tr.day.killedLastNight)}</div>
             ${results.killed.map(id => {
               const p = game.getPlayer(id);
               const role = Roles.get(p?.roleId);
@@ -227,24 +227,24 @@ export class DayView extends BaseView {
           </div>
         ` : `
           <div class="card mb-md" style="border-color: var(--success);">
-            <div style="color: var(--success); font-weight: 600;">✨ کسی در شب نمرد!</div>
+            <div style="color: var(--success); font-weight: 600;">${t(tr.day.noKills)}</div>
           </div>
         `}
 
         ${results?.shielded?.length > 0 ? `
           <div class="card mb-md" style="border-color: var(--warning);">
-            <div class="font-bold mb-sm" style="color: var(--warning);">🛡️ سپر فعال شد:</div>
+            <div class="font-bold mb-sm" style="color: var(--warning);">${t(tr.day.shieldActivated)}</div>
             <div class="text-secondary" style="font-size: var(--text-sm);">
-              یک نفر مورد حمله قرار گرفت اما سپرش ضربه را جذب کرد (سپر از بین رفت)
+              ${t(tr.day.shieldDescription)}
             </div>
           </div>
         ` : ''}
 
         ${results?.saved?.length > 0 ? `
           <div class="card mb-md" style="border-color: var(--success);">
-            <div class="font-bold mb-sm" style="color: var(--success);">⚕️ نجات‌یافتگان:</div>
+            <div class="font-bold mb-sm" style="color: var(--success);">${t(tr.day.savedLabel)}</div>
             <div class="text-secondary" style="font-size: var(--text-sm);">
-              یک نفر مورد حمله قرار گرفت اما نجات یافت (بدون فاش کردن نام)
+              ${t(tr.day.savedDescription)}
             </div>
           </div>
         ` : ''}
@@ -252,7 +252,7 @@ export class DayView extends BaseView {
         ${silencedPlayer ? `
           <div class="card mb-md" style="border-color: var(--warning);">
             <div style="font-weight: 600; color: var(--warning);">
-              🤐 ${silencedPlayer.name} امروز حق صحبت ندارد!
+              ${t(tr.day.silencedToday).replace('%s', silencedPlayer.name)}
             </div>
           </div>
         ` : ''}
@@ -260,7 +260,7 @@ export class DayView extends BaseView {
         ${results?.revived ? `
           <div class="card mb-md" style="border-color: var(--success);">
             <div style="font-weight: 600; color: var(--success);">
-              ✝️ ${game.getPlayer(results.revived)?.name || '—'} زنده شد!
+              ${t(tr.day.revivedAnnouncement).replace('%s', game.getPlayer(results.revived)?.name || '—')}
             </div>
           </div>
         ` : ''}
@@ -268,54 +268,54 @@ export class DayView extends BaseView {
         ${results?.jackCurseTriggered ? `
           <div class="card mb-md" style="border-color: rgba(139,92,246,0.6);">
             <div style="font-weight: 600; color: rgb(139,92,246);">
-              🔪 طلسم جک فعال شد — جک هم از بازی خارج شد!
+              ${t(tr.day.jackCurseTriggered)}
             </div>
           </div>
         ` : ''}
 
         ${results?.framasonRecruit?.contaminated ? `
           <div class="card mb-md" style="border-color: var(--danger);">
-            <div class="font-bold mb-sm" style="color: var(--danger);">🔺 تیم فراماسون آلوده شد!</div>
+            <div class="font-bold mb-sm" style="color: var(--danger);">${t(tr.day.framasonContaminated)}</div>
             <div class="text-secondary" style="font-size: var(--text-sm);">
-              فراماسون یک بازیکن خطرناک را بیدار کرد — تمام اعضای تیم فراماسون حذف خواهند شد.
-              <br>(دکمه «حل فراماسون» در پایین)
+              ${t(tr.day.framasonContaminationDesc)}
             </div>
           </div>
         ` : ''}
 
         ${results?.kaneReveal ? `
           <div class="card mb-md" style="border-color: var(--warning); background: rgba(234,179,8,0.08);">
-            <div class="font-bold mb-sm" style="color: var(--warning);">🎖️ اعلام همشهری کین:</div>
+            <div class="font-bold mb-sm" style="color: var(--warning);">${t(tr.day.kaneRevealLabel)}</div>
             <div style="font-size: var(--text-lg); font-weight: 700;">
-              به دستور همشهری کین،
+              ${t(tr.day.kaneRevealNote)}
+              <br>
               <strong>${results.kaneReveal.targetName}</strong>
-              نقش ${results.kaneReveal.roleIcon} <strong>${results.kaneReveal.roleName}</strong> را داشته!
+              ${results.kaneReveal.roleIcon} <strong>${results.kaneReveal.roleName}</strong>
             </div>
-            <div class="text-muted mt-sm" style="font-size: var(--text-xs);">هدف در بازی می‌ماند — مردم می‌توانند رأی بدهند. شب بعد همشهری کین حذف می‌شود.</div>
+            <div class="text-muted mt-sm" style="font-size: var(--text-xs);">${t(tr.day.kaneRevealNote)}</div>
           </div>
         ` : ''}
 
         <!-- God-only info -->
         <div class="god-dashboard mt-lg">
-          <div class="god-dashboard__title">👁️ اطلاعات محرمانه خدا</div>
+          <div class="god-dashboard__title">${t(tr.day.godSecretInfo)}</div>
           
           ${results?.investigated ? `
             <div class="card mb-sm" style="background: var(--bg-glass); font-size: var(--text-sm);">
-              🔍 نتیجه استعلام کارآگاه: 
+              ${t(tr.day.investigationResult)} 
               <strong>${game.getPlayer(results.investigated.playerId)?.name}</strong>
-              ← ${results.investigated.result === 'blocked' ? '✊ بلاک شده' : results.investigated.result === 'positive' ? '👍' : '👎'}
+              ← ${results.investigated.result === 'blocked' ? t(tr.night.blocked) : results.investigated.result === 'positive' ? '👍' : '👎'}
             </div>
           ` : ''}
 
           ${results?.bombed ? `
             <div class="card mb-sm" style="background: var(--bg-glass); font-size: var(--text-sm);">
-              💣 بمب روی: <strong>${game.getPlayer(results.bombed)?.name}</strong>
+              ${t(tr.day.bombPlanted)} <strong>${game.getPlayer(results.bombed)?.name}</strong>
             </div>
           ` : ''}
 
           ${results?.blocked ? `
             <div class="card mb-sm" style="background: var(--bg-glass); font-size: var(--text-sm);">
-              🧙 اقدام خنثی‌شده: <strong>${game.getPlayer(results.blocked)?.name}</strong>
+              ${t(tr.night.blockAction)} <strong>${game.getPlayer(results.blocked)?.name}</strong>
             </div>
           ` : ''}
 
@@ -324,7 +324,7 @@ export class DayView extends BaseView {
             if (jackP && jackP.curse.isActive) {
               const tTarget = game.getPlayer(jackP.curse.targetId);
               return `<div class="card mb-sm" style="background: rgba(139,92,246,0.08); font-size: var(--text-sm);">
-                🔪 طلسم جک روی: <strong>${tTarget?.name || '—'}</strong>
+                ${t(tr.day.jackCurse).replace('%s', `<strong>${tTarget?.name || '—'}</strong>`)}
               </div>`;
             }
             return '';
@@ -332,8 +332,8 @@ export class DayView extends BaseView {
 
           ${game.framason.isActive || game.framason.isContaminated ? `
             <div class="card mb-sm" style="background: rgba(239,68,68,0.08); font-size: var(--text-sm);">
-              🔺 تیم فراماسون: <strong>${game.getFramasonAllianceNames().join('، ') || '—'}</strong>
-              ${game.framason.isContaminated ? '<span style="color: var(--danger);"> ⚠️ آلوده!</span>' : ''}
+              ${t(tr.day.framasonTeamLabel)} <strong>${game.getFramasonAllianceNames().join('، ') || '—'}</strong>
+              ${game.framason.isContaminated ? '<span style="color: var(--danger);"> ⚠️ '+t(tr.day.contaminated)+'</span>' : ''}
             </div>
           ` : ''}
 
@@ -341,9 +341,9 @@ export class DayView extends BaseView {
             const bullets = game.getActiveBullets();
             if (bullets.length === 0) return '';
             return `<div class="card mb-sm" style="background: rgba(234,179,8,0.08); font-size: var(--text-sm);">
-              🔫 تیرهای فعال:
+              ${t(tr.day.activeBullets)}
               ${bullets.map(b => `<div style="font-size: var(--text-xs); margin-top: 2px;">
-                ${b.type === 'live' ? '🔴 جنگی' : '🟡 مشقی'} → <strong>${b.holderName}</strong>
+                ${b.type === 'live' ? '🔴 '+t(tr.day.announced) : '🟡 '+t(tr.day.announced)} → <strong>${b.holderName}</strong>
               </div>`).join('')}
             </div>`;
           })()}
@@ -351,12 +351,12 @@ export class DayView extends BaseView {
 
         ${game.hasFramasonContamination() ? `
           <button class="btn btn--danger btn--block mt-md" id="btn-resolve-framason">
-            🔺 حل فراماسون — حذف تیم آلوده
+            ${t(tr.day.resolveFramason)}
           </button>
         ` : ''}
 
         <button class="btn btn--primary btn--block mt-lg" id="btn-go-discussion">
-          💬 شروع بحث روز
+          ${t(tr.day.startDiscussion)}
         </button>
       </div>
     `;
