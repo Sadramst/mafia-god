@@ -55,15 +55,15 @@ export class DayView extends BaseView {
         <div class="stats-row">
           <div class="stat-card stat-card--mafia">
             <div class="stat-card__value">${counts.mafia}</div>
-            <div class="stat-card__label">مافیا</div>
+            <div class="stat-card__label">${t(tr.teams.mafiaShort)}</div>
           </div>
           <div class="stat-card stat-card--citizen">
             <div class="stat-card__value">${counts.citizen}</div>
-            <div class="stat-card__label">شهروند</div>
+            <div class="stat-card__label">${t(tr.teams.citizenShort)}</div>
           </div>
           <div class="stat-card stat-card--independent">
             <div class="stat-card__value">${counts.independent}</div>
-            <div class="stat-card__label">مستقل</div>
+            <div class="stat-card__label">${t(tr.teams.independentShort)}</div>
           </div>
         </div>
 
@@ -111,15 +111,15 @@ export class DayView extends BaseView {
         <div class="stats-row">
           <div class="stat-card stat-card--mafia">
             <div class="stat-card__value">${counts.mafia}</div>
-            <div class="stat-card__label">مافیا</div>
+            <div class="stat-card__label">${t(tr.teams.mafiaShort)}</div>
           </div>
           <div class="stat-card stat-card--citizen">
             <div class="stat-card__value">${counts.citizen}</div>
-            <div class="stat-card__label">شهروند</div>
+            <div class="stat-card__label">${t(tr.teams.citizenShort)}</div>
           </div>
           <div class="stat-card stat-card--independent">
             <div class="stat-card__value">${counts.independent}</div>
-            <div class="stat-card__label">مستقل</div>
+            <div class="stat-card__label">${t(tr.teams.independentShort)}</div>
           </div>
         </div>
 
@@ -324,7 +324,7 @@ export class DayView extends BaseView {
             if (jackP && jackP.curse.isActive) {
               const tTarget = game.getPlayer(jackP.curse.targetId);
               return `<div class="card mb-sm" style="background: rgba(139,92,246,0.08); font-size: var(--text-sm);">
-                ${t(tr.day.jackCurse).replace('%s', `<strong>${tTarget?.name || '—'}</strong>`)}
+                ${t(tr.day.jackCurseOn)} <strong>${tTarget?.name || '—'}</strong>
               </div>`;
             }
             return '';
