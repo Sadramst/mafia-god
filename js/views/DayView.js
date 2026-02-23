@@ -104,8 +104,8 @@ export class DayView extends BaseView {
       <div class="view">
         <div class="phase-bar phase-bar--day">
           <span class="phase-bar__icon">☀️</span>
-          <span>روز کور</span>
-          <span class="phase-bar__round">دور ۱</span>
+          <span>${t(tr.day.blindDay)}</span>
+          <span class="phase-bar__round">${t(tr.day.roundNumber).replace('%d', (game.round || 1))}</span>
         </div>
 
         <div class="stats-row">
@@ -124,27 +124,27 @@ export class DayView extends BaseView {
         </div>
 
         <div class="section">
-          <h2 class="section__title">☀️ روز کور — بدون چالش</h2>
+          <h2 class="section__title">${t(tr.day.blindDayTitle)}</h2>
           <p class="text-secondary text-center mb-lg" style="font-size: var(--text-sm);">
-            بازیکنان ۱ دقیقه فرصت صحبت آزاد دارند. هیچ رأی‌گیری یا چالشی انجام نمی‌شود.
+            ${t(tr.day.blindDayDescription)}
           </p>
 
           <div class="timer">
-            <div class="timer__display" id="blind-timer-display">01:00</div>
+            <div class="timer__display" id="blind-timer-display">${Timer.format(game.blindDayDuration)}</div>
             <div class="timer__progress">
               <div class="timer__progress-bar" id="blind-timer-bar" style="width: 100%"></div>
             </div>
             <div class="timer__controls">
-              <button class="btn btn--secondary btn--sm" id="btn-blind-start">▶️ شروع</button>
-              <button class="btn btn--ghost btn--sm" id="btn-blind-pause">⏸️ توقف</button>
-              <button class="btn btn--ghost btn--sm" id="btn-blind-reset">🔄 ریست</button>
+              <button class="btn btn--secondary btn--sm" id="btn-blind-start">${t(tr.day.timerStart)}</button>
+              <button class="btn btn--ghost btn--sm" id="btn-blind-pause">${t(tr.day.timerPause)}</button>
+              <button class="btn btn--ghost btn--sm" id="btn-blind-reset">${t(tr.day.timerReset)}</button>
             </div>
           </div>
         </div>
 
         <div class="mt-lg">
           <button class="btn btn--primary btn--lg btn--block" id="btn-end-blind-day">
-            🌙 پایان روز کور → شب کور
+            ${t(tr.day.endBlindDay)}
           </button>
         </div>
       </div>
@@ -455,7 +455,7 @@ export class DayView extends BaseView {
         ${this.morningShootResult ? this._renderMorningShootResult() : ''}
 
         <button class="btn btn--primary btn--block mt-lg" id="btn-go-voting">
-          🗳️ شروع رأی‌گیری
+          ${t(tr.day.startVoting)}
         </button>
       </div>
     `;
@@ -881,8 +881,10 @@ export class DayView extends BaseView {
     const game = this.app.game;
     const shooter = game.getPlayer(this.morningShooterId);
     if (!shooter) return '';
-
-    const targets = game.getAlivePlayers().filter(p => p.id !== this.morningShooterId);
+    const shooterRole = shooter ? Roles.get(shooter.roleId) : null;
+    // Allow self-target only if shooter is mafia
+    const allowSelf = shooterRole?.team === 'mafia';
+    const targets = game.getAlivePlayers().filter(p => (allowSelf ? true : p.id !== this.morningShooterId));
 
     return `
       <div class="card mt-md" style="border-color: rgba(234,179,8,0.6);">

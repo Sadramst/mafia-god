@@ -43,36 +43,36 @@ export class NightView extends BaseView {
         <!-- Phase Bar -->
         <div class="phase-bar phase-bar--night">
           <span class="phase-bar__icon">🌙</span>
-          <span>${isBlind ? 'شب کور' : `شب ${game.round}`}</span>
-          <span class="phase-bar__round">دور ${game.round}</span>
+          <span>${isBlind ? t(tr.night.blindNightTitle) : t(tr.night.title).replace('%d', String(game.round))}</span>
+          <span class="phase-bar__round">${t(tr.night.roundNumber).replace('%d', String(game.round))}</span>
         </div>
 
         <!-- Stats -->
         <div class="stats-row">
           <div class="stat-card stat-card--mafia">
             <div class="stat-card__value">${counts.mafia}</div>
-            <div class="stat-card__label">مافیا</div>
+              <div class="stat-card__label">${t(tr.setup.mafia)}</div>
           </div>
           <div class="stat-card stat-card--citizen">
             <div class="stat-card__value">${counts.citizen}</div>
-            <div class="stat-card__label">شهروند</div>
+              <div class="stat-card__label">${t(tr.setup.citizen)}</div>
           </div>
           <div class="stat-card stat-card--independent">
             <div class="stat-card__value">${counts.independent}</div>
-            <div class="stat-card__label">مستقل</div>
+              <div class="stat-card__label">${t(tr.setup.independent)}</div>
           </div>
         </div>
 
         <!-- God Dashboard Toggle -->
         <button class="btn btn--ghost btn--block mb-md" id="btn-toggle-dashboard">
-          ${this.showDashboard ? '🙈 مخفی کردن داشبورد' : '👁️ نمایش داشبورد خدا'}
+          ${this.showDashboard ? t(tr.night.hideDashboard) : t(tr.night.showDashboard)}
         </button>
 
         ${this.showDashboard ? this._renderDashboard() : ''}
 
         <!-- Night Steps -->
         <div class="section">
-          <h2 class="section__title">${isBlind ? '🌙 شب کور' : '🎬 اقدامات شبانه'}</h2>
+          <h2 class="section__title">${isBlind ? t(tr.night.blindNightTitle) : t(tr.night.nightActionsTitle)}</h2>
           <div class="stepper" id="night-stepper">
             ${this._renderSteps()}
           </div>
@@ -82,11 +82,11 @@ export class NightView extends BaseView {
         <div class="mt-lg">
           ${game.isNightComplete() ? `
             <button class="btn btn--primary btn--lg btn--block" id="btn-resolve-night">
-              ${isBlind ? '☀️ پایان شب کور → روز' : '☀️ حل شب و رفتن به روز'}
+              ${isBlind ? t(tr.night.endBlindNight) : t(tr.night.resolveNightGoToDay)}
             </button>
           ` : `
             <div class="text-center text-muted" style="font-size: var(--text-sm);">
-              مراحل شبانه را کامل کنید
+              ${t(tr.night.completeSteps)}
             </div>
           `}
         </div>
@@ -100,7 +100,7 @@ export class NightView extends BaseView {
     const game = this.app.game;
     return `
       <div class="god-dashboard">
-        <div class="god-dashboard__title">👁️ داشبورد خدا — فقط شما می‌بینید</div>
+        <div class="god-dashboard__title">${t(tr.night.godDashboardTitle)}</div>
         <div class="god-dashboard__grid">
           ${game.players.map(p => {
             const role = Roles.get(p.roleId);
@@ -123,7 +123,7 @@ export class NightView extends BaseView {
     const steps = game.nightSteps;
 
     if (steps.length === 0) {
-      return `<div class="empty-state"><div class="empty-state__text">هیچ نقشی با اقدام شبانه فعال نیست</div></div>`;
+      return `<div class="empty-state"><div class="empty-state__text">${t(tr.night.noActiveRoles)}</div></div>`;
     }
 
     return steps.map((step, idx) => {
@@ -142,15 +142,10 @@ export class NightView extends BaseView {
       } else if (step.roleId === 'drWatson') {
         targets = targets.filter(p => game.canDrWatsonHeal(p.id));
       } else if (step.roleId === 'constantine') {
-        // Constantine: allow selecting already-dead revivable players
-        // or players who are currently targeted to be killed this night
-        // (exclude salakhi victims — those are not revivable)
-        const deadRevivable = game.getRevivablePlayers();
-        const pending = game.getPendingKillTargets();
-        // merge and dedupe by id — Constantine may pick a pending victim
-        const map = new Map();
-        deadRevivable.concat(pending).forEach(p => { if (p) map.set(p.id, p); });
-        targets = Array.from(map.values());
+        // Constantine: only allow selecting players who died in the previous night
+        // (these are revivable players). Do NOT include pending targets from the
+        // current night — Constantine cannot revive someone killed this same night.
+        targets = game.getRevivablePlayers();
       } else if (step.roleId === 'jadoogar') {
         // Jadoogar can only target citizens and independents, not same person as last night
         targets = targets.filter(p => {
@@ -159,15 +154,19 @@ export class NightView extends BaseView {
             && p.id !== game._jadoogarLastBlockedId;
         });
       } else if (step.roleId === 'godfather') {
-        // Filter based on which mode is selected
-        targets = targets.filter(p => !step.actors.includes(p.id));
-        targets = targets.filter(p => Roles.get(p.roleId)?.team !== 'mafia');
-
+        // Godfather: allow selecting any alive player as target for shoot (including mafia and self),
+        // except roles immune to night shots when in 'shoot' mode. For 'salakhi', restrict guesses
+        // to non-mafia roles as before.
         if (this.godfatherMode === 'shoot') {
-          // Regular shoot: exclude shoot-immune roles (Jack, Zodiac)
+          // Regular shoot: allow targeting anyone except shoot-immune roles (Jack, Zodiac)
           targets = targets.filter(p => !Roles.get(p.roleId)?.shootImmune);
+        } else if (this.godfatherMode === 'salakhi') {
+          // Salakhi: all non-mafia alive players (including Jack/Zodiac)
+          targets = targets.filter(p => Roles.get(p.roleId)?.team !== 'mafia');
+        } else {
+          // No mode selected yet — default to allowing all alive players as potential targets
+          targets = targets;
         }
-        // Salakhi: all non-mafia alive players (including Jack/Zodiac)
       }
 
       const selectedTarget = this.selectedTargets[idx];
@@ -177,18 +176,18 @@ export class NightView extends BaseView {
           <div class="step__header">
             <span class="step__icon">${role?.icon || '❓'}</span>
             <div>
-              <div class="step__title">${step.roleName} بیدار شود</div>
-              <div class="step__subtitle">${this._getActionDescription(step.actionType)}</div>
+              <div class="step__title">${step.roleName} ${t(tr.night.wakeUp)}</div>
+                <div class="step__subtitle">${this._getActionDescription(step.actionType)}</div>
             </div>
           </div>
           <div class="step__body">
-            ${isCompleted ? `
-              <div class="chip" style="color: var(--success);">
-                ✓ ${step.targetId ? `هدف: ${game.getPlayer(step.targetId)?.name || '—'}` : 'رد شد'}
-              </div>
-            ` : isActive ? this._renderActiveStep(step, idx, targets, selectedTarget) : `
-              <div class="text-muted" style="font-size: var(--text-sm);">در انتظار...</div>
-            `}
+              ${isCompleted ? `
+                <div class="chip" style="color: var(--success);">
+                  ${t(tr.night.targetSelected).replace('%s', step.targetId ? (game.getPlayer(step.targetId)?.name || '—') : t(tr.night.skipped))}
+                </div>
+              ` : isActive ? this._renderActiveStep(step, idx, targets, selectedTarget) : `
+                <div class="text-muted" style="font-size: var(--text-sm);">${t(tr.night.waiting)}</div>
+              `}
           </div>
         </div>
       `;
@@ -218,12 +217,12 @@ export class NightView extends BaseView {
       });
       return `
         <div class="card mb-md" style="border-color: var(--mafia); background: rgba(220,38,38,0.06);">
-          <div class="font-bold mb-sm" style="color: var(--mafia);">اعضای تیم مافیا:</div>
+          <div class="font-bold mb-sm" style="color: var(--mafia);">${t(tr.night.mafiaTeamMembers)}</div>
           ${mafiaMembers.join('')}
         </div>
-        <div class="text-muted mb-sm" style="font-size: var(--text-xs);">مافیا همدیگر را شناختند. تأیید کنید.</div>
+        <div class="text-muted mb-sm" style="font-size: var(--text-xs);">${t(tr.night.mafiaKnowEachOther)}</div>
         <button class="btn btn--primary btn--block btn--sm" data-action="confirm-step" data-step="${idx}">
-          ✓ تأیید
+          ${t(tr.night.confirmButton)}
         </button>
       `;
     }
@@ -240,7 +239,7 @@ export class NightView extends BaseView {
       });
       return `
         <div class="card mb-sm" style="background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.3); font-size: var(--text-xs); padding: 8px 12px;">
-          🔪 جک طلسم خود را روی یک نفر می‌گذارد. اگر آن فرد کشته شود یا رأی بگیرد، جک هم حذف می‌شود.
+          ${t(tr.night.jackCurseDescription)}
         </div>
         <div class="target-grid">
           ${curseTargets.map(t => `
@@ -254,10 +253,10 @@ export class NightView extends BaseView {
           <button class="btn btn--primary btn--block btn--sm" 
                   data-action="confirm-step" data-step="${idx}"
                   ${!selectedTarget ? 'disabled' : ''}>
-            ✓ تأیید طلسم
+            ${t(tr.night.confirmCurse)}
           </button>
           <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
-            رد شدن
+            ${t(tr.night.skipAction)}
           </button>
         </div>
       `;
@@ -289,7 +288,7 @@ export class NightView extends BaseView {
     }
 
     // ── Standard step UI ──
-    return `
+      return `
       <div class="target-grid">
         ${targets.map(t => `
           <button class="target-btn ${selectedTarget === t.id ? 'selected' : ''}" 
@@ -302,10 +301,10 @@ export class NightView extends BaseView {
         <button class="btn btn--primary btn--block btn--sm" 
                 data-action="confirm-step" data-step="${idx}"
                 ${!selectedTarget ? 'disabled' : ''}>
-          ✓ تأیید
+          ${t(tr.night.confirmButton)}
         </button>
         <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
-          رد شدن
+          ${t(tr.night.skipAction)}
         </button>
       </div>
     `;
@@ -324,16 +323,16 @@ export class NightView extends BaseView {
       <div class="flex gap-sm mb-md" style="flex-wrap: wrap;">
         <button class="btn ${this.godfatherMode === 'shoot' ? 'btn--primary' : 'btn--ghost'} btn--sm btn--block"
                 data-gf-mode="shoot">
-          🔫 شلیک
+          ${t(tr.night.godfatherShoot)}
         </button>
         <button class="btn ${this.godfatherMode === 'salakhi' ? 'btn--danger' : 'btn--ghost'} btn--sm btn--block"
                 data-gf-mode="salakhi">
-          🗡️ سلاخی
+          ${t(tr.night.godfatherSalakhi)}
         </button>
         ${canNegotiate ? `
           <button class="btn ${this.godfatherMode === 'negotiate' ? 'btn--warning' : 'btn--ghost'} btn--sm btn--block"
                   data-gf-mode="negotiate">
-            🤝 مذاکره
+            ${t(tr.night.godfatherNegotiate)}
           </button>
         ` : ''}
       </div>
@@ -341,10 +340,10 @@ export class NightView extends BaseView {
 
     if (!this.godfatherMode) {
       return `
-        <div class="text-muted mb-sm" style="font-size: var(--text-sm);">ابتدا نوع اقدام را انتخاب کنید:</div>
+        <div class="text-muted mb-sm" style="font-size: var(--text-sm);">${t(tr.night.selectActionFirst)}</div>
         ${modeButtons}
         <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
-          رد شدن
+          ${t(tr.night.skipAction)}
         </button>
       `;
     }
@@ -366,8 +365,8 @@ export class NightView extends BaseView {
     if (this.godfatherMode === 'salakhi' && selectedTarget) {
       const allRoles = Object.values(Roles.ALL).filter(r => r.team !== 'mafia');
       roleGuessUI = `
-        <div class="mt-md">
-          <div class="text-muted mb-sm" style="font-size: var(--text-sm);">نقش حدس‌زده:</div>
+          <div class="mt-md">
+          <div class="text-muted mb-sm" style="font-size: var(--text-sm);">${t(tr.night.guessedRole)}</div>
           <div class="target-grid">
             ${allRoles.map(r => `
               <button class="role-guess-btn ${this.salakhiGuessRoleId === r.id ? 'selected' : ''}"
@@ -385,13 +384,13 @@ export class NightView extends BaseView {
     if (this.godfatherMode === 'salakhi') {
       modeInfoCard = `
         <div class="card mb-sm" style="background: rgba(220,38,38,0.1); border-color: var(--danger); font-size: var(--text-xs); padding: 8px 12px;">
-          ⚠️ در شب سلاخی مافیا شلیک ندارد. اگر حدس درست باشد هدف حذف می‌شود (دکتر و سپر تأثیری ندارد).
+          ${t(tr.night.salakhiWarning)}
         </div>
       `;
     } else if (this.godfatherMode === 'negotiate') {
       modeInfoCard = `
         <div class="card mb-sm" style="background: rgba(234,179,8,0.1); border-color: var(--warning); font-size: var(--text-xs); padding: 8px 12px;">
-          🤝 اگر هدف شهروند ساده یا مظنون باشد → به مافیا اضافه می‌شود. در غیر این صورت مذاکره شکست می‌خورد و شلیک مافیا از دست می‌رود.
+          ${t(tr.night.negotiateInfo)}
         </div>
       `;
     }
@@ -413,10 +412,10 @@ export class NightView extends BaseView {
         <button class="btn btn--primary btn--block btn--sm" 
                 data-action="confirm-step" data-step="${idx}"
                 ${!canConfirm ? 'disabled' : ''}>
-          ✓ تأیید
+          ${t(tr.night.confirmButton)}
         </button>
         <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
-          رد شدن
+          ${t(tr.night.skipAction)}
         </button>
       </div>
     `;
@@ -428,7 +427,7 @@ export class NightView extends BaseView {
   _renderBomberStep(idx, targets, selectedTarget) {
     return `
       <div class="card mb-sm" style="background: rgba(220,38,38,0.06); border-color: var(--danger); font-size: var(--text-xs); padding: 8px 12px;">
-        💣 بمب‌گذار یک‌بار بمب روی کسی می‌گذارد و رمز ۱ تا ۴ تعیین می‌کند. خدا رمز را به خاطر بسپارد!
+        ${t(tr.night.bomberDescription)}
       </div>
       <div class="target-grid">
         ${targets.map(t => `
@@ -440,7 +439,7 @@ export class NightView extends BaseView {
       </div>
       ${selectedTarget ? `
         <div class="mt-md">
-          <div class="text-muted mb-sm" style="font-size: var(--text-sm);">🔑 رمز بمب:</div>
+          <div class="text-muted mb-sm" style="font-size: var(--text-sm);">${t(tr.night.bombPassword)}</div>
           <div class="flex gap-sm">
             ${[1,2,3,4].map(n => `
               <button class="btn btn--sm ${this.bombPassword === n ? 'btn--danger' : 'btn--ghost'} btn--block"
@@ -453,10 +452,10 @@ export class NightView extends BaseView {
         <button class="btn btn--primary btn--block btn--sm" 
                 data-action="confirm-step" data-step="${idx}"
                 ${!selectedTarget || !this.bombPassword ? 'disabled' : ''}>
-          ✓ تأیید بمب
+          ${t(tr.night.confirmBomb)}
         </button>
         <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
-          رد شدن
+          ${t(tr.night.skipAction)}
         </button>
       </div>
     `;
@@ -479,15 +478,15 @@ export class NightView extends BaseView {
 
     return `
       <div class="card mb-sm" style="background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.3); font-size: var(--text-xs); padding: 8px 12px;">
-        🔺 فراماسون یک نفر را بیدار می‌کند. اگر مافیا (غیر جاسوس) یا مستقل باشد، صبح فردا تمام تیم فراماسون حذف می‌شوند!
+        ${t(tr.night.framasonWarning)}
       </div>
       <div class="card mb-md" style="border-color: rgba(239,68,68,0.3);">
-        <div class="font-bold mb-sm" style="color: var(--danger);">👥 تیم فراماسون (${allianceNames.length} نفر):</div>
+        <div class="font-bold mb-sm" style="color: var(--danger);">${t(tr.night.framasonTeam).replace('%d', String(allianceNames.length))}</div>
         <div class="text-secondary" style="font-size: var(--text-sm);">
           ${allianceNames.join('، ') || '—'}
         </div>
         <div class="text-muted mt-sm" style="font-size: var(--text-xs);">
-          ظرفیت باقی‌مانده: ${remaining} نفر
+          ${t(tr.night.framasonCapacity).replace('%d', String(remaining))}
         </div>
       </div>
       <div class="target-grid">
@@ -502,10 +501,10 @@ export class NightView extends BaseView {
         <button class="btn btn--primary btn--block btn--sm" 
                 data-action="confirm-step" data-step="${idx}"
                 ${!selectedTarget ? 'disabled' : ''}>
-          ✓ بیدار کردن و اضافه به تیم
+          ${t(tr.night.wakeAndAddToTeam)}
         </button>
         <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
-          رد شدن (امشب کسی اضافه نکن)
+          ${t(tr.night.skipRecruitment)}
         </button>
       </div>
     `;
@@ -536,25 +535,28 @@ export class NightView extends BaseView {
     // Assigned bullets summary
     const assignedList = this.gunnerAssignments.map((a, i) => {
       const p = game.getPlayer(a.holderId);
+      const label = a.type === 'live'
+        ? t(tr.setup.gunnerLiveBullets).replace(':', '')
+        : t(tr.setup.gunnerBlankBullets).replace(':', '');
       return `<div class="flex items-center gap-sm mb-sm" style="font-size: var(--text-sm);">
-        ${a.type === 'live' ? '🔴 جنگی' : '🟡 مشقی'} → <strong>${p?.name || '—'}</strong>
+        ${label} → <strong>${p?.name || '—'}</strong>
         <button class="btn btn--ghost btn--sm" data-remove-assignment="${i}" style="padding: 2px 8px; font-size: var(--text-xs);">✕</button>
       </div>`;
     }).join('');
 
     // Type selection for adding a new bullet
     const typeButtons = totalLeft > 0 && bulletTargets.length > 0 ? `
-      <div class="text-muted mb-sm mt-md" style="font-size: var(--text-sm);">➕ اضافه کردن تیر:</div>
+      <div class="text-muted mb-sm mt-md" style="font-size: var(--text-sm);">${t(tr.night.addBullet)}</div>
       <div class="flex gap-sm mb-md">
         <button class="btn ${this.gunnerCurrentType === 'blank' ? 'btn--primary' : 'btn--ghost'} btn--sm btn--block"
                 data-gunner-type="blank"
                 ${blankLeft <= 0 ? 'disabled' : ''}>
-          🟡 مشقی (${blankLeft})
+          ${t(tr.night.blankBullet).replace('%d', String(blankLeft))}
         </button>
         <button class="btn ${this.gunnerCurrentType === 'live' ? 'btn--danger' : 'btn--ghost'} btn--sm btn--block"
                 data-gunner-type="live"
                 ${liveLeft <= 0 ? 'disabled' : ''}>
-          🔴 جنگی (${liveLeft})
+          ${t(tr.night.liveBullet).replace('%d', String(liveLeft))}
         </button>
       </div>
     ` : '';
@@ -572,16 +574,16 @@ export class NightView extends BaseView {
 
     return `
       <div class="card mb-sm" style="background: rgba(234,179,8,0.08); border-color: rgba(234,179,8,0.3); font-size: var(--text-xs); padding: 8px 12px;">
-        🔫 تفنگدار تیر به بازیکنان می‌دهد — هر چند تا که دارد ولی حداکثر یک تیر به هر نفر. دارنده صبح می‌تواند شلیک کند.
+        ${t(tr.night.gunnerDescription)}
       </div>
 
       <div class="card mb-sm" style="font-size: var(--text-sm); padding: 8px 12px;">
-        📦 موجودی: 🟡 مشقی: <strong>${blankLeft}</strong> · 🔴 جنگی: <strong>${liveLeft}</strong>
+        ${t(tr.night.gunnerInventory)} 🟡 <strong>${blankLeft}</strong> · 🔴 <strong>${liveLeft}</strong>
       </div>
 
       ${this.gunnerAssignments.length > 0 ? `
         <div class="card mb-sm" style="border-color: rgba(234,179,8,0.4); padding: 8px 12px;">
-          <div class="font-bold mb-sm" style="font-size: var(--text-sm);">📋 تیرهای تخصیص‌داده‌شده:</div>
+          <div class="font-bold mb-sm" style="font-size: var(--text-sm);">${t(tr.night.assignedBullets)}</div>
           ${assignedList}
         </div>
       ` : ''}
@@ -593,10 +595,10 @@ export class NightView extends BaseView {
         <button class="btn btn--primary btn--block btn--sm"
                 data-action="confirm-step" data-step="${idx}"
                 ${this.gunnerAssignments.length === 0 ? 'disabled' : ''}>
-          ✓ تأیید تیرها (${this.gunnerAssignments.length})
+          ${t(tr.night.confirmBullets).replace('%d', String(this.gunnerAssignments.length))}
         </button>
         <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
-          رد شدن
+          ${t(tr.night.skipGunner)}
         </button>
       </div>
     `;
@@ -618,8 +620,8 @@ export class NightView extends BaseView {
 
     const resultIcon = negotiationSuccess ? '👍' : '👎';
     const resultText = negotiationSuccess
-      ? 'خریداری انجام شده است!'
-      : 'خریداری انجام نشده.';
+      ? t(tr.night.negotiationSuccess)
+      : t(tr.night.negotiationFailed);
     const resultColor = negotiationSuccess ? 'var(--success)' : 'var(--danger)';
 
     return `
@@ -629,9 +631,9 @@ export class NightView extends BaseView {
           ${resultText}
         </div>
       </div>
-      <div class="text-muted mb-sm" style="font-size: var(--text-xs);">نتیجه را به خبرنگار نشان دهید و تأیید کنید.</div>
+      <div class="text-muted mb-sm" style="font-size: var(--text-xs);">${t(tr.night.showToReporter)}</div>
       <button class="btn btn--primary btn--block btn--sm" data-action="confirm-step" data-step="${idx}">
-        ✓ تأیید
+        ${t(tr.night.confirmButton)}
       </button>
     `;
   }
@@ -646,10 +648,10 @@ export class NightView extends BaseView {
     overlay.innerHTML = `
       <div class="negotiate-overlay__content">
         <div style="font-size: 64px; margin-bottom: var(--space-md);">📢</div>
-        <div class="negotiate-overlay__title">با صدای بلند اعلام کنید:</div>
-        <div class="negotiate-overlay__text">«مافیا در حال خریداری است»</div>
+        <div class="negotiate-overlay__title">${t(tr.night.announceAloud)}</div>
+        <div class="negotiate-overlay__text">${t(tr.night.mafiaIsNegotiating)}</div>
         <button class="btn btn--warning btn--lg btn--block mt-lg negotiate-overlay__dismiss">
-          ✓ اعلام کردم
+          ${t(tr.night.announced)}
         </button>
       </div>
     `;
@@ -662,27 +664,10 @@ export class NightView extends BaseView {
   }
 
   _getActionDescription(actionType) {
-    const descriptions = {
-      kill: 'شلیک یا سلاخی — نوع اقدام را انتخاب کنید',
-      mafiaHeal: 'یک عضو مافیا را برای نجات انتخاب کنید',
-      bomb: 'بمب روی چه کسی؟ رمز ۱ تا ۴ را تعیین کنید',
-
-      silence: 'چه کسی را سکوت کند؟',
-      block: 'اقدام شبانه چه شهروند یا مستقلی را خنثی کند؟',
-      heal: 'چه کسی را نجات دهد؟',
-      investigate: 'چه کسی را استعلام کند؟ (👍/👎/✊)',
-
-      snipe: 'چه کسی را هدف بگیرد؟ (تیر باقیمانده)',
-      kaneReveal: 'یک بازیکن را انتخاب کند (افشاگری یک‌باره)',
-      soloKill: 'چه کسی را بکشد؟',
-      revive: 'چه کسی را زنده کند؟',
-      curse: 'طلسم را روی چه کسی بگذارد؟',
-      framasonRecruit: 'چه کسی را به تیم اضافه کند؟',
-      giveBullet: 'نوع تیر و بازیکن هدف را انتخاب کنید',
-      checkNegotiation: 'آیا خریداری انجام شده؟',
-      mafiaReveal: 'تیم مافیا همدیگر را بشناسند',
-    };
-    return descriptions[actionType] || 'یک بازیکن انتخاب کنید';
+    // Prefer translations from the shared night dictionary; fall back to a generic prompt
+    const maybe = tr.night && tr.night[actionType];
+    if (maybe) return t(maybe);
+    return t(tr.night.selectTarget);
   }
 
   _attachEvents() {

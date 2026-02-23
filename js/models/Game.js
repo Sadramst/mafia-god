@@ -220,12 +220,11 @@ export class Game {
   /** Start blind day — 1 min, no challenges */
   startBlindDay() {
     this.phase = 'blindDay';
-    this._addHistory('blind_day', '☀️ روز کور آغاز شد — ۱ دقیقه بدون چالش.');
+    this._addHistory('blind_day', t(tr.history.blindDayStart));
   }
 
   /** Start blind night — only mafia wakes to meet each other */
   startBlindNight() {
-    this.round = 1;
     this.phase = 'blindNight';
     this.nightActions = {};
     this.currentNightStep = 0;
@@ -235,7 +234,7 @@ export class Game {
 
     // Blind night: only mafia recognition + Jack curse
     this.nightSteps = this._buildBlindNightSteps();
-    this._addHistory('night_start', '🌙 شب کور — فقط تیم مافیا بیدار می‌شوند.');
+    this._addHistory('night_start', t(tr.history.blindNightStart));
   }
 
   /** Build steps for blind night (mafia meet + Jack curse) */
@@ -249,7 +248,7 @@ export class Game {
     if (mafiaPlayers.length > 0) {
       steps.push({
         roleId: 'mafiaReveal',
-        roleName: 'تیم مافیا',
+        roleName: t(tr.setup.teamMafia),
         roleIcon: '🔴',
         actionType: 'mafiaReveal',
         actors: mafiaPlayers.map(a => a.id),
@@ -263,7 +262,7 @@ export class Game {
     if (jackPlayer) {
       steps.push({
         roleId: 'jack',
-        roleName: 'جک',
+        roleName: (typeof Roles.get === 'function' ? Roles.get('jack')?.getLocalizedName?.() : 'Jack'),
         roleIcon: '🔪',
         actionType: 'curse',
         actors: [jackPlayer.id],
@@ -281,7 +280,7 @@ export class Game {
 
   /** Start a new night */
   startNight() {
-    this.round++;
+    // Round is incremented at the start of the day so day/night share the same round number.
     this.phase = 'night';
     this.nightActions = {};
     this.votes = {};
@@ -298,7 +297,7 @@ export class Game {
     // Build night steps based on active roles
     this.nightSteps = this._buildNightSteps();
 
-    this._addHistory('night_start', `🌙 شب ${this.round} آغاز شد.`);
+    this._addHistory('night_start', t(tr.history.nightStart).replace('%d', String(this.round)));
   }
 
   /** Clear Jack's curse for the new night */
@@ -332,9 +331,17 @@ export class Game {
 
     for (const role of nightRoles) {
       // Check if any alive player has this role
-      const actors = this.players.filter(
+      let actors = this.players.filter(
         p => p.isAlive && p.roleId === role.id
       );
+
+      // If Godfather is dead but other mafia are alive, use mafia members as actors
+      if (actors.length === 0 && role.id === 'godfather') {
+        const mafiaPlayers = this.players.filter(p => p.isAlive && Roles.get(p.roleId)?.team === 'mafia');
+        if (mafiaPlayers.length > 0) {
+          actors = mafiaPlayers;
+        }
+      }
       if (actors.length === 0) continue;
 
       // Special: skip constantine if already used
@@ -360,7 +367,7 @@ export class Game {
 
       steps.push({
         roleId: role.id,
-        roleName: role.name,
+        roleName: typeof role.getLocalizedName === 'function' ? role.getLocalizedName() : role.name,
         roleIcon: role.icon,
         actionType: role.nightAction,
         actors: actors.map(a => a.id),
@@ -432,7 +439,7 @@ export class Game {
       if (kanePlayer) {
         kanePlayer.kill(this.round, 'kane_sacrifice', false); // Not revivable
         results.killed.push(kanePlayer.id);
-        this._addHistory('death', `🎖️ همشهری کین به دستور خدا حذف شد (بهای افشاگری).`);
+        this._addHistory('death', t(tr.history.kaneSacrifice));
       }
       this._kanePendingDeath = false;
     }
@@ -502,9 +509,9 @@ export class Game {
           // Salakhi bypasses doctor, shield, bodyguard — instant kill (not revivable)
           target.kill(this.round, 'salakhi', false);
           results.killed.push(targetId);
-          this._addHistory('death', `🗡️ ${target.name} سلاخی شد. (${Roles.get(target.roleId)?.name})`);
+          this._addHistory('death', t(tr.history.salakhiDeath).replace('%s', target.name).replace('%s', Roles.get(target.roleId)?.getLocalizedName?.() || Roles.get(target.roleId)?.name || '—'));
         } else {
-          this._addHistory('salakhi_fail', `🗡️ سلاخی نادرست بود — ${target.name} زنده ماند.`);
+          this._addHistory('salakhi_fail', t(tr.history.salakhiFail).replace('%s', target.name));
         }
       } else if (target && mode === 'negotiate') {
         // ── Negotiate — recruit simpleCitizen or suspect ──
@@ -512,9 +519,9 @@ export class Game {
         results.negotiated = { playerId: targetId, success: isRecruitable };
         if (isRecruitable) {
           target.roleId = 'simpleMafia';
-          this._addHistory('negotiate', `🤝 ${target.name} توسط مذاکره به تیم مافیا پیوست.`);
+          this._addHistory('negotiate', t(tr.history.negotiateSuccess).replace('%s', target.name));
         } else {
-          this._addHistory('negotiate_fail', `🤝 مذاکره با ${target.name} شکست خورد — شلیک مافیا از دست رفت.`);
+          this._addHistory('negotiate_fail', t(tr.history.negotiateFail).replace('%s', target.name));
         }
       } else if (target) {
         // ── Regular mafia shoot ──
@@ -522,19 +529,19 @@ export class Game {
 
         // Jack & Zodiac are immune to mafia shoot
         if (targetRole?.shootImmune) {
-          this._addHistory('immune', `🔫 شلیک مافیا به ${target.name} تأثیری نداشت (مصونیت).`);
+          this._addHistory('immune', t(tr.history.immune).replace('%s', target.name));
         } else if (target.healed) {
           results.saved.push(targetId);
-          this._addHistory('save', `⚕️ ${target.name} توسط دکتر نجات یافت.`);
+          this._addHistory('save', t(tr.history.saveByDoctor).replace('%s', target.name));
         } else {
           // Check shield before killing
           const died = target.tryKill(this.round, 'mafia');
           if (died) {
             results.killed.push(targetId);
-            this._addHistory('death', `🔫 ${target.name} توسط مافیا کشته شد.`);
+            this._addHistory('death', t(tr.history.mafiaKill).replace('%s', target.name));
           } else {
             results.shielded.push(targetId);
-            this._addHistory('shield', `🛡️ سپر ${target.name} شلیک مافیا را دفع کرد.`);
+            this._addHistory('shield', t(tr.history.shielded).replace('%s', target.name));
           }
         }
       }
@@ -546,7 +553,7 @@ export class Game {
       if (jackPlayer) {
         jackPlayer.curse.place(actions.jack.targetId);
         const curseTarget = this.getPlayer(actions.jack.targetId);
-        this._addHistory('curse', `🔪 جک طلسم خود را روی ${curseTarget?.name || '—'} گذاشت.`);
+        this._addHistory('curse', t(tr.history.cursePlaced).replace('%s', curseTarget?.name || '—'));
       }
     }
 
@@ -562,17 +569,17 @@ export class Game {
           // Zodiac shot the bodyguard → Zodiac dies, bodyguard survives
           zodiacPlayer.kill(this.round, 'zodiac_bodyguard');
           results.killed.push(zodiacId);
-          this._addHistory('death', `♈ زودیاک به محافظ شلیک کرد و خودش حذف شد.`);
+          this._addHistory('death', t(tr.history.zodiacBodyguard));
         } else if (target.healed) {
           results.saved.push(targetId);
         } else {
           const died = target.tryKill(this.round, 'zodiac');
           if (died) {
             results.killed.push(targetId);
-            this._addHistory('death', `♈ ${target.name} توسط زودیاک کشته شد.`);
+            this._addHistory('death', t(tr.history.zodiacKilled).replace('%s', target.name));
           } else {
             results.shielded.push(targetId);
-            this._addHistory('shield', `🛡️ سپر ${target.name} حمله زودیاک را دفع کرد.`);
+            this._addHistory('shield', t(tr.history.shielded).replace('%s', target.name));
           }
         }
       }
@@ -592,23 +599,27 @@ export class Game {
 
         if (targetTeam === 'independent') {
           // Independent → nothing happens, bullet wasted
-          this._addHistory('sniper', `🎯 اسنایپر به ${target.name} شلیک کرد — مستقل است، هیچ اتفاقی نیفتاد.`);
+          this._addHistory('sniper', t(tr.history.sniper_independent).replace('%s', target.name));
         } else if (targetTeam === 'mafia') {
-          if (target.roleId === 'godfather' && target.shield?.isActive) {
-            // Godfather with shield → nothing happens, bullet wasted
-            this._addHistory('sniper', `🎯 اسنایپر به ${target.name} شلیک کرد — پدرخوانده سپر دارد، هیچ اتفاقی نیفتاد.`);
-          } else if (target.healed) {
+          // Use tryKill so shield semantics apply (shield absorbs first lethal shot and is consumed).
+          if (target.healed) {
             // Healed by Dr Lecter → bullet wasted, nothing happens
-            this._addHistory('sniper', `🎯 اسنایپر به ${target.name} شلیک کرد ولی دکتر لکتر نجاتش داد — تیر هدر رفت.`);
+            this._addHistory('sniper', t(tr.history.sniper_healed).replace('%s', target.name));
           } else {
-            // Mafia not healed, godfather without shield → killed
             const died = target.tryKill(this.round, 'sniper');
             if (died) {
               results.killed.push(targetId);
-              this._addHistory('death', `🎯 ${target.name} توسط اسنایپر کشته شد.`);
+              this._addHistory('death', t(tr.history.sniper_killed).replace('%s', target.name));
             } else {
-              results.shielded.push(targetId);
-              this._addHistory('shield', `🛡️ سپر ${target.name} تیر اسنایپر را دفع کرد.`);
+              // tryKill returned false — either shield absorbed it or role immunity applied
+              if (target.shield && !target.shield.isActive) {
+                // Shield was consumed this shot
+                results.shielded.push(targetId);
+                this._addHistory('shield', t(tr.history.sniper_shielded).replace('%s', target.name));
+              } else {
+                // Otherwise treat as immune / wasted
+                this._addHistory('sniper', t(tr.history.sniper_godfather_shield).replace('%s', target.name));
+              }
             }
           }
         } else {
@@ -616,7 +627,7 @@ export class Game {
           const died = sniperPlayer.tryKill(this.round, 'sniper_miss');
           if (died) {
             results.killed.push(sniperId);
-            this._addHistory('death', `🎯 اسنایپر اشتباه زد و خودش مرد.`);
+            this._addHistory('death', t(tr.history.sniper_miss));
           }
         }
       }
@@ -632,7 +643,7 @@ export class Game {
         if (wasBlocked) {
           // Blocked → closed fist ✊
           results.investigated = { playerId: targetId, result: 'blocked' };
-          this._addHistory('investigate', `🔍 کارآگاه بلاک شده بود — نتیجه‌ای ندارد. ✊`);
+          this._addHistory('investigate', t(tr.history.investigate_blocked));
         } else {
           const role = Roles.get(target.roleId);
           const targetTeam = role?.team;
@@ -649,7 +660,7 @@ export class Game {
             thumbsUp = false; // Citizen or independent → 👎
           }
           results.investigated = { playerId: targetId, result: thumbsUp ? 'positive' : 'negative' };
-          this._addHistory('investigate', `🔍 کارآگاه ${target.name} را بررسی کرد: ${thumbsUp ? '👍' : '👎'}`);
+          this._addHistory('investigate', t(tr.history.investigate_result).replace('%s', target.name).replace('%s', thumbsUp ? '👍' : '👎'));
         }
       }
     }
@@ -660,7 +671,7 @@ export class Game {
       if (target) {
         target.silenced = true;
         results.silenced = actions.matador.targetId;
-        this._addHistory('silence', `🤐 ${target.name} توسط ماتادور سکوت شد.`);
+        this._addHistory('silence', t(tr.history.silence).replace('%s', target.name));
       }
     }
 
@@ -671,18 +682,19 @@ export class Game {
       if (target && password) {
         this.bomb.plant(target.id, password);
         results.bombed = actions.bomber.targetId;
-        this._addHistory('bomb', `💣 بمب روی ${target.name} کار گذاشته شد (رمز: ${password}).`);
+        this._addHistory('bomb', t(tr.history.bomb_planted).replace('%s', target.name).replace('%s', password));
       }
     }
 
     // 12. Constantine revives (only players who died last night with revivable death)
     if (actions.constantine?.targetId) {
       const target = this.getPlayer(actions.constantine.targetId);
-      if (target && !target.isAlive && target.deathRound === this.round && target.isRevivable) {
+      // Allow reviving players who died before the current night (any previous round)
+      if (target && !target.isAlive && typeof target.deathRound === 'number' && target.deathRound < this.round && target.isRevivable) {
         target.revive();
         results.revived = actions.constantine.targetId;
         this.constantineUsed = true;
-        this._addHistory('revive', `✝️ ${target.name} توسط کنستانتین زنده شد.`);
+        this._addHistory('revive', t(tr.history.revive).replace('%s', target.name));
       }
     }
 
@@ -699,9 +711,9 @@ export class Game {
           contaminated: res.contaminated,
         };
         if (res.safe) {
-          this._addHistory('framason', `🔺 فراماسون ${recruit.name} را به تیم اضافه کرد.`);
+          this._addHistory('framason', t(tr.history.framason_add).replace('%s', recruit.name));
         } else {
-          this._addHistory('framason', `🔺⚠️ فراماسون ${recruit.name} را بیدار کرد — تیم آلوده شد!`);
+          this._addHistory('framason', t(tr.history.framason_contaminated).replace('%s', recruit.name));
         }
       }
     }
@@ -729,7 +741,7 @@ export class Game {
       if (kaneTarget && results.killed.includes(kaneTargetId)) {
         // Target died during night → act returns to Kane
         this._kaneUsed = false;
-        this._addHistory('kane', `🎖️ هدف همشهری کین در شب کشته شد — توانایی برگشت.`);
+        this._addHistory('kane', t(tr.history.kane_return));
       } else if (kaneTarget) {
         this._kaneUsed = true;
         const targetRole = Roles.get(kaneTarget.roleId);
@@ -743,11 +755,11 @@ export class Game {
             roleIcon: targetRole?.icon || '',
           };
           this._kanePendingDeath = true;
-          this._addHistory('kane', `🎖️ همشهری کین ${kaneTarget.name} را افشا کرد: ${targetRole?.name}`);
+          this._addHistory('kane', t(tr.history.kane_reveal_success).replace('%s', kaneTarget.name).replace('%s', targetRole?.getLocalizedName?.() || targetRole?.name || '—'));
         } else {
           // Target is citizen → nothing happens, act is consumed
           results.kaneReveal = null;
-          this._addHistory('kane', `🎖️ همشهری کین اقدام کرد اما هدف شهروند بود — هیچ اعلامی نمی‌شود.`);
+          this._addHistory('kane', t(tr.history.kane_reveal_fail));
         }
       }
     }
@@ -762,7 +774,7 @@ export class Game {
           results.killed.push(jackPlayer.id);
           results.jackCurseTriggered = true;
           const curseTarget = this.getPlayer(killedId);
-          this._addHistory('death', `🔪 ${curseTarget?.name} کشته شد و به همراه آن جک هم از بازی خارج شد (طلسم).`);
+          this._addHistory('death', t(tr.history.jack_curse_chain).replace('%s', curseTarget?.name || '—'));
           break;
         }
       }
@@ -782,9 +794,15 @@ export class Game {
 
   /** Start day phase */
   startDay() {
+    // Increment round when a real day starts. If round is 0 (first real day), set to 1.
+    if (!this.round || this.round === 0) {
+      this.round = 1;
+    } else {
+      this.round++;
+    }
     this.phase = 'day';
     this.votes = {};
-    this._addHistory('day_start', `☀️ روز ${this.round} آغاز شد.`);
+    this._addHistory('day_start', t(tr.history.day_start).replace('%d', String(this.round)));
   }
 
   // ──────────────────────────────────
@@ -810,7 +828,7 @@ export class Game {
       const p = this.getPlayer(id);
       if (p && p.isAlive) {
         p.kill(this.round, 'framason');
-        this._addHistory('death', `🔺 ${p.name} (تیم فراماسون) حذف شد.`);
+        this._addHistory('death', t(tr.history.framason_member_death).replace('%s', p.name));
       }
     }
 
@@ -857,12 +875,12 @@ export class Game {
 
     // Jack is immune to vote
     if (this.isVoteImmune(playerId)) {
-      this._addHistory('vote_immune', `⚖️ رأی‌گیری علیه ${player.name} — اما حذف نشد (مصونیت از رأی).`);
+      this._addHistory('vote_immune', t(tr.history.vote_immune).replace('%s', player.name));
       return { voteImmune: true };
     }
 
     player.kill(this.round, 'vote');
-    this._addHistory('death', `⚖️ ${player.name} با رأی‌گیری اعدام شد. (${Roles.get(player.roleId)?.name})`);
+    this._addHistory('death', t(tr.history.vote_executed).replace('%s', player.name).replace('%s', Roles.get(player.roleId)?.getLocalizedName?.() || Roles.get(player.roleId)?.name || '—'));
 
     // If framason leader is eliminated, deactivate alliance
     if (this.framason.isActive && playerId === this.framason.leaderId) {
@@ -876,7 +894,7 @@ export class Game {
     if (jackPlayer && jackPlayer.curse.isTriggeredBy(playerId)) {
       jackPlayer.kill(this.round, 'curse');
       extra.jackCurseTriggered = true;
-      this._addHistory('death', `🔪 ${player.name} اعدام شد و جک هم به همراه او از بازی خارج شد (طلسم).`);
+      this._addHistory('death', t(tr.history.execution_with_curse).replace('%s', player.name));
     }
 
     return extra;
@@ -892,7 +910,7 @@ export class Game {
     }
     const ok = this.bulletManager.giveBullet(holderId, type, this.round);
     if (!ok) return { success: false, reason: 'no_bullets' };
-    this._addHistory('gunner', `🔫 تفنگدار یک تیر ${type === 'live' ? 'جنگی' : 'مشقی'} به ${holder.name} داد.`);
+    this._addHistory('gunner', t(tr.history.gunner_gave).replace('%s', (type === 'live' ? 'جنگی' : 'مشقی')).replace('%s', holder.name));
     return { success: true };
   }
 
@@ -917,13 +935,23 @@ export class Game {
     const target = this.getPlayer(targetId);
     if (!target || !target.isAlive) return null;
 
+    // Defensive check: prevent non-mafia shooters from shooting themselves
+    if (shooterId === targetId) {
+      const shooter = this.getPlayer(shooterId);
+      const shooterRole = shooter ? Roles.get(shooter.roleId) : null;
+      if (shooterRole?.team !== 'mafia') {
+        // Invalid self-shot by non-mafia — ignore
+        return null;
+      }
+    }
+
     const targetRole = Roles.get(target.roleId);
     const targetTeam = targetRole?.team || 'citizen';
     const result = { type: bulletType, killed: false, targetTeam, targetName: target.name };
 
     if (bulletType === 'blank') {
       // Blank bullet — always harmless
-      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند.`);
+      this._addHistory('morning_shot', t(tr.history.morning_shot_blank).replace('%s', target.name));
       return result;
     }
 
@@ -934,13 +962,13 @@ export class Game {
     const jadoogarAction = this.nightActions?.jadoogar;
     if (jadoogarAction?.targetId === shooterId) {
       result.type = 'blank';
-      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (جادوگر تیر را خنثی کرد)`);
+      this._addHistory('morning_shot', t(tr.history.morning_shot_wizard).replace('%s', target.name));
       return result;
     }
 
     // Check if target was healed (heal stays until morning)
     if (target.healed) {
-      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (هیل فعال)`);
+      this._addHistory('morning_shot', t(tr.history.morning_shot_healed).replace('%s', target.name));
       return result;
     }
 
@@ -948,18 +976,18 @@ export class Game {
     if (target.shield?.isActive) {
       const absorbed = target.shield.absorb('morning_shot');
       if (absorbed) {
-        this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (سپر)`);
+        this._addHistory('morning_shot', t(tr.history.morning_shot_shield).replace('%s', target.name));
         return result;
       }
     }
 
     // Check Jack/Zodiac morning shot immunity settings
     if (target.roleId === 'jack' && this.jackMorningShotImmune) {
-      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (مصونیت جک)`);
+      this._addHistory('morning_shot', t(tr.history.morning_shot_jack_immune).replace('%s', target.name));
       return result;
     }
     if (target.roleId === 'zodiac' && this.zodiacMorningShotImmune) {
-      this._addHistory('morning_shot', `🔫 تیر مشقی بود — ${target.name} زنده ماند. (مصونیت زودیاک)`);
+      this._addHistory('morning_shot', t(tr.history.morning_shot_zodiac_immune).replace('%s', target.name));
       return result;
     }
 
@@ -968,13 +996,13 @@ export class Game {
     result.killed = true;
 
     const teamName = Roles.getTeamName(targetTeam);
-    this._addHistory('death', `🔫 تیر جنگی بود — ${target.name} حذف شد. (${teamName})`);
+    this._addHistory('death', t(tr.history.warshot_death).replace('%s', target.name).replace('%s', teamName));
 
     // Check Jack curse chain
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
     if (jackPlayer && jackPlayer.curse.isTriggeredBy(targetId)) {
       jackPlayer.kill(this.round, 'curse');
-      this._addHistory('death', `🔪 طلسم جک فعال شد — جک هم حذف شد!`);
+      this._addHistory('death', t(tr.history.jack_curse_activated));
       result.jackCurseTriggered = true;
     }
 
@@ -1001,13 +1029,13 @@ export class Game {
         holder.kill(this.round, 'live_explosion');
         this.bulletManager.removeBullet(bullet.holderId);
         explosions.push({ holderId: holder.id, holderName: holder.name });
-        this._addHistory('death', `💥 تیر جنگی در دست ${holder.name} منفجر شد!`);
+        this._addHistory('death', t(tr.history.live_explosion).replace('%s', holder.name));
 
         // Check Jack curse chain
         const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
         if (jackPlayer && jackPlayer.curse.isTriggeredBy(holder.id)) {
           jackPlayer.kill(this.round, 'curse');
-          this._addHistory('death', `🔪 طلسم جک فعال شد — جک هم حذف شد!`);
+          this._addHistory('death', t(tr.history.jack_curse_activated));
           explosions.push({ holderId: jackPlayer.id, holderName: jackPlayer.name, curseChain: true });
         }
 
@@ -1053,14 +1081,14 @@ export class Game {
     const guardianId = this.players.find(p => p.isAlive && p.roleId === 'bodyguard')?.id;
 
     if (result === 'defused') {
-      this._addHistory('bomb_defused', `🛡️💣 محافظ رمز بمب را درست حدس زد — بمب خنثی شد!`);
+      this._addHistory('bomb_defused', t(tr.history.bomb_defused));
       this.bomb.clear();
     } else {
       // Guardian dies instead of bombed player
       const guardian = this.getPlayer(guardianId);
       if (guardian) {
         guardian.kill(this.round, 'bomb_guardian');
-        this._addHistory('death', `🛡️💥 محافظ رمز بمب را اشتباه زد — محافظ حذف شد.`);
+        this._addHistory('death', t(tr.history.bomb_defused_incorrect));
       }
       this.bomb.clear();
     }
@@ -1070,7 +1098,7 @@ export class Game {
   /** Bodyguard chooses not to try guessing the bomb password */
   bombGuardianSkip() {
     this.bomb.guardianSkip();
-    this._addHistory('bomb_skip', `🛡️ محافظ تصمیم گرفت رمز بمب را حدس نزند.`);
+    this._addHistory('bomb_skip', t(tr.history.bomb_skip));
   }
 
   /**
@@ -1083,12 +1111,12 @@ export class Game {
     const result = this.bomb.targetGuess(guess);
 
     if (result === 'defused') {
-      this._addHistory('bomb_defused', `💣✅ ${this.getPlayer(targetId)?.name} رمز بمب را درست حدس زد — بمب خنثی شد!`);
+      this._addHistory('bomb_defused', t(tr.history.bomb_defused_named).replace('%s', this.getPlayer(targetId)?.name || '—'));
     } else {
       const target = this.getPlayer(targetId);
       if (target) {
         target.kill(this.round, 'bomb');
-        this._addHistory('death', `💥 ${target.name} رمز بمب را اشتباه زد — حذف شد.`);
+        this._addHistory('death', t(tr.history.bomb_wrong_pw_death).replace('%s', target.name));
       }
     }
     this.bomb.clear();
@@ -1110,7 +1138,7 @@ export class Game {
     if (mafiaAlive.length === 0 && independentAlive.length === 0) {
       this.winner = 'citizen';
       this.phase = 'ended';
-      this._addHistory('win', '🏆 تیم شهروند پیروز شد!');
+      this._addHistory('win', t(tr.history.win_citizen));
       return 'citizen';
     }
 
@@ -1118,7 +1146,7 @@ export class Game {
     if (mafiaAlive.length >= citizenAlive.length + independentAlive.length) {
       this.winner = 'mafia';
       this.phase = 'ended';
-      this._addHistory('win', '🏆 تیم مافیا پیروز شد!');
+      this._addHistory('win', t(tr.history.win_mafia));
       return 'mafia';
     }
 
@@ -1126,7 +1154,7 @@ export class Game {
     if (independentAlive.length > 0 && alive.length <= 2 && mafiaAlive.length === 0) {
       this.winner = 'independent';
       this.phase = 'ended';
-      this._addHistory('win', '🏆 بازیکن مستقل پیروز شد!');
+      this._addHistory('win', t(tr.history.win_independent));
       return 'independent';
     }
 
@@ -1145,7 +1173,7 @@ export class Game {
     // Lock Jack's curse so it cannot be moved
     p.curse.lock();
     // Add an explicit history entry
-    this._addHistory('reveal', `🔪 ${p.name} revealed as Jack — طلسم ثابت شد.`);
+    this._addHistory('reveal', t(tr.history.reveal_jack).replace('%s', p.name));
     return true;
   }
 
@@ -1170,9 +1198,13 @@ export class Game {
 
   /** Get revivable players (died last night, not salakhi/kane_sacrifice) */
   getRevivablePlayers() {
-    return this.players.filter(p => 
-      !p.isAlive && 
-      p.deathRound === this.round && 
+    // Revivable players are those who died before the current night
+    // (i.e. deathRound < this.round) and are marked revivable.
+    // This includes any death from game start up to the previous round.
+    return this.players.filter(p =>
+      !p.isAlive &&
+      typeof p.deathRound === 'number' &&
+      p.deathRound < this.round &&
       p.isRevivable
     );
   }

@@ -55,10 +55,83 @@ export class App {
     };
 
     this._initNavigation();
+    this._initTheme();
+    this._initLanguage();
     setDocumentDirection(Settings.getLanguage() === 'en' ? 'en' : 'fa');
     this._updateNavLabels();
     this._initWakeLock();
     this.navigate('home');
+  }
+
+  // ─── Theme / Accent Color ───
+  _initTheme() {
+    // available accent colors to cycle through
+    this._accents = ['#dc2626','#3b82f6','#10b981','#a855f7','#f59e0b'];
+    const accent = Settings.getAccent();
+    this._applyAccent(accent);
+
+    // wire up toggle if present in DOM
+    const btn = document.getElementById('theme-toggle');
+    const dot = document.getElementById('theme-toggle-dot');
+    if (dot) dot.style.background = accent;
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const current = Settings.getAccent();
+        const idx = this._accents.indexOf(current);
+        const next = this._accents[(idx + 1) % this._accents.length];
+        Settings.setAccent(next);
+        this._applyAccent(next);
+        if (dot) dot.style.background = next;
+        // update meta theme-color for mobile chrome
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', next);
+      });
+    }
+  }
+
+  _applyAccent(color) {
+    try {
+      document.documentElement.style.setProperty('--accent', color);
+      // compute hover/darker variant simply by reducing brightness
+      const hover = this._shadeColor(color, -16);
+      document.documentElement.style.setProperty('--accent-hover', hover);
+    } catch (e) { /* ignore */ }
+  }
+
+  // simple shade helper: amount -100..100
+  _shadeColor(col, amt) {
+    const usePound = col[0] === '#';
+    let c = usePound ? col.slice(1) : col;
+    const num = parseInt(c,16);
+    let r = (num >> 16) + amt;
+    let g = ((num >> 8) & 0x00FF) + amt;
+    let b = (num & 0x0000FF) + amt;
+    r = Math.max(Math.min(255, r), 0);
+    g = Math.max(Math.min(255, g), 0);
+    b = Math.max(Math.min(255, b), 0);
+    return (usePound ? '#' : '') + ( (r<<16) | (g<<8) | b ).toString(16).padStart(6,'0');
+  }
+
+  // ─── Language toggle ───
+  _initLanguage() {
+    const btn = document.getElementById('lang-toggle');
+    const update = () => {
+      const lang = Settings.getLanguage();
+      if (!btn) return;
+      // show the language we will switch TO: when current is 'en', show 'فا' (Farsi in Farsi script);
+      // when current is 'fa', show 'EN'.
+      btn.textContent = lang === 'en' ? 'فا' : 'EN';
+      btn.classList.toggle('active', lang === 'en');
+    };
+    update();
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const newLang = Settings.getLanguage() === 'en' ? 'fa' : 'en';
+        Settings.setLanguage(newLang);
+        this.onLanguageChange();
+        update();
+      });
+    }
   }
 
   /**

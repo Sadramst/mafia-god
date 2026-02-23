@@ -52,7 +52,7 @@ export class RoleRevealView extends BaseView {
               <div class="reveal-card__back reveal-card__back--${teamClass}">
                 <div class="reveal-card__back-icon">${role?.icon || '👤'}</div>
                 <div class="reveal-card__back-role">${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedName() || '—'}</span>` : (role?.getLocalizedName() || '—')}</div>
-                <div class="reveal-card__back-team">${Roles.getTeamName(teamClass)}</div>
+                <div class="reveal-card__back-team">${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${t(tr.teams[teamClass])}</span>` : t(tr.teams[teamClass])}</div>
                 <div class="reveal-card__back-desc">${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedDescription() || ''}</span>` : (role?.getLocalizedDescription() || '')}</div>
               </div>
             </div>

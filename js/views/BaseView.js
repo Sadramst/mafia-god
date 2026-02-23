@@ -2,6 +2,8 @@
  * BaseView.js — Base class for all views
  * Provides common rendering helpers and lifecycle
  */
+import { t, translations as tr } from '../utils/i18n.js';
+
 export class BaseView {
   /**
    * @param {HTMLElement} container — The main content container
@@ -44,7 +46,7 @@ export class BaseView {
   }
 
   /** Show a confirmation modal */
-  confirm(title, body, onConfirm, confirmText = 'تأیید', cancelText = 'انصراف') {
+  confirm(title, body, onConfirm, confirmText = t(tr.common.confirm), cancelText = t(tr.common.cancel)) {
     this.app.showModal(title, body, onConfirm, confirmText, cancelText);
   }
 }

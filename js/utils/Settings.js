@@ -24,16 +24,21 @@ export class Settings {
     language: Language.ENGLISH, // Default to English
   };
 
+  /** Theme / accent color defaults */
+  static DEFAULT_THEME = {
+    accent: '#dc2626'
+  };
+
   /** Get current settings */
   static get() {
     try {
       const stored = localStorage.getItem(Settings.KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        return { ...Settings.DEFAULT, ...parsed };
+        return { ...Settings.DEFAULT, ...Settings.DEFAULT_THEME, ...parsed };
       }
     } catch { /* ignore */ }
-    return { ...Settings.DEFAULT };
+    return { ...Settings.DEFAULT, ...Settings.DEFAULT_THEME };
   }
 
   /** Save settings */
@@ -61,5 +66,16 @@ export class Settings {
   /** Reset to defaults */
   static reset() {
     localStorage.removeItem(Settings.KEY);
+  }
+
+  /** Accent color helpers */
+  static getAccent() {
+    return Settings.get().accent || Settings.DEFAULT_THEME.accent;
+  }
+
+  static setAccent(color) {
+    const settings = Settings.get();
+    settings.accent = color;
+    Settings.save(settings);
   }
 }
