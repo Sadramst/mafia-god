@@ -13,7 +13,7 @@ export class DayView extends BaseView {
     super(container, app);
     this.subView = 'results'; // results | discussion | siesta | voting | defense
     this.timer = null;
-    this.timerDisplay = '03:00';
+    this.timerDisplay = '01:00';
     this.timerProgress = 100;
     this.votingTarget = null; // Player being voted on
     this.votedPlayers = {}; // { playerId: [voterIds] } (legacy - not used in simplified voting)
@@ -47,8 +47,8 @@ export class DayView extends BaseView {
         <!-- Phase Bar -->
         <div class="phase-bar phase-bar--day">
           <span class="phase-bar__icon">☀️</span>
-          <span>روز ${game.round}</span>
-          <span class="phase-bar__round">دور ${game.round}</span>
+          <span>${t(tr.day.title).replace('%d', game.round)}</span>
+          <span class="phase-bar__round">${t(tr.day.roundNumber).replace('%d', game.round)}</span>
         </div>
 
         <!-- Stats -->
@@ -69,12 +69,12 @@ export class DayView extends BaseView {
 
         <!-- Sub-view tabs -->
         <div class="tabs mb-md">
-          <button class="tab ${this.subView === 'results' ? 'active' : ''}" data-sub="results">نتایج شب</button>
-          <button class="tab ${this.subView === 'discussion' ? 'active' : ''}" data-sub="discussion">بحث</button>
+          <button class="tab ${this.subView === 'results' ? 'active' : ''}" data-sub="results">${t(tr.day.resultsTab)}</button>
+          <button class="tab ${this.subView === 'discussion' ? 'active' : ''}" data-sub="discussion">${t(tr.day.discussionTab)}</button>
           ${this.app.game.hasBombToResolve() ? `
-            <button class="tab ${this.subView === 'siesta' ? 'active' : ''}" data-sub="siesta">💣 خواب نیم‌روزی</button>
+            <button class="tab ${this.subView === 'siesta' ? 'active' : ''}" data-sub="siesta">${t(tr.day.siestaTab)}</button>
           ` : ''}
-          <button class="tab ${this.subView === 'voting' ? 'active' : ''}" data-sub="voting">رأی‌گیری</button>
+          <button class="tab ${this.subView === 'voting' ? 'active' : ''}" data-sub="voting">${t(tr.day.votingTab)}</button>
         </div>
 
         <div id="day-content"></div>
@@ -388,23 +388,23 @@ export class DayView extends BaseView {
 
     container.innerHTML = `
       <div class="section">
-        <h2 class="section__title">💬 بحث آزاد</h2>
-        
+        <h2 class="section__title">💬 ${t(tr.day.freeDiscussion)}</h2>
+
         <div class="timer">
           <div class="timer__display" id="timer-display">${this.timerDisplay}</div>
           <div class="timer__progress">
             <div class="timer__progress-bar" id="timer-bar" style="width: ${this.timerProgress}%"></div>
           </div>
           <div class="timer__controls">
-            <button class="btn btn--secondary btn--sm" id="btn-timer-start">▶️ شروع</button>
-            <button class="btn btn--ghost btn--sm" id="btn-timer-pause">⏸️ توقف</button>
-            <button class="btn btn--ghost btn--sm" id="btn-timer-reset">🔄 ریست</button>
+            <button class="btn btn--secondary btn--sm" id="btn-timer-start">${t(tr.day.startTimer)}</button>
+            <button class="btn btn--ghost btn--sm" id="btn-timer-pause">${t(tr.day.pauseTimer)}</button>
+            <button class="btn btn--ghost btn--sm" id="btn-timer-reset">${t(tr.day.resetTimer)}</button>
           </div>
         </div>
 
         <!-- Alive players list -->
         <div class="card mt-lg">
-          <div class="font-bold mb-sm">بازیکنان زنده (${game.getAlivePlayers().length} نفر):</div>
+          <div class="font-bold mb-sm">${t(tr.day.alivePlayers).replace('%d', game.getAlivePlayers().length)}</div>
           <div class="player-list">
             ${game.getAlivePlayers().map((p, i) => {
               const role = Roles.get(p.roleId);
@@ -804,7 +804,7 @@ export class DayView extends BaseView {
           if (bar) bar.style.width = `${this.timerProgress}%`;
         },
         () => {
-          this.toast('⏰ وقت بحث تمام شد!', 'info');
+          this.app.showToast(t(tr.day.discussionTimeUp), 'info');
         }
       );
     }

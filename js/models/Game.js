@@ -29,7 +29,7 @@ export class Game {
     this.selectedRoles = {}; // { roleId: count }
     this.currentNightStep = 0;
     this.nightSteps = [];
-    this.dayTimerDuration = 180; // seconds
+    this.dayTimerDuration = 60; // seconds
     this.defenseTimerDuration = 60;
     this.blindDayDuration = 60;  // 1 minute for blind day
     this.constantineUsed = false;
@@ -1318,7 +1318,7 @@ export class Game {
     this._kaneTargetId = data._kaneTargetId ?? null;
     this._kanePendingDeath = data._kanePendingDeath ?? false;
     this._jadoogarLastBlockedId = data._jadoogarLastBlockedId ?? null;
-    this.dayTimerDuration = data.dayTimerDuration || 180;
+    this.dayTimerDuration = data.dayTimerDuration || 60;
     this.defenseTimerDuration = data.defenseTimerDuration || 60;
     this.blindDayDuration = data.blindDayDuration || 60;
     this.zodiacFrequency = data.zodiacFrequency || 'every';
