@@ -69,6 +69,11 @@ export class Player {
    * @returns {boolean} true if player actually died, false if shield saved them
    */
   tryKill(round, cause, revivable = true) {
+    // Immunity: Jack and Zodiac cannot be killed by generic night kills
+    // except when the cause is a Godfather 'salakhi' or a 'curse' chain or special sacrifices.
+    if ((this.roleId === 'jack' || this.roleId === 'zodiac') && !['salakhi', 'curse', 'kane_sacrifice'].includes(cause)) {
+      return false;
+    }
     if (this.shield.absorb(cause)) {
       return false; // Shield absorbed the hit
     }
@@ -78,10 +83,17 @@ export class Player {
 
   /** Kill this player */
   kill(round, cause, revivable = true) {
+    // Respect role-specific immunity: Jack and Zodiac are immune to generic night kills
+    // unless the cause is an explicit Godfather salakhi, curse chain, or special sacrificial removal.
+    if ((this.roleId === 'jack' || this.roleId === 'zodiac') && !['salakhi', 'curse', 'kane_sacrifice'].includes(cause)) {
+      return false;
+    }
+
     this.isAlive = false;
     this.deathRound = round;
     this.deathCause = cause;
     this.isRevivable = revivable;
+    return true;
   }
 
   /** Revive this player (Constantine ability) */
