@@ -284,6 +284,42 @@ export class SetupView extends BaseView {
       try { Storage.saveRoster(game.players.map(p => ({ id: p.id, nameEn: p.nameEn, nameFa: p.nameFa }))); } catch (e) {}
     };
 
+    // Attach direct listeners but also a delegated click handler on the container
+    // Remove previous delegated handler if present to avoid duplicates
+    if (this._setupClickHandlerRef) this.container.removeEventListener('click', this._setupClickHandlerRef);
+    this._setupClickHandlerRef = (e) => {
+      const target = e.target;
+      if (!target) return;
+      // Add button (works even if DOM was replaced)
+      if (target.closest && target.closest('#btn-add-player')) {
+        e.preventDefault();
+        addPlayer();
+        return;
+      }
+      // Suggested player quick-add
+      const sp = target.closest && target.closest('.suggested-player');
+      if (sp) {
+        const en = sp.dataset.en; const fa = sp.dataset.fa;
+        addPlayer({ en, fa });
+        return;
+      }
+      // Remove player button
+      if (target.closest && target.closest('.player-item__remove')) {
+        const btn = target.closest('.player-item__remove');
+        const id = Number(btn.dataset.id);
+        if (!Number.isNaN(id)) {
+          const item = this.container.querySelector(`.player-item[data-id="${id}"]`);
+          if (item) item.remove();
+          game.removePlayer(id);
+          this._updatePlayersCountDisplays();
+          try { this.app.saveGame(); } catch (e) {}
+          try { Storage.saveRoster(game.players.map(p => ({ id: p.id, nameEn: p.nameEn, nameFa: p.nameFa }))); this.toast(t(tr.setup.rosterSaved), 'success'); } catch (e) {}
+        }
+        return;
+      }
+    };
+    this.container.addEventListener('click', this._setupClickHandlerRef);
+
     if (addBtn) addBtn.addEventListener('click', addPlayer);
     if (input) input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') addPlayer();
