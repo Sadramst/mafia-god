@@ -1133,6 +1133,22 @@ export class Game {
     return null;
   }
 
+  /**
+   * Reveal a player's Jack identity publicly and lock Jack's curse so it cannot be changed.
+   * This is a helper for God to 'reveal' Jack and freeze his curse target.
+   * @param {number} jackPlayerId
+   */
+  revealJack(jackPlayerId) {
+    const p = this.getPlayer(jackPlayerId);
+    if (!p) return false;
+    if (p.roleId !== 'jack') return false;
+    // Lock Jack's curse so it cannot be moved
+    p.curse.lock();
+    // Add an explicit history entry
+    this._addHistory('reveal', `🔪 ${p.name} revealed as Jack — طلسم ثابت شد.`);
+    return true;
+  }
+
   // ──────────────────────────────────
   //  HELPERS
   // ──────────────────────────────────

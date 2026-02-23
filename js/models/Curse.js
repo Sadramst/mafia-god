@@ -16,6 +16,8 @@ export class Curse {
     this._targetId = null;
     /** @type {number|null} Last night's curse target (used to prevent re-targeting) */
     this._lastTargetId = null;
+    /** @type {boolean} If true, Jack cannot change or place a new curse anymore */
+    this._locked = false;
   }
 
   /** Whether a curse is currently active */
@@ -33,7 +35,18 @@ export class Curse {
    * @param {number} playerId — The target player ID
    */
   place(playerId) {
+    if (this._locked) return; // cannot change curse once locked
     this._targetId = playerId;
+  }
+
+  /** Lock the curse so it cannot be moved again (e.g., after public reveal) */
+  lock() {
+    this._locked = true;
+  }
+
+  /** Whether the curse has been locked (cannot be changed) */
+  get isLocked() {
+    return !!this._locked;
   }
 
   /**
@@ -61,7 +74,7 @@ export class Curse {
 
   /** Serialize for storage */
   toJSON() {
-    return { targetId: this._targetId, lastTargetId: this._lastTargetId };
+    return { targetId: this._targetId, lastTargetId: this._lastTargetId, locked: !!this._locked };
   }
 
   /** Deserialize from storage */
@@ -69,6 +82,7 @@ export class Curse {
     const t = new Curse();
     t._targetId = data?.targetId ?? null;
     t._lastTargetId = data?.lastTargetId ?? null;
+    t._locked = !!data?.locked;
     return t;
   }
 }

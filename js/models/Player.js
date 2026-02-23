@@ -69,10 +69,18 @@ export class Player {
    * @returns {boolean} true if player actually died, false if shield saved them
    */
   tryKill(round, cause, revivable = true) {
-    // Immunity: Jack and Zodiac cannot be killed by generic night kills
-    // except when the cause is a Godfather 'salakhi' or a 'curse' chain or special sacrifices.
-    if ((this.roleId === 'jack' || this.roleId === 'zodiac') && !['salakhi', 'curse', 'kane_sacrifice'].includes(cause)) {
-      return false;
+    // Immunity rules:
+    // - Jack: immune to generic night kills; only dies on 'salakhi', 'curse', or 'kane_sacrifice'.
+    // - Zodiac: immune to mafia/sniper night shots but can die from Godfather salakhi,
+    //   from shooting the bodyguard (cause 'zodiac_bodyguard'), from daytime/morning shots
+    //   (gunner `morning_shot`) and explosions/bombs.
+    if (this.roleId === 'jack') {
+      if (!['salakhi', 'curse', 'kane_sacrifice'].includes(cause)) return false;
+    }
+    if (this.roleId === 'zodiac') {
+      if (!['salakhi', 'curse', 'kane_sacrifice', 'zodiac_bodyguard', 'morning_shot', 'live_explosion', 'bomb'].includes(cause)) {
+        return false;
+      }
     }
     if (this.shield.absorb(cause)) {
       return false; // Shield absorbed the hit
