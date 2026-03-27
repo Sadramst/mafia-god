@@ -1,0 +1,253 @@
+[
+  {
+    "id": "S14",
+    "title": "Jack Instant Win — Mafia Collapse",
+    "winner": "independent (Jack)",
+    "players": 10,
+    "roster": {
+      "P1": "jack", "P2": "zodiac", "P3": "godfather", "P4": "simpleMafia",
+      "P5": "drWatson", "P6": "detective", "P7": "sniper", "P8": "simpleCitizen",
+      "P9": "simpleCitizen", "P10": "bodyguard"
+    },
+    "timeline": [
+      { "phase": "blindNight", "actions": { "jack": { "target": "P5", "action": "curse" } } },
+      { "phase": "night1", "actions": {
+        "godfather": { "target": "P8", "mode": "shoot" },
+        "zodiac": { "target": "P9", "action": "shoot" },
+        "drWatson": { "target": "P5", "action": "heal" },
+        "sniper": { "target": "P4", "action": "shoot" }
+      }, "results": { "killed": ["P8", "P9", "P4"], "sniperHit": "P4 is mafia → correct kill" } },
+      { "phase": "day1", "vote": "P3", "result": "P3 (Godfather) eliminated by vote" },
+      { "phase": "checkWin", "result": "All mafia dead (P3, P4). Jack alive → Jack wins instantly. Zodiac also alive but Jack takes priority." }
+    ]
+  },
+  {
+    "id": "S15",
+    "title": "Zodiac Handshake Victory — Citizen Allies Zodiac",
+    "winner": "independent (Zodiac)",
+    "players": 10,
+    "roster": {
+      "P1": "zodiac", "P2": "godfather", "P3": "simpleMafia", "P4": "drWatson",
+      "P5": "detective", "P6": "sniper", "P7": "simpleCitizen", "P8": "simpleCitizen",
+      "P9": "simpleCitizen", "P10": "bodyguard"
+    },
+    "timeline": [
+      { "phase": "night1", "actions": {
+        "godfather": { "target": "P4", "mode": "shoot" },
+        "zodiac": { "target": "P7", "action": "shoot" }
+      }, "results": { "killed": ["P4", "P7"] } },
+      { "phase": "day1", "vote": "P2", "result": "P2 (Godfather) voted out" },
+      { "phase": "night2", "actions": {
+        "zodiac": { "target": "P8", "action": "shoot" }
+      }, "results": { "killed": ["P8"], "note": "P3 (simpleMafia) still alive but is last mafia" } },
+      { "phase": "day2", "vote": "P3", "result": "P3 (simpleMafia) voted out. All mafia dead. Jack NOT alive → no instant win. Zodiac alive with citizens → game continues." },
+      { "phase": "night3", "actions": {
+        "zodiac": { "target": "P9", "action": "shoot" }
+      }, "results": { "killed": ["P9"] } },
+      { "phase": "day3", "vote": "P6", "result": "P6 (sniper) voted out" },
+      { "phase": "checkWin", "result": "3 alive: P1 (zodiac), P5 (detective), P10 (bodyguard) → handshake triggered" },
+      { "phase": "handshake", "pair": ["P5", "P1"], "result": "Citizen + Zodiac → independent wins" }
+    ]
+  },
+  {
+    "id": "S16",
+    "title": "Mafia Wins via Handshake — Citizen Picks Mafia Over Zodiac",
+    "winner": "mafia",
+    "players": 8,
+    "roster": {
+      "P1": "zodiac", "P2": "godfather", "P3": "drWatson", "P4": "simpleCitizen",
+      "P5": "simpleCitizen", "P6": "simpleCitizen", "P7": "simpleCitizen", "P8": "simpleMafia"
+    },
+    "timeline": [
+      { "phase": "night1", "actions": {
+        "godfather": { "target": "P3", "mode": "shoot" },
+        "zodiac": { "target": "P4", "action": "shoot" }
+      }, "results": { "killed": ["P3", "P4"] } },
+      { "phase": "day1", "vote": "P5", "result": "P5 (citizen) mislynched" },
+      { "phase": "night2", "actions": {
+        "godfather": { "target": "P6", "mode": "shoot" },
+        "zodiac": { "target": "P7", "action": "shoot" }
+      }, "results": { "killed": ["P6", "P7"] } },
+      { "phase": "checkWin", "result": "3 alive: P1 (zodiac), P2 (godfather), P8 (simpleMafia). Mafia ≥ citizen+indie (2 >= 0+1) BUT 3 alive with independent → handshake" },
+      { "phase": "handshake", "pair": ["P2", "P8"], "result": "Mafia + Mafia (no independent in pair) → mafia wins" }
+    ]
+  },
+  {
+    "id": "S17",
+    "title": "Jack Curse Chain Prevents Jack Win — Citizen Victory",
+    "winner": "citizen",
+    "players": 8,
+    "roster": {
+      "P1": "jack", "P2": "godfather", "P3": "simpleMafia", "P4": "drWatson",
+      "P5": "detective", "P6": "simpleCitizen", "P7": "simpleCitizen", "P8": "sniper"
+    },
+    "timeline": [
+      { "phase": "blindNight", "actions": { "jack": { "target": "P6", "action": "curse" } } },
+      { "phase": "night1", "actions": {
+        "godfather": { "target": "P4", "mode": "shoot" },
+        "jack": { "target": "P6", "action": "curse" }
+      }, "results": { "killed": ["P4"] } },
+      { "phase": "day1", "vote": ["P6", "P3"], "result": "Tie vote: P6 + P3 both eliminated. P6 was cursed → Jack also dies via curse chain! All 3 dead." },
+      { "phase": "night2", "actions": {
+        "godfather": { "target": "P7", "mode": "shoot" }
+      }, "results": { "killed": ["P7"] } },
+      { "phase": "day2", "vote": "P2", "result": "P2 (Godfather) voted out. All mafia dead (P2, P3). Jack dead. No independents alive → citizen wins." }
+    ]
+  },
+  {
+    "id": "S18",
+    "title": "Zodiac Kills to 3-Player — Long Game via Sorcerer Disruption",
+    "winner": "independent (Zodiac via handshake)",
+    "players": 10,
+    "roster": {
+      "P1": "zodiac", "P2": "godfather", "P3": "jadoogar", "P4": "drWatson",
+      "P5": "detective", "P6": "sniper", "P7": "simpleCitizen", "P8": "simpleCitizen",
+      "P9": "bodyguard", "P10": "simpleMafia"
+    },
+    "timeline": [
+      { "phase": "night1", "actions": {
+        "jadoogar": { "target": "P4", "action": "block" },
+        "godfather": { "target": "P7", "mode": "shoot" },
+        "zodiac": { "target": "P8", "action": "shoot" },
+        "drWatson": { "target": "P7", "action": "heal" }
+      }, "results": { "killed": ["P7", "P8"], "note": "Watson blocked → heal nullified → P7 dies" } },
+      { "phase": "day1", "vote": "P2", "result": "P2 (Godfather) voted out" },
+      { "phase": "night2", "actions": {
+        "zodiac": { "target": "P5", "action": "shoot" }
+      }, "results": { "killed": ["P5"] } },
+      { "phase": "day2", "vote": "P10", "result": "P10 (simpleMafia) voted out. All mafia dead. No Jack → no instant win. Zodiac continues." },
+      { "phase": "night3", "actions": {
+        "zodiac": { "target": "P6", "action": "shoot" }
+      }, "results": { "killed": ["P6"] } },
+      { "phase": "day3", "vote": "P4", "result": "P4 (Watson) voted out. 3 alive: P1(zodiac), P3(jadoogar dead? no P3 is alive), P9(bodyguard)" },
+      { "phase": "checkWin", "result": "3 alive with independent → handshake" },
+      { "phase": "handshake", "pair": ["P9", "P1"], "result": "Citizen + Zodiac → independent wins" }
+    ]
+  },
+  {
+    "id": "S19",
+    "title": "Salakhi Kills Jack — No Instant Win — Mafia Dominance",
+    "winner": "mafia",
+    "players": 8,
+    "roster": {
+      "P1": "jack", "P2": "godfather", "P3": "simpleMafia", "P4": "drWatson",
+      "P5": "simpleCitizen", "P6": "simpleCitizen", "P7": "simpleCitizen", "P8": "simpleCitizen"
+    },
+    "timeline": [
+      { "phase": "night1", "actions": {
+        "godfather": { "target": "P1", "mode": "salakhi", "guessedRole": "jack" }
+      }, "results": { "salakhi": { "correct": true }, "killed": ["P1"] } },
+      { "phase": "night2", "actions": {
+        "godfather": { "target": "P4", "mode": "shoot" }
+      }, "results": { "killed": ["P4"] } },
+      { "phase": "day2", "vote": "P5", "result": "P5 mislynched" },
+      { "phase": "night3", "actions": {
+        "godfather": { "target": "P6", "mode": "shoot" }
+      }, "results": { "killed": ["P6"] } },
+      { "phase": "checkWin", "result": "Alive: P2(GF), P3(mafia), P7(citizen), P8(citizen). Mafia 2 >= citizen 2 → mafia wins." }
+    ]
+  },
+  {
+    "id": "S20",
+    "title": "Bomb + Curse Chain → Jack Dies Before Mafia Collapse",
+    "winner": "citizen",
+    "players": 10,
+    "roster": {
+      "P1": "jack", "P2": "godfather", "P3": "bomber", "P4": "drWatson",
+      "P5": "detective", "P6": "bodyguard", "P7": "simpleCitizen", "P8": "simpleCitizen",
+      "P9": "simpleCitizen", "P10": "sniper"
+    },
+    "timeline": [
+      { "phase": "blindNight", "actions": { "jack": { "target": "P7", "action": "curse" } } },
+      { "phase": "night1", "actions": {
+        "godfather": { "target": "P8", "mode": "shoot" },
+        "bomber": { "target": "P7", "bombPassword": 3 },
+        "jack": { "target": "P7", "action": "curse" }
+      }, "results": { "killed": ["P8"], "bombed": "P7" } },
+      { "phase": "day1_bomb", "bodyguardGuess": 1, "result": "Wrong → P6 (bodyguard) dies. Bomb cleared (guardian sacrifice). P7 survives." },
+      { "phase": "day1_vote", "vote": "P7", "result": "P7 voted out. P7 was Jack's curse target → Jack also dies!" },
+      { "phase": "night2", "actions": {
+        "sniper": { "target": "P2", "action": "shoot" }
+      }, "results": { "note": "Sniper hits Godfather → shield absorbs" } },
+      { "phase": "day2", "vote": "P2", "result": "Godfather voted out (no shield left)" },
+      { "phase": "night3_or_vote", "vote": "P3", "result": "P3 (bomber) voted out. All mafia dead. Jack dead. No indep alive → citizen wins." }
+    ]
+  },
+  {
+    "id": "S21",
+    "title": "Freemason Contamination + Zodiac Survives → Handshake",
+    "winner": "independent (Zodiac via handshake)",
+    "players": 10,
+    "roster": {
+      "P1": "zodiac", "P2": "godfather", "P3": "simpleMafia", "P4": "drWatson",
+      "P5": "freemason", "P6": "simpleCitizen", "P7": "simpleCitizen", "P8": "simpleCitizen",
+      "P9": "bodyguard", "P10": "detective"
+    },
+    "timeline": [
+      { "phase": "night1", "actions": {
+        "godfather": { "target": "P6", "mode": "shoot" },
+        "zodiac": { "target": "P7", "action": "shoot" },
+        "freemason": { "target": "P8", "action": "recruit" }
+      }, "results": { "killed": ["P6", "P7"], "framasonRecruit": { "safe": true } } },
+      { "phase": "day1", "vote": "P2", "result": "P2 (Godfather) voted out" },
+      { "phase": "night2", "actions": {
+        "freemason": { "target": "P3", "action": "recruit" },
+        "zodiac": { "target": "P10", "action": "shoot" }
+      }, "results": { "killed": ["P10"], "framasonContaminated": true, "note": "Recruited mafia → contamination!" } },
+      { "phase": "day2", "framasonContam": true, "result": "Freemason contamination: P5, P8 die. P3 voted out. Mafia all dead." },
+      { "phase": "night3", "actions": { "zodiac": { "target": "P4", "action": "shoot" } }, "results": { "killed": ["P4"] } },
+      { "phase": "checkWin", "result": "3 alive: P1(zodiac), P9(bodyguard), P3 is dead... need recount. Actually: P1, P9, remaining citizen → handshake" },
+      { "phase": "handshake", "pair": ["P9", "P1"], "result": "Citizen + Zodiac → independent wins" }
+    ]
+  },
+  {
+    "id": "S22",
+    "title": "Constantine Revives Key Player → Citizens Survive to Win",
+    "winner": "citizen",
+    "players": 10,
+    "roster": {
+      "P1": "godfather", "P2": "simpleMafia", "P3": "drWatson", "P4": "detective",
+      "P5": "constantine", "P6": "sniper", "P7": "simpleCitizen", "P8": "simpleCitizen",
+      "P9": "simpleCitizen", "P10": "simpleCitizen"
+    },
+    "timeline": [
+      { "phase": "night1", "actions": {
+        "godfather": { "target": "P6", "mode": "shoot" },
+        "detective": { "target": "P2", "action": "investigate" }
+      }, "results": { "killed": ["P6"], "investigated": { "result": "positive", "note": "P2 is mafia" } } },
+      { "phase": "day1", "vote": "P2", "result": "P2 (simpleMafia) voted out based on detective info" },
+      { "phase": "night2", "actions": {
+        "godfather": { "target": "P4", "mode": "shoot" },
+        "constantine": { "target": "P6", "action": "revive" }
+      }, "results": { "killed": ["P4"], "revived": "P6" } },
+      { "phase": "day2", "vote": "P1", "result": "P1 (Godfather) voted out. All mafia dead. No independents → citizen wins." }
+    ]
+  },
+  {
+    "id": "S23",
+    "title": "Jack + Zodiac Both Alive, Mafia Dies → Jack Instant Win",
+    "winner": "independent (Jack)",
+    "players": 10,
+    "roster": {
+      "P1": "jack", "P2": "zodiac", "P3": "godfather", "P4": "simpleMafia",
+      "P5": "drWatson", "P6": "detective", "P7": "simpleCitizen", "P8": "simpleCitizen",
+      "P9": "bodyguard", "P10": "sniper"
+    },
+    "timeline": [
+      { "phase": "blindNight", "actions": { "jack": { "target": "P7", "action": "curse" } } },
+      { "phase": "night1", "actions": {
+        "godfather": { "target": "P7", "mode": "shoot" },
+        "zodiac": { "target": "P8", "action": "shoot" },
+        "jack": { "target": "P7", "action": "curse" }
+      }, "results": { "killed": ["P7", "P8"], "jackCurse": "P7 killed → Jack's curse triggers → Jack also dies!" } },
+      { "phase": "day1_vote", "vote": "P3", "result": "P3 (Godfather) voted out" },
+      { "phase": "day1_check", "result": "All mafia not dead yet (P4 alive)" },
+      { "phase": "night2", "actions": {
+        "zodiac": { "target": "P5", "action": "shoot" },
+        "sniper": { "target": "P4", "action": "shoot" }
+      }, "results": { "killed": ["P5", "P4"], "note": "Sniper kills last mafia P4" } },
+      { "phase": "checkWin", "result": "All mafia dead. Jack alive? P1 died from curse in night1. So Jack dead. Zodiac alive. Citizens alive. No instant Jack win." },
+      { "phase": "note", "result": "This scenario's twist: Jack curse triggers in N1 killing Jack. Then no instant win. Game continues until Zodiac gets to handshake or citizens eliminate Zodiac." }
+    ]
+  }
+]

@@ -247,7 +247,7 @@ describe('S1 — Chain Reactions & Misleading Signals', () => {
     // P12 is drLecter (mafia) — still alive, so no win yet
   });
 
-  it('Final — after all mafia + independents dead → Citizens Win', () => {
+  it('Final — all mafia dead + Jack alive (killed by curse) + all other indeps dead → Citizens Win', () => {
     // Kill all mafia: P8 (bomber), P12 (lecter), P14 (godfather)
     // Kill all independents: P4 (zodiac), P7 (jack)
     p.P8.kill(2, 'vote'); p.P12.kill(4, 'vote'); p.P14.kill(3, 'vote');
@@ -391,8 +391,28 @@ describe('S2 — Freemason Contamination & Negotiation', () => {
 /* ═══════════════════════════════════════════════════════════════════
    S3 — Independent Victory Edge
    ═══════════════════════════════════════════════════════════════════ */
-describe('S3 — Independent Victory Edge', () => {
-  it('Independent wins when ≤2 alive + independents present + no mafia', () => {
+describe('S3 — Independent Victory — New Rules', () => {
+  it('Jack instant win: all mafia dead + Jack alive → independent wins immediately', () => {
+    const { game, p } = setup({
+      P1: 'sniper',
+      P2: 'simpleCitizen',
+      P3: 'jack',
+      P4: 'godfather',
+      P5: 'simpleMafia',
+      P6: 'simpleCitizen',
+      P7: 'simpleCitizen',
+      P8: 'simpleCitizen',
+    });
+
+    // Kill all mafia
+    p.P4.kill(2, 'vote'); p.P5.kill(3, 'vote');
+    // Jack alive + citizens alive → Jack wins immediately
+    const winner = game.checkWinCondition();
+    expect(winner).toBe('independent');
+    expect(game.phase).toBe('ended');
+  });
+
+  it('Zodiac alone (all mafia + all citizens dead) → independent wins', () => {
     const { game, p } = setup({
       P1: 'sniper',
       P2: 'simpleCitizen',
@@ -401,33 +421,76 @@ describe('S3 — Independent Victory Edge', () => {
       P5: 'simpleMafia',
     });
 
-    // Kill all mafia
+    // Kill all mafia + all citizens
     p.P4.kill(2, 'vote'); p.P5.kill(3, 'vote');
-    // Kill citizens down to 0
     p.P1.kill(1, 'mafia'); p.P2.kill(2, 'zodiac');
-    // Alive: P3 (zodiac) only — 1 player, independent, no mafia
+    // Alive: P3 (zodiac) only
     const winner = game.checkWinCondition();
     expect(winner).toBe('independent');
   });
 
-  it('Independent wins with 2 indeps + 0 mafia + 0 citizens', () => {
+  it('3 players with independent → handshake triggered', () => {
     const { game, p } = setup({
-      P1: 'jack',
-      P2: 'zodiac',
+      P1: 'zodiac',
+      P2: 'simpleCitizen',
       P3: 'godfather',
       P4: 'simpleCitizen',
       P5: 'simpleCitizen',
       P6: 'simpleCitizen',
       P7: 'simpleCitizen',
-      P8: 'simpleCitizen',
+      P8: 'simpleMafia',
     });
 
-    // Kill mafia + citizens, leave independents
-    p.P3.kill(1, 'vote'); // godfather
+    // Kill down to 3: P1 (zodiac), P2 (citizen), P3 (godfather)
     for (const k of ['P4', 'P5', 'P6', 'P7', 'P8']) p[k].kill(2, 'mafia');
-    // Alive: P1 (jack), P2 (zodiac) = 2 indeps, total 2 ≤ 2
-    const winner = game.checkWinCondition();
-    expect(winner).toBe('independent');
+
+    const result = game.checkWinCondition();
+    expect(result).toBe('handshake');
+    expect(game.phase).toBe('handshake');
+    expect(game.handshakeState).toBeTruthy();
+    expect(game.handshakeState.players).toHaveLength(3);
+  });
+
+  it('Handshake resolved: independent in pair → independent wins', () => {
+    const { game, p } = setup({
+      P1: 'zodiac',
+      P2: 'simpleCitizen',
+      P3: 'godfather',
+      P4: 'simpleCitizen',
+      P5: 'simpleCitizen',
+      P6: 'simpleCitizen',
+      P7: 'simpleCitizen',
+      P8: 'simpleMafia',
+    });
+
+    for (const k of ['P4', 'P5', 'P6', 'P7', 'P8']) p[k].kill(2, 'mafia');
+    game.checkWinCondition(); // triggers handshake
+
+    const result = game.resolveHandshake(p.P2.id, p.P1.id); // citizen + zodiac
+    expect(result.winner).toBe('independent');
+    expect(game.phase).toBe('ended');
+    expect(dead(p.P3)).toBe(true); // godfather eliminated
+  });
+
+  it('Handshake resolved: mafia + citizen (no independent) → mafia wins', () => {
+    const { game, p } = setup({
+      P1: 'zodiac',
+      P2: 'simpleCitizen',
+      P3: 'godfather',
+      P4: 'simpleCitizen',
+      P5: 'simpleCitizen',
+      P6: 'simpleCitizen',
+      P7: 'simpleCitizen',
+      P8: 'simpleMafia',
+    });
+
+    for (const k of ['P4', 'P5', 'P6', 'P7', 'P8']) p[k].kill(2, 'mafia');
+    game.checkWinCondition(); // triggers handshake
+
+    const result = game.resolveHandshake(p.P2.id, p.P3.id); // citizen + godfather
+    expect(result.winner).toBe('mafia');
+    expect(game.phase).toBe('ended');
+    expect(dead(p.P1)).toBe(true); // zodiac eliminated
   });
 });
 
@@ -965,5 +1028,355 @@ describe('S13 — Jack Curse Multi-Trigger', () => {
     const result = game.eliminateByVote(p.P2.id);
     expect(result.voteImmune).toBe(true);
     expect(alive(p.P2)).toBe(true);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S14 — Jack Instant Win — Mafia Collapse
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S14 — Jack Instant Win — Mafia Collapse', () => {
+  it('All mafia die + Jack alive → Jack wins instantly (citizens still alive)', () => {
+    const { game, p } = setup({
+      P1: 'jack', P2: 'zodiac', P3: 'godfather', P4: 'simpleMafia',
+      P5: 'drWatson', P6: 'detective', P7: 'sniper', P8: 'simpleCitizen',
+      P9: 'simpleCitizen', P10: 'bodyguard',
+    });
+
+    // Night 1: kill some players
+    p.P8.kill(1, 'mafia'); p.P9.kill(1, 'zodiac'); p.P4.kill(1, 'sniper');
+    game.round = 1;
+    game.startDay();
+
+    // Day 1 vote: Godfather out
+    game.eliminateByVote(p.P3.id);
+    expect(dead(p.P3)).toBe(true);
+
+    // All mafia dead (P3+P4). Jack alive → instant win
+    const winner = game.checkWinCondition();
+    expect(winner).toBe('independent');
+    expect(game.phase).toBe('ended');
+    // Citizens and Zodiac still alive but Jack wins
+    expect(alive(p.P5)).toBe(true);
+    expect(alive(p.P1)).toBe(true);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S15 — Zodiac Handshake Victory
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S15 — Zodiac Handshake Victory', () => {
+  it('Zodiac kills to 3 players, citizen allies with Zodiac → independent wins', () => {
+    const { game, p } = setup({
+      P1: 'zodiac', P2: 'godfather', P3: 'simpleMafia', P4: 'drWatson',
+      P5: 'detective', P6: 'sniper', P7: 'simpleCitizen', P8: 'simpleCitizen',
+      P9: 'simpleCitizen', P10: 'bodyguard',
+    });
+
+    // Kill mafia first
+    p.P4.kill(1, 'mafia'); p.P7.kill(1, 'zodiac');
+    p.P2.kill(1, 'vote'); // Godfather
+    p.P8.kill(2, 'zodiac'); p.P3.kill(2, 'vote'); // Last mafia
+    // All mafia dead. No Jack → no instant win. Zodiac + citizens remain.
+    p.P9.kill(3, 'zodiac'); p.P6.kill(3, 'vote');
+    // 3 alive: P1(zodiac), P5(detective), P10(bodyguard)
+    const result = game.checkWinCondition();
+    expect(result).toBe('handshake');
+
+    // Citizen allies with Zodiac
+    const hsResult = game.resolveHandshake(p.P5.id, p.P1.id);
+    expect(hsResult.winner).toBe('independent');
+    expect(dead(p.P10)).toBe(true);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S16 — Mafia Wins via Handshake
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S16 — Mafia Wins via Handshake', () => {
+  it('3 alive (2 mafia + 1 zodiac), mafia pair up → mafia wins', () => {
+    const { game, p } = setup({
+      P1: 'zodiac', P2: 'godfather', P3: 'simpleCitizen', P4: 'simpleCitizen',
+      P5: 'simpleCitizen', P6: 'simpleCitizen', P7: 'simpleCitizen', P8: 'simpleMafia',
+    });
+
+    // Kill citizens down to 3: P1(zodiac), P2(godfather), P8(simpleMafia)
+    for (const k of ['P3', 'P4', 'P5', 'P6', 'P7']) p[k].kill(2, 'mafia');
+
+    // Mafia normally wins (2 >= 0+1) but 3 alive with independent → handshake
+    const result = game.checkWinCondition();
+    expect(result).toBe('handshake');
+
+    // Mafia pair allies
+    const hsResult = game.resolveHandshake(p.P2.id, p.P8.id);
+    expect(hsResult.winner).toBe('mafia');
+    expect(dead(p.P1)).toBe(true);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S17 — Jack Curse Prevents Jack Win — Citizens Win
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S17 — Jack Curse Chain → Jack Dies Before Mafia Collapse', () => {
+  it('Jack cursed player voted out → Jack dies → then mafia eliminated → citizen wins', () => {
+    const { game, p } = setup({
+      P1: 'jack', P2: 'godfather', P3: 'simpleMafia', P4: 'drWatson',
+      P5: 'detective', P6: 'simpleCitizen', P7: 'simpleCitizen', P8: 'sniper',
+    });
+
+    // Jack curses P6
+    p.P1.curse.place(p.P6.id);
+
+    p.P4.kill(1, 'mafia'); // Watson dies N1
+    game.round = 1; game.startDay();
+
+    // Day 1: Vote P6 → Jack curse triggers
+    game.eliminateByVote(p.P6.id);
+    expect(dead(p.P1)).toBe(true);
+    expect(p.P1.deathCause).toBe('curse');
+
+    // Day 1: Also vote out P3
+    game.eliminateByVote(p.P3.id);
+    expect(dead(p.P3)).toBe(true);
+
+    // N2: Godfather shoots P7
+    p.P7.kill(2, 'mafia');
+    game.round = 2; game.startDay();
+
+    // Day 2: Vote out Godfather → all mafia dead, Jack already dead → citizen wins
+    game.eliminateByVote(p.P2.id);
+    const winner = game.checkWinCondition();
+    expect(winner).toBe('citizen');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S18 — Zodiac Long Game → Handshake Win
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S18 — Zodiac Long Game → Handshake', () => {
+  it('Zodiac kills consistently, reaches 3-player handshake after mafia eliminated', () => {
+    const { game, p } = setup({
+      P1: 'zodiac', P2: 'godfather', P3: 'jadoogar', P4: 'drWatson',
+      P5: 'detective', P6: 'sniper', P7: 'simpleCitizen', P8: 'simpleCitizen',
+      P9: 'bodyguard', P10: 'simpleMafia',
+    });
+
+    // N1: Godfather kills P7, Zodiac kills P8
+    p.P7.kill(1, 'mafia'); p.P8.kill(1, 'zodiac');
+    // D1: Vote out Godfather
+    p.P2.kill(1, 'vote');
+    // N2: Zodiac kills P5
+    p.P5.kill(2, 'zodiac');
+    // D2: Vote out P10 (simpleMafia)
+    p.P10.kill(2, 'vote');
+    // Alive: P1(zodiac), P3(jadoogar), P4(watson), P6(sniper), P9(bodyguard) = 5
+    // Still 1 mafia (P3) alive → game continues normally
+    let winner = game.checkWinCondition();
+    expect(winner).toBeNull();
+
+    // N3: Zodiac kills P6
+    p.P6.kill(3, 'zodiac');
+    // D3: Vote out P3 (jadoogar — last mafia)
+    p.P3.kill(3, 'vote');
+    // Alive: P1(zodiac), P4(watson), P9(bodyguard) = 3
+    // All mafia dead. Zodiac alive. 3 players with independent → handshake
+    winner = game.checkWinCondition();
+    expect(winner).toBe('handshake');
+
+    const hsResult = game.resolveHandshake(p.P9.id, p.P1.id);
+    expect(hsResult.winner).toBe('independent');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S19 — Salakhi Kills Jack → Mafia Domination
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S19 — Salakhi Kills Jack → Mafia Dominates', () => {
+  it('Godfather salakhis Jack N1. No instant win for Jack. Mafia wins by numbers.', () => {
+    const { game, p } = setup({
+      P1: 'jack', P2: 'godfather', P3: 'simpleMafia', P4: 'drWatson',
+      P5: 'simpleCitizen', P6: 'simpleCitizen', P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+
+    // Night 1: Salakhi Jack (correct)
+    const results = nightRound(game, {
+      godfather: { actorIds: [p.P2.id], targetId: p.P1.id, actionType: 'shoot', mode: 'salakhi', guessedRoleId: 'jack' },
+    });
+    expect(results.salakhied.correct).toBe(true);
+    expect(dead(p.P1)).toBe(true);
+    expect(p.P1.isRevivable).toBe(false);
+
+    // Night 2: Godfather shoots P4
+    p.P4.kill(2, 'mafia');
+    // Day 2: Citizens mislynch P5
+    p.P5.kill(2, 'vote');
+
+    // Night 3: Godfather shoots P6
+    p.P6.kill(3, 'mafia');
+    // Alive: P2(GF), P3(mafia), P7(citizen), P8(citizen) → 2 mafia >= 2 citizen → mafia wins
+    const winner = game.checkWinCondition();
+    expect(winner).toBe('mafia');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S20 — Bomb + Curse Chain → Citizens Win
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S20 — Bomb + Curse → Jack Dies → Citizens Win', () => {
+  it('Jack cursed player voted out → Jack dies, then remaining mafia eliminated → citizen win', () => {
+    const { game, p } = setup({
+      P1: 'jack', P2: 'godfather', P3: 'simpleMafia', P4: 'drWatson',
+      P5: 'detective', P6: 'bodyguard', P7: 'simpleCitizen', P8: 'simpleCitizen',
+      P9: 'simpleCitizen', P10: 'sniper',
+    });
+
+    // Jack curses P7
+    p.P1.curse.place(p.P7.id);
+
+    // N1: Kill some players
+    p.P8.kill(1, 'mafia');
+    game.round = 1; game.startDay();
+
+    // Vote: P7 out → Jack curse triggers, Jack dies
+    game.eliminateByVote(p.P7.id);
+    expect(dead(p.P7)).toBe(true);
+    expect(dead(p.P1)).toBe(true);
+
+    // Kill mafia over subsequent rounds
+    p.P3.kill(2, 'vote');
+    p.P2.kill(3, 'vote');
+
+    // All mafia dead, all indep dead → citizen wins
+    const winner = game.checkWinCondition();
+    expect(winner).toBe('citizen');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S21 — Freemason Contamination + Zodiac → Handshake
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S21 — Freemason Contamination + Zodiac Survives → Handshake', () => {
+  it('Freemason recruits mafia → contamination. Zodiac reaches handshake.', () => {
+    const { game, p } = setup({
+      P1: 'zodiac', P2: 'godfather', P3: 'simpleMafia', P4: 'drWatson',
+      P5: 'freemason', P6: 'simpleCitizen', P7: 'simpleCitizen', P8: 'simpleCitizen',
+      P9: 'bodyguard', P10: 'detective',
+    });
+    game.framason.init(p.P5.id, game.framasonMaxMembers);
+
+    // N1: kill P6, P7
+    p.P6.kill(1, 'mafia'); p.P7.kill(1, 'zodiac');
+    // D1: Vote P2
+    p.P2.kill(1, 'vote');
+
+    // N2: Freemason recruits P3 (mafia) → contamination
+    game.framason.recruit(p.P3.id, 'simpleMafia', 'mafia');
+    expect(game.hasFramasonContamination()).toBe(true);
+
+    // Also: Zodiac kills P10
+    p.P10.kill(2, 'zodiac');
+
+    // D2: Contamination kills freemason team
+    game.round = 2; game.startDay();
+    const { deadIds } = game.resolveFramasonContamination();
+    expect(deadIds).toContain(p.P5.id);
+    expect(dead(p.P5)).toBe(true);
+
+    // Also vote P3
+    game.eliminateByVote(p.P3.id);
+    expect(dead(p.P3)).toBe(true);
+
+    // N3: Zodiac kills P4
+    p.P4.kill(3, 'zodiac');
+
+    // 3 alive: P1(zodiac), P8(citizen), P9(bodyguard) → handshake
+    const result = game.checkWinCondition();
+    expect(result).toBe('handshake');
+
+    // Bodyguard allies with Zodiac
+    const hsResult = game.resolveHandshake(p.P9.id, p.P1.id);
+    expect(hsResult.winner).toBe('independent');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S22 — Constantine Revival → Citizens Win
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S22 — Constantine Revival Saves Game → Citizens Win', () => {
+  it('Constantine revives sniper. Later all mafia die. No independents → citizen win.', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson', P4: 'detective',
+      P5: 'constantine', P6: 'sniper', P7: 'simpleCitizen', P8: 'simpleCitizen',
+      P9: 'simpleCitizen', P10: 'simpleCitizen',
+    });
+
+    // N1: Godfather kills P6 (sniper)
+    p.P6.kill(1, 'mafia');
+    // D1: Vote P2 out
+    p.P2.kill(1, 'vote');
+
+    // N2: Constantine revives P6 (sniper)
+    game.round = 2;
+    const results = nightRound(game, {
+      godfather:   { actorIds: [p.P1.id], targetId: p.P4.id, actionType: 'shoot', mode: 'shoot' },
+      constantine: { actorIds: [p.P5.id], targetId: p.P6.id, actionType: 'revive' },
+    });
+    expect(results.revived).toBe(p.P6.id);
+    expect(alive(p.P6)).toBe(true);
+    expect(dead(p.P4)).toBe(true);
+
+    // D2: Vote out Godfather
+    game.startDay();
+    game.eliminateByVote(p.P1.id);
+
+    // All mafia dead, no independents → citizen wins
+    const winner = game.checkWinCondition();
+    expect(winner).toBe('citizen');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S23 — Jack + Zodiac Both Alive, Jack Curse Kills Jack
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S23 — Jack Curse Self-Destructs, Zodiac Continues', () => {
+  it('Jack dies from curse. Then mafia dies. No Jack → no instant win. Zodiac must reach handshake.', () => {
+    const { game, p } = setup({
+      P1: 'jack', P2: 'zodiac', P3: 'godfather', P4: 'simpleMafia',
+      P5: 'drWatson', P6: 'detective', P7: 'simpleCitizen', P8: 'simpleCitizen',
+      P9: 'bodyguard', P10: 'sniper',
+    });
+
+    // Jack curses P7
+    p.P1.curse.place(p.P7.id);
+
+    // N1: Godfather kills P7 (cursed citizen)
+    p.P7.kill(1, 'mafia');
+    // Jack curse triggers → Jack dies
+    p.P1.kill(1, 'curse');
+    expect(dead(p.P1)).toBe(true);
+
+    // Zodiac kills P8
+    p.P8.kill(1, 'zodiac');
+
+    // D1: Vote Godfather
+    p.P3.kill(1, 'vote');
+    // D2: Vote P4 (last mafia)
+    p.P4.kill(2, 'vote');
+
+    // All mafia dead. Jack dead. Zodiac alive. Citizens alive.
+    // Jack NOT alive → no instant win
+    let winner = game.checkWinCondition();
+    expect(winner).toBeNull(); // Game continues — Zodiac must kill to 3
+
+    // Zodiac keeps killing
+    p.P5.kill(3, 'zodiac'); p.P6.kill(3, 'vote');
+
+    // 3 alive: P2(zodiac), P9(bodyguard), P10(sniper) → handshake
+    winner = game.checkWinCondition();
+    expect(winner).toBe('handshake');
+
+    // Handshake: sniper + zodiac → independent wins
+    const hsResult = game.resolveHandshake(p.P10.id, p.P2.id);
+    expect(hsResult.winner).toBe('independent');
+    expect(dead(p.P9)).toBe(true);
   });
 });

@@ -21,7 +21,9 @@ export class SummaryView extends BaseView {
 
     const game = this.game;
 
-    if (game.phase === 'ended' && game.winner) {
+    if (game.phase === 'handshake') {
+      this._renderHandshake();
+    } else if (game.phase === 'ended' && game.winner) {
       this._renderWinScreen();
     } else {
       this._renderGameLog();
@@ -85,6 +87,56 @@ export class SummaryView extends BaseView {
     `;
 
     this.listen('#btn-home-summary', 'click', () => this.navigate('home'));
+  }
+
+  _renderHandshake() {
+    const game = this.game;
+    const hs = game.handshakeState;
+    if (!hs) { this._renderGameLog(); return; }
+
+    const alivePlayers = hs.players.map(id => game.getPlayer(id)).filter(Boolean);
+
+    this.container.innerHTML = `
+      <div class="view">
+        <div class="win-screen">
+          <div class="win-screen__icon">🤝</div>
+          <h1 class="win-screen__title">${t({ fa: 'دست‌دادن سه‌نفره', en: '3-Player Handshake' })}</h1>
+          <p class="win-screen__subtitle">${t({ fa: '۳ نفر باقی مانده‌اند. ۲ دقیقه صحبت آزاد، سپس هر نفر متحد خود را انتخاب کند.', en: '3 players remain. 2 minutes of free talk, then each picks an ally.' })}</p>
+        </div>
+
+        <div class="section mt-lg">
+          <h2 class="section__title">${t({ fa: 'بازیکنان باقی‌مانده', en: 'Remaining Players' })}</h2>
+          <div class="player-list">
+            ${alivePlayers.map(p => {
+              const role = Roles.get(p.roleId);
+              return `<div class="player-item"><span class="dot dot--alive"></span><div class="player-item__name">${p.name}</div><span class="role-badge role-badge--${role?.team || 'citizen'}">${role?.icon || ''} ${role?.getLocalizedName() || p.roleId}</span></div>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <div class="section mt-lg">
+          <h2 class="section__title">${t({ fa: 'انتخاب جفت متحد', en: 'Choose Allied Pair' })}</h2>
+          <p style="color:var(--text-secondary); margin-bottom:.75rem;">
+            ${t({ fa: 'دو بازیکنی که دست می‌دهند را انتخاب کنید:', en: 'Select the two players who shake hands:' })}
+          </p>
+          ${alivePlayers.map((p, i) => alivePlayers.slice(i + 1).map(q => `
+            <button class="btn btn--primary btn--block mt-sm handshake-pair" data-p1="${p.id}" data-p2="${q.id}">
+              🤝 ${p.name} + ${q.name}
+            </button>
+          `).join('')).join('')}
+        </div>
+      </div>
+    `;
+
+    this.container.querySelectorAll('.handshake-pair').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p1 = Number(btn.dataset.p1);
+        const p2 = Number(btn.dataset.p2);
+        game.resolveHandshake(p1, p2);
+        this.app.saveGame();
+        this.render(); // Re-render to show win screen
+      });
+    });
   }
 
   _renderWinScreen() {

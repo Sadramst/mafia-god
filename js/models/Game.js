@@ -24,6 +24,7 @@ export class Game {
     this.round = 0;
     this.phase = 'setup'; // setup | roleReveal | blindDay | blindNight | night | day | ended
     this.winner = null;    // 'mafia' | 'citizen' | 'independent' | null
+    this.handshakeState = null; // null | { players: [...], timer: 120 } — 3-player endgame
     this.history = [];     // Array of round events
     this.nightActions = {}; // { roleId: { actorId, targetId } }
     this.votes = {};       // { voterId: targetId }
@@ -1156,8 +1157,17 @@ export class Game {
     const mafiaAlive = alive.filter(p => Roles.get(p.roleId)?.team === 'mafia');
     const citizenAlive = alive.filter(p => Roles.get(p.roleId)?.team === 'citizen');
     const independentAlive = alive.filter(p => Roles.get(p.roleId)?.team === 'independent');
+    const jackAlive = alive.find(p => p.roleId === 'jack');
 
-    // All mafia dead and no independent threats
+    // 1. Jack instant win: all mafia dead + Jack alive
+    if (mafiaAlive.length === 0 && jackAlive) {
+      this.winner = 'independent';
+      this.phase = 'ended';
+      this._addHistory('win', t(tr.history.win_independent));
+      return 'independent';
+    }
+
+    // 2. Citizen win: all mafia dead AND all independents dead
     if (mafiaAlive.length === 0 && independentAlive.length === 0) {
       this.winner = 'citizen';
       this.phase = 'ended';
@@ -1165,23 +1175,88 @@ export class Game {
       return 'citizen';
     }
 
-    // Mafia >= citizens (mafia wins)
-    if (mafiaAlive.length >= citizenAlive.length + independentAlive.length) {
-      this.winner = 'mafia';
-      this.phase = 'ended';
-      this._addHistory('win', t(tr.history.win_mafia));
-      return 'mafia';
-    }
-
-    // Independent alone with one other (edge case)
-    if (independentAlive.length > 0 && alive.length <= 2 && mafiaAlive.length === 0) {
+    // 2b. All mafia + all citizens dead, only independents remain → independent wins
+    if (mafiaAlive.length === 0 && citizenAlive.length === 0 && independentAlive.length > 0) {
       this.winner = 'independent';
       this.phase = 'ended';
       this._addHistory('win', t(tr.history.win_independent));
       return 'independent';
     }
 
+    // 3. Mafia win: mafia >= citizens + independents (but not if exactly 3 alive with an independent)
+    if (mafiaAlive.length >= citizenAlive.length + independentAlive.length) {
+      // If exactly 3 alive with an independent → handshake instead
+      if (alive.length === 3 && independentAlive.length > 0) {
+        return this._triggerHandshake(alive);
+      }
+      this.winner = 'mafia';
+      this.phase = 'ended';
+      this._addHistory('win', t(tr.history.win_mafia));
+      return 'mafia';
+    }
+
+    // 4. Handshake endgame: exactly 3 alive with at least 1 independent
+    if (alive.length === 3 && independentAlive.length > 0) {
+      return this._triggerHandshake(alive);
+    }
+
     return null;
+  }
+
+  /** Trigger the 3-player handshake endgame */
+  _triggerHandshake(alivePlayers) {
+    this.handshakeState = {
+      players: alivePlayers.map(p => p.id),
+      timer: 120, // 2 minutes of free talk
+    };
+    this.phase = 'handshake';
+    this._addHistory('handshake', t(tr.history.handshake_triggered));
+    return 'handshake';
+  }
+
+  /**
+   * Resolve the handshake: two players form an alliance, the third is eliminated.
+   * @param {number} player1Id — First player in the allied pair
+   * @param {number} player2Id — Second player in the allied pair
+   * @returns {{ winner: string, pair: number[], eliminated: number }}
+   */
+  resolveHandshake(player1Id, player2Id) {
+    const p1 = this.getPlayer(player1Id);
+    const p2 = this.getPlayer(player2Id);
+    if (!p1 || !p2) return null;
+
+    // Find the eliminated player (the third one)
+    const eliminatedPlayer = this.players.find(p =>
+      p.isAlive && p.id !== player1Id && p.id !== player2Id
+    );
+    if (eliminatedPlayer) {
+      eliminatedPlayer.isAlive = false;
+      eliminatedPlayer.deathRound = this.round;
+      eliminatedPlayer.deathCause = 'handshake';
+    }
+
+    // Determine winner: if any independent is in the pair → independent wins
+    const p1Role = Roles.get(p1.roleId);
+    const p2Role = Roles.get(p2.roleId);
+    const hasIndependent = p1Role?.team === 'independent' || p2Role?.team === 'independent';
+
+    if (hasIndependent) {
+      this.winner = 'independent';
+    } else if (p1Role?.team === 'mafia' || p2Role?.team === 'mafia') {
+      this.winner = 'mafia';
+    } else {
+      this.winner = 'citizen';
+    }
+
+    this.phase = 'ended';
+    this._addHistory('win', t(tr.history['win_' + this.winner]));
+    this.handshakeState = null;
+
+    return {
+      winner: this.winner,
+      pair: [player1Id, player2Id],
+      eliminated: eliminatedPlayer?.id,
+    };
   }
 
   /**
@@ -1442,6 +1517,7 @@ export class Game {
       lastActionManager: this.lastActionManager?.toJSON(),
       lastActionSkipNight: this.lastActionSkipNight,
       lastActionBlockMafiaShoot: this.lastActionBlockMafiaShoot,
+      handshakeState: this.handshakeState,
     };
   }
 
@@ -1482,6 +1558,7 @@ export class Game {
     this.lastActionManager = LastActionManager.fromJSON(data.lastActionManager);
     this.lastActionSkipNight = data.lastActionSkipNight || false;
     this.lastActionBlockMafiaShoot = data.lastActionBlockMafiaShoot || false;
+    this.handshakeState = data.handshakeState || null;
 
     // Restore Player ID counter
     const maxId = Math.max(0, ...this.players.map(p => p.id));

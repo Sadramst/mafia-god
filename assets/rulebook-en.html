@@ -99,8 +99,10 @@
 <section id="victory">
   <h2>🏆 2. Victory Conditions</h2>
   <p><span class="badge badge--citizen">🔵 Citizen Victory</span> — All mafia members (Godfather and all associates) <strong>AND</strong> all independents (Jack &amp; Zodiac) are eliminated.</p>
-  <p><span class="badge badge--mafia">🔴 Mafia Victory</span> — Alive mafia count is ≥ the total of alive citizens + independents.</p>
-  <p><span class="badge badge--indie">🟣 Independent Victory</span> — Rare: at least 1 independent alive, all mafia dead, and 2 or fewer total players remaining.</p>
+  <p><span class="badge badge--mafia">🔴 Mafia Victory</span> — Alive mafia count is ≥ total of alive citizens + independents (unless exactly 3 remain with an independent → handshake).</p>
+  <p><span class="badge badge--indie">🟣 Jack Instant Win</span> — If all mafia die while Jack is still alive → Jack wins immediately, regardless of other players.</p>
+  <p><span class="badge badge--indie">🟣 Zodiac Victory</span> — Zodiac does NOT auto-win when mafia dies. Must keep killing until 3 players remain, then win through the handshake.</p>
+  <p><span class="badge badge--indie">🤝 3-Player Handshake</span> — When exactly 3 players remain with at least 1 independent: 2 minutes of free talk, each picks an ally, the allied pair wins. If independent is in the pair → independent wins. If mafia+citizen without independent → mafia wins.</p>
 </section>
 
 <!-- 3. PHASES -->
@@ -305,6 +307,7 @@
       <li>Cannot curse same person two nights in a row</li>
       <li>Only ways to eliminate: correct salakhi, curse chain, or last action cards</li>
       <li>If blocked by Sorcerer: curse is locked and cannot be moved</li>
+      <li><strong>🏆 Victory:</strong> If all mafia die and Jack is alive → Jack wins instantly! Also wins through the 3-player handshake.</li>
     </ul>
   </div>
 
@@ -316,6 +319,7 @@
       <li>If shoots Bodyguard → Zodiac dies, bodyguard survives</li>
       <li>Can be voted out during day</li>
       <li>Can be eliminated by correct salakhi</li>
+      <li><strong>🏆 Victory:</strong> Does NOT auto-win when mafia dies. Must keep killing until 3 players remain and win through the handshake endgame.</li>
     </ul>
   </div>
 </section>
@@ -357,6 +361,11 @@
   <div class="role-block">
     <h3>🔫 Morning Shots &amp; Bullets</h3>
     <p>Gunner gives bullets at night. Morning: holder shoots. Blank = safe. Live = lethal if unprotected. Unused live = explosion at voting.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🤝 3-Player Handshake Endgame</h3>
+    <p>When exactly 3 players remain with at least 1 independent, the game enters the handshake phase: 2 minutes of free talk, then each player picks who to ally with. The allied pair is the winner. If an independent is in the pair → independent wins. If mafia+citizen without independent → mafia wins. If 2 citizens → citizen wins.</p>
   </div>
 </section>
 
