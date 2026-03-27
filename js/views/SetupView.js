@@ -107,18 +107,16 @@ export class SetupView extends BaseView {
       </div>
     `;
 
-    // Tab switching with minimal player guard
-    this.container.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        const tabName = tab.dataset.tab;
-        const MIN_PLAYERS = 8;
-        if ((tabName === 'roles' || tabName === 'assign') && game.players.length < MIN_PLAYERS) {
-          this.toast(t(tr.setup.minPlayers).replace('%d', MIN_PLAYERS), 'error');
-          return;
-        }
-        this.activeTab = tabName;
-        this._requestRender();
-      });
+    // Tab switching via delegation
+    this.delegate('click', '.tab', (_e, tab) => {
+      const tabName = tab.dataset.tab;
+      const MIN_PLAYERS = 8;
+      if ((tabName === 'roles' || tabName === 'assign') && game.players.length < MIN_PLAYERS) {
+        this.toast(t(tr.setup.minPlayers).replace('%d', MIN_PLAYERS), 'error');
+        return;
+      }
+      this.activeTab = tabName;
+      this._requestRender();
     });
 
     // Render active tab content
@@ -352,10 +350,7 @@ export class SetupView extends BaseView {
         b.dataset.en = s.en; b.dataset.fa = s.fa;
         // show only the current language to avoid bilingual duplication
         b.innerHTML = lang === 'en' ? (`<span class="ltr-inline">${s.en}</span>`) : (`<span dir="rtl">${s.fa}</span>`);
-        b.addEventListener('click', () => {
-          addPlayer({ en: s.en, fa: s.fa });
-          try { this.toast(lang === 'en' ? s.en : s.fa, 'success'); } catch (e) {}
-        });
+        // Click is handled by the delegated _setupClickHandlerRef — no direct listener needed
         suggestedWrap.appendChild(b);
       });
     }
@@ -493,9 +488,11 @@ export class SetupView extends BaseView {
       for (const role of roles) {
         const count = game.selectedRoles[role.id] || 0;
         const isSelected = count > 0;
+        // Disable reporter unless negotiator is selected
+        const reporterDisabled = (role.id === 'reporter' && !game.selectedRoles['negotiator']);
 
         html += `
-          <div class="role-card role-card--${team} ${isSelected ? 'selected' : ''}" data-role="${role.id}">
+          <div class="role-card role-card--${team} ${isSelected ? 'selected' : ''} ${reporterDisabled ? 'role-card--disabled' : ''}" data-role="${role.id}" ${reporterDisabled ? 'data-disabled="1"' : ''}>
             <button class="role-card__info" data-info="${role.id}" title="${t(tr.setup.roleInfoTooltip)}">i</button>
             <div class="role-card__icon">${role.icon}</div>
             <div class="role-card__name">${role.getLocalizedName()}</div>
@@ -629,7 +626,7 @@ export class SetupView extends BaseView {
 
     // Toggle unique roles — update DOM in-place to avoid full re-render
     container.querySelectorAll('.role-card').forEach(card => {
-      card.addEventListener('click', (e) => {
+        card.addEventListener('click', (e) => {
         if (e.target.closest('.role-card__count-btn')) return;
         if (e.target.closest('.role-card__info')) return;
         if (e.target.closest('.role-card__bullets')) return;
@@ -637,6 +634,14 @@ export class SetupView extends BaseView {
         const roleId = card.dataset.role;
         const role = Roles.get(roleId);
         if (!role) return;
+        // Prevent interaction if this card is disabled (e.g., reporter requires negotiator)
+        if (card.dataset.disabled) {
+          // If it's disabled but selected (edge-case), allow deselect via count buttons; otherwise notify
+          if (!game.selectedRoles[roleId]) {
+            this.toast(t(tr.setupExtras.negotiatorRequiredForReporter), 'error');
+            return;
+          }
+        }
 
         // Toggle data model with limits
         const selecting = !game.selectedRoles[roleId];
@@ -719,6 +724,27 @@ export class SetupView extends BaseView {
         if (desiredCitizenAssign) desiredCitizenAssign.textContent = game.desiredCitizen;
         // refresh remaining roles / counts
         this._updatePlayersCountDisplays();
+        // If negotiator was deselected, ensure reporter is disabled and removed
+        if (roleId === 'negotiator' && !game.selectedRoles['negotiator']) {
+          if (game.selectedRoles['reporter']) {
+            delete game.selectedRoles['reporter'];
+            const repCard = this.container.querySelector('.role-card[data-role="reporter"]');
+            if (repCard) {
+              repCard.classList.remove('selected');
+              repCard.dataset.disabled = '1';
+              const val = repCard.querySelector('.role-card__count-value'); if (val) val.textContent = 0;
+            }
+            this.toast(t(tr.setupExtras.reporterRemovedWhenNegotiatorDeselected), 'info');
+          }
+          // mark reporter card disabled visually
+          const repCard2 = this.container.querySelector('.role-card[data-role="reporter"]');
+          if (repCard2) repCard2.dataset.disabled = '1';
+        }
+        // If negotiator was selected, enable reporter card visually
+        if (roleId === 'negotiator' && game.selectedRoles['negotiator']) {
+          const repCard3 = this.container.querySelector('.role-card[data-role="reporter"]');
+          if (repCard3) repCard3.removeAttribute('data-disabled');
+        }
       });
     });
     // +/- buttons for non-unique roles (in-place, respecting team and total limits)
@@ -735,6 +761,11 @@ export class SetupView extends BaseView {
         const playersCount = game.players.length;
 
         if (action === 'inc') {
+          // reporter cannot be incremented unless negotiator is selected
+          if (roleId === 'reporter' && !game.selectedRoles['negotiator']) {
+            this.toast(t(tr.setupExtras.negotiatorRequiredForReporter), 'error');
+            return;
+          }
           // total limit
           if (totalSelected >= playersCount) {
             this.toast(t(tr.setup.shouldBe).replace('%d', playersCount), 'error');
@@ -787,6 +818,23 @@ export class SetupView extends BaseView {
         }
         // refresh remaining roles / counts
         this._updatePlayersCountDisplays();
+        // If negotiator count changed via +/- and now deselected, remove reporter
+        if (roleId === 'negotiator' && !game.selectedRoles['negotiator']) {
+          if (game.selectedRoles['reporter']) {
+            delete game.selectedRoles['reporter'];
+            const repCard = this.container.querySelector('.role-card[data-role="reporter"]');
+            if (repCard) {
+              repCard.classList.remove('selected');
+              repCard.dataset.disabled = '1';
+              const val = repCard.querySelector('.role-card__count-value'); if (val) val.textContent = 0;
+            }
+            this.toast(t(tr.setupExtras.reporterRemovedWhenNegotiatorDeselected), 'info');
+          }
+          const repCard2 = this.container.querySelector('.role-card[data-role="reporter"]'); if (repCard2) repCard2.dataset.disabled = '1';
+        }
+        if (roleId === 'negotiator' && game.selectedRoles['negotiator']) {
+          const repCard4 = this.container.querySelector('.role-card[data-role="reporter"]'); if (repCard4) repCard4.removeAttribute('data-disabled');
+        }
       });
     });
     container.querySelectorAll('[data-action="blank-dec"]').forEach(btn => {
@@ -1011,13 +1059,13 @@ export class SetupView extends BaseView {
       </div>
     `;
 
-    container.querySelector('#btn-random-assign')?.addEventListener('click', () => {
+    this.listen('#btn-random-assign', 'click', () => {
       game.assignRolesRandomly();
-      this.app.navigate('roleReveal');
+      this.navigate('roleReveal');
     });
 
-    container.querySelector('#btn-back-home-setup')?.addEventListener('click', () => {
-      this.app.navigate('home');
+    this.listen('#btn-back-home-setup', 'click', () => {
+      this.navigate('home');
     });
 
     // Zodiac frequency selection — update classes in-place to avoid re-render blink

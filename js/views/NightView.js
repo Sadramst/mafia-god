@@ -20,7 +20,7 @@ export class NightView extends BaseView {
   }
 
   render() {
-    const game = this.app.game;
+    const game = this.game;
 
     // Auto-skip reporter step if godfather didn't negotiate this night
     while (true) {
@@ -81,7 +81,7 @@ export class NightView extends BaseView {
         <!-- Resolve / Continue -->
         <div class="mt-lg">
           ${game.isNightComplete() ? `
-            <button class="btn btn--primary btn--lg btn--block" id="btn-resolve-night">
+            <button class="btn btn--accent btn--lg btn--block" id="btn-resolve-night">
               ${isBlind ? t(tr.night.endBlindNight) : t(tr.night.resolveNightGoToDay)}
             </button>
           ` : `
@@ -97,7 +97,7 @@ export class NightView extends BaseView {
   }
 
   _renderDashboard() {
-    const game = this.app.game;
+    const game = this.game;
     return `
       <div class="god-dashboard">
         <div class="god-dashboard__title">${t(tr.night.godDashboardTitle)}</div>
@@ -119,7 +119,7 @@ export class NightView extends BaseView {
   }
 
   _renderSteps() {
-    const game = this.app.game;
+    const game = this.game;
     const steps = game.nightSteps;
 
     if (steps.length === 0) {
@@ -202,7 +202,26 @@ export class NightView extends BaseView {
    * For other roles: shows standard target selection.
    */
   _renderActiveStep(step, idx, targets, selectedTarget) {
-    const game = this.app.game;
+    const game = this.game;
+
+    // If this step's single actor was already targeted by Jadoogar earlier this night,
+    // show blocked message and don't allow selecting targets.
+    if (Array.isArray(step.actors) && step.actors.length === 1) {
+      const actorId = step.actors[0];
+      const jadoAction = game.nightActions?.jadoogar;
+      if (jadoAction && jadoAction.targetId === actorId && step.roleId !== 'jadoogar') {
+        const actor = game.getPlayer(actorId);
+        return `
+          <div class="card mb-sm" style="background: rgba(99,102,241,0.06); border-color: rgba(99,102,241,0.3);">
+            <div class="font-bold mb-sm">${t(tr.blockAction)}</div>
+            <div>${t(tr.blockedBySorcerer)}</div>
+            <div class="mt-md">
+              <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">${t(tr.night.skipAction)}</button>
+            </div>
+          </div>
+        `;
+      }
+    }
 
     // ── Mafia reveal (blind night) ──
     if (step.actionType === 'mafiaReveal') {
@@ -262,6 +281,68 @@ export class NightView extends BaseView {
       `;
     }
 
+      // ── Detective / Investigator UI: show immediate thumbs up/down (or blocked)
+      if (step.actionType === 'investigate' || step.roleId === 'detective') {
+        const detectiveActorId = step.actors && step.actors[0];
+        const wasBlocked = game.nightActions?.jadoogar && game.nightActions.jadoogar.targetId === detectiveActorId;
+
+        // Target grid (normal selection)
+        const targetGrid = `
+          <div class="target-grid">
+            ${targets.map(t => `
+              <button class="target-btn ${selectedTarget === t.id ? 'selected' : ''}" 
+                      data-step="${idx}" data-target="${t.id}">
+                ${t.name}
+              </button>
+            `).join('')}
+          </div>
+        `;
+
+        // If blocked, show blocked message
+        if (wasBlocked) {
+          return `
+            <div class="card mb-sm" style="background: rgba(99,102,241,0.06); border-color: rgba(99,102,241,0.3);">
+              <div class="font-bold mb-sm">${t(tr.night.investigationResult || tr.night.investigated)}</div>
+              <div class="text-muted">${t(tr.night.blocked)} (${game.getPlayer(detectiveActorId)?.name || '—'})</div>
+              <div class="mt-md">
+                <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">${t(tr.night.skipAction)}</button>
+              </div>
+            </div>
+          `;
+        }
+
+        // If a target is selected, compute thumbs up/down
+        let resultCard = '';
+        if (selectedTarget) {
+          const target = game.getPlayer(selectedTarget);
+          const role = Roles.get(target?.roleId);
+          const targetTeam = role?.team;
+          let thumbsUp = false;
+          if (target?.roleId === 'suspect') thumbsUp = true;
+          else if (target?.roleId === 'godfather') thumbsUp = false;
+          else if (targetTeam === 'mafia') thumbsUp = true;
+
+          resultCard = `
+            <div class="chip" style="margin-top:8px">${thumbsUp ? '👍' : '👎'} ${t(tr.night.investigationResultText) || ''}</div>
+          `;
+        }
+
+        return `
+          ${targetGrid}
+          ${resultCard}
+          <div class="flex gap-sm mt-md">
+            <button class="btn btn--primary btn--block btn--sm" 
+                    data-action="confirm-step" data-step="${idx}"
+                    ${!selectedTarget ? 'disabled' : ''}>
+              ${t(tr.night.confirmButton)}
+            </button>
+            <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
+              ${t(tr.night.skipAction)}
+            </button>
+          </div>
+        `;
+      }
+
     // ── Godfather special UI ──
     if (step.roleId === 'godfather') {
       return this._renderGodfatherStep(idx, targets, selectedTarget);
@@ -315,7 +396,7 @@ export class NightView extends BaseView {
    * then target selection, and role guess (salakhi only).
    */
   _renderGodfatherStep(idx, targets, selectedTarget) {
-    const game = this.app.game;
+    const game = this.game;
     const canNegotiate = game.canNegotiate();
 
     // Step 1: Mode selection
@@ -465,7 +546,7 @@ export class NightView extends BaseView {
    * Render Framason's special step: show alliance + recruit target selection.
    */
   _renderFramasonStep(idx, targets, selectedTarget) {
-    const game = this.app.game;
+    const game = this.game;
     const framason = game.framason;
 
     // Show current alliance
@@ -515,7 +596,7 @@ export class NightView extends BaseView {
    * God can assign as many bullets as available, max one per person.
    */
   _renderGunnerStep(idx, targets, selectedTarget) {
-    const game = this.app.game;
+    const game = this.game;
     const bm = game.bulletManager;
 
     // Calculate remaining after pending assignments
@@ -609,7 +690,7 @@ export class NightView extends BaseView {
    * Reads the already-recorded godfather action to determine the result.
    */
   _renderReporterStep(idx) {
-    const game = this.app.game;
+    const game = this.game;
     const gfAction = game.nightActions.godfather;
 
     let negotiationSuccess = false;
@@ -671,12 +752,26 @@ export class NightView extends BaseView {
   }
 
   _attachEvents() {
-    const game = this.app.game;
+    const game = this.game;
 
-    // Toggle dashboard
+    // Toggle dashboard — manipulate DOM to avoid full re-render (prevents blink)
     this.container.querySelector('#btn-toggle-dashboard')?.addEventListener('click', () => {
       this.showDashboard = !this.showDashboard;
-      this.render();
+      const btn = this.container.querySelector('#btn-toggle-dashboard');
+      const existing = this.container.querySelector('.god-dashboard');
+      if (existing) {
+        existing.style.display = this.showDashboard ? '' : 'none';
+        if (btn) btn.textContent = this.showDashboard ? t(tr.night.hideDashboard) : t(tr.night.showDashboard);
+      } else {
+        // Insert dashboard before the night steps if it wasn't rendered originally
+        if (this.showDashboard) {
+          const insertBeforeEl = this.container.querySelector('#night-stepper')?.parentElement;
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = this._renderDashboard();
+          if (insertBeforeEl && insertBeforeEl.parentNode) insertBeforeEl.parentNode.insertBefore(wrapper.firstElementChild, insertBeforeEl);
+          if (btn) btn.textContent = t(tr.night.hideDashboard);
+        }
+      }
     });
 
     // Target selection
@@ -825,12 +920,11 @@ export class NightView extends BaseView {
       const isBlind = game.phase === 'blindNight';
 
       if (isBlind) {
-        // Blind night: resolve curse placement only, then go to day
         const results = game.resolveNight();
         game.startDay();
         this.app.saveGame();
         this.app._nightResults = results;
-        this.app.navigate('day');
+        this.navigate('day');
         return;
       }
 
@@ -838,19 +932,18 @@ export class NightView extends BaseView {
       game.startDay();
       this.app.saveGame();
 
-      // Check win before going to day
       const winner = game.checkWinCondition();
       if (winner) {
-        this.app.navigate('summary');
+        this.navigate('summary');
       } else {
-        // Store results to show on day view
         this.app._nightResults = results;
-        this.app.navigate('day');
+        this.navigate('day');
       }
     });
   }
 
   destroy() {
+    super.destroy();
     this.selectedTargets = {};
     this.showDashboard = true;
     this.godfatherMode = null;

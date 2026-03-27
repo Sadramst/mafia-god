@@ -11,6 +11,7 @@ export class DayView extends BaseView {
 
   constructor(container, app) {
     super(container, app);
+    this.showGodTools = false;
     this.subView = 'results'; // results | discussion | siesta | voting | defense
     this.timer = null;
     this.timerDisplay = '01:00';
@@ -29,10 +30,49 @@ export class DayView extends BaseView {
     this.morningShooterId = null;      // Which bullet holder is shooting?
     this.morningShootTargetId = null;  // Selected target
     this.morningShootResult = null;    // Result of the shot
+    // delegated click handler bound to container to avoid missing listeners after render
+    this._onContainerClick = (e) => {
+      const btn = e.target.closest && e.target.closest('#btn-toggle-godtools');
+      if (!btn) return;
+      console.log('DayView: God Tools toggle clicked (delegated)');
+      this.showGodTools = !this.showGodTools;
+
+      // Try to toggle dashboard without re-rendering whole view to avoid blink
+      const content = this.container.querySelector('#day-content');
+      if (!content) {
+        // not rendered yet — fallback to full render
+        this.render();
+        return;
+      }
+
+      let godEl = content.querySelector('#god-tools-container');
+      if (godEl) {
+        godEl.style.display = this.showGodTools ? '' : 'none';
+        if (this.showGodTools) {
+          try { godEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+        }
+        return;
+      }
+
+      if (this.showGodTools) {
+        // create and insert god tools container without re-rendering the whole view
+        godEl = document.createElement('div');
+        godEl.id = 'god-tools-container';
+        godEl.style.outline = '2px dashed magenta';
+        // insert before subview if present
+        const subviewEl = content.querySelector('#day-subview');
+        if (subviewEl) content.insertBefore(godEl, subviewEl);
+        else content.appendChild(godEl);
+        // render into the new container
+        try { this._renderGodTools(godEl); } catch (err) { console.error('DayView: _renderGodTools failed', err); }
+        try { godEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+      }
+    };
+    this.container?.addEventListener('click', this._onContainerClick);
   }
 
   render() {
-    const game = this.app.game;
+    const game = this.game;
     const counts = game.getTeamCounts();
     const isBlindDay = game.phase === 'blindDay';
 
@@ -49,6 +89,10 @@ export class DayView extends BaseView {
           <span class="phase-bar__icon">☀️</span>
           <span>${t(tr.day.title).replace('%d', game.round)}</span>
           <span class="phase-bar__round">${t(tr.day.roundNumber).replace('%d', game.round)}</span>
+        </div>
+
+        <div class="mb-md">
+          <button class="btn btn--ghost" id="btn-toggle-godtools">${t(tr.day.godTools)}</button>
         </div>
 
         <!-- Stats -->
@@ -71,7 +115,7 @@ export class DayView extends BaseView {
         <div class="tabs mb-md">
           <button class="tab ${this.subView === 'results' ? 'active' : ''}" data-sub="results">${t(tr.day.resultsTab)}</button>
           <button class="tab ${this.subView === 'discussion' ? 'active' : ''}" data-sub="discussion">${t(tr.day.discussionTab)}</button>
-          ${this.app.game.hasBombToResolve() ? `
+          ${this.game.hasBombToResolve() ? `
             <button class="tab ${this.subView === 'siesta' ? 'active' : ''}" data-sub="siesta">${t(tr.day.siestaTab)}</button>
           ` : ''}
           <button class="tab ${this.subView === 'voting' ? 'active' : ''}" data-sub="voting">${t(tr.day.votingTab)}</button>
@@ -89,16 +133,42 @@ export class DayView extends BaseView {
       });
     });
 
+    // NOTE: delegated click handler in constructor handles the toggle to avoid double-binding
+
     const content = this.container.querySelector('#day-content');
-    if (this.subView === 'results') this._renderResults(content);
-    else if (this.subView === 'discussion') this._renderDiscussion(content);
-    else if (this.subView === 'siesta') this._renderSiesta(content);
-    else if (this.subView === 'voting') this._renderVoting(content);
+
+    // If God Tools are enabled, render the editable dashboard above subview
+    if (this.showGodTools) {
+      const godToolsContainer = document.createElement('div');
+      godToolsContainer.id = 'god-tools-container';
+      // visual debug outline so user can see the container if rendered
+      godToolsContainer.style.outline = '2px dashed magenta';
+      console.log('DayView: inserting god-tools-container');
+      content.appendChild(godToolsContainer);
+      this._renderGodTools(godToolsContainer);
+      // ensure the god tools panel is visible and focused
+      try {
+        godToolsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const firstSel = godToolsContainer.querySelector('.god-role-select');
+        if (firstSel && typeof firstSel.focus === 'function') firstSel.focus();
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    // Render the active subview into its own container so God Tools isn't overwritten
+    const subviewEl = document.createElement('div');
+    subviewEl.id = 'day-subview';
+    content.appendChild(subviewEl);
+    if (this.subView === 'results') this._renderResults(subviewEl);
+    else if (this.subView === 'discussion') this._renderDiscussion(subviewEl);
+    else if (this.subView === 'siesta') this._renderSiesta(subviewEl);
+    else if (this.subView === 'voting') this._renderVoting(subviewEl);
   }
 
   // ─── Blind Day (1 minute, no challenges) ───
   _renderBlindDay(counts) {
-    const game = this.app.game;
+    const game = this.game;
 
     this.container.innerHTML = `
       <div class="view">
@@ -181,14 +251,14 @@ export class DayView extends BaseView {
       this._blindTimer = null;
       game.startBlindNight();
       this.app.saveGame();
-      this.app.navigate('night');
+      this.navigate('night');
     });
   }
 
   // ─── Night Results ───
   _renderResults(container) {
     const results = this.app._nightResults;
-    const game = this.app.game;
+    const game = this.game;
 
     // Silenced player announcement
     const silencedPlayer = results?.silenced ? game.getPlayer(results.silenced) : null;
@@ -366,6 +436,9 @@ export class DayView extends BaseView {
       this.render();
     });
 
+    
+
+    // Resolve framason contamination (button handler)
     container.querySelector('#btn-resolve-framason')?.addEventListener('click', () => {
       const { deadIds } = game.resolveFramasonContamination();
       this.app.saveGame();
@@ -375,16 +448,40 @@ export class DayView extends BaseView {
       }
       const winner = game.checkWinCondition();
       if (winner) {
-        this.app.navigate('summary');
+        this.navigate('summary');
       } else {
         this.render();
       }
     });
+
+  }
+
+  _renderGodTools(container) {
+    const game = this.game;
+    // Render a read-only God dashboard (same style as NightView dashboard)
+    container.innerHTML = `
+      <div class="god-dashboard">
+        <div class="god-dashboard__title">داشبورد خدا — فقط شما می‌بینید</div>
+        <div class="god-dashboard__grid">
+          ${game.players.map(p => {
+            const role = Roles.get(p.roleId);
+            const team = role?.team || 'citizen';
+            return `
+              <div class="god-player god-player--${team} ${!p.isAlive ? 'god-player--dead' : ''}">
+                <span class="dot ${p.isAlive ? 'dot--alive' : 'dot--dead'}"></span>
+                <span class="god-player__name">${p.name}</span>
+                <span class="god-player__role">${role?.icon || ''} ${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedName() || ''}</span>` : (role?.getLocalizedName() || '')}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
   }
 
   // ─── Discussion with Timer ───
   _renderDiscussion(container) {
-    const game = this.app.game;
+    const game = this.game;
 
     container.innerHTML = `
       <div class="section">
@@ -467,19 +564,19 @@ export class DayView extends BaseView {
       this.timer?.stop();
 
       // Resolve live bullet expiration before voting
-      const explosions = this.app.game.resolveLiveExpiration();
+      const explosions = this.game.resolveLiveExpiration();
       if (explosions.length > 0) {
         this.app.saveGame();
         const names = explosions.map(e => e.holderName).join('، ');
         this.app.showToast(`💥 تیر جنگی منفجر شد: ${names}`, 'error');
-        const winner = this.app.game.checkWinCondition();
+        const winner = this.game.checkWinCondition();
         if (winner) {
-          this.app.navigate('summary');
+          this.navigate('summary');
           return;
         }
       }
 
-      if (this.app.game.hasBombToResolve()) {
+      if (this.game.hasBombToResolve()) {
         this.subView = 'siesta';
       } else {
         this.subView = 'voting';
@@ -490,7 +587,7 @@ export class DayView extends BaseView {
 
   // ─── Voting ───
   _renderVoting(container) {
-    const game = this.app.game;
+    const game = this.game;
     const alivePlayers = game.getAlivePlayers();
 
     const aliveCount = alivePlayers.length;
@@ -617,102 +714,7 @@ export class DayView extends BaseView {
         });
       });
 
-      container.querySelector('#btn-execute-runoff')?.addEventListener('click', () => {
-        // find max
-        let maxCount = -1;
-        let winners = [];
-        for (const id of Object.keys(this.runoffVoteCounts)) {
-          const c = this.runoffVoteCounts[id] || 0;
-          if (c > maxCount) { maxCount = c; winners = [Number(id)]; }
-          else if (c === maxCount) winners.push(Number(id));
-        }
-
-        if (winners.length === 0) {
-          this.app.showToast(t(tr.day.runoffTie), 'info');
-          return;
-        }
-        if (winners.length > 1) {
-          // If exactly two candidates tied, offer Shir/Khat (heads/tails) to God
-          if (winners.length === 2) {
-            const [a, b] = winners;
-            const nameA = game.getPlayer(a)?.name || '—';
-            const nameB = game.getPlayer(b)?.name || '—';
-
-            const overlay = document.createElement('div');
-            overlay.className = 'modal-overlay';
-            overlay.innerHTML = `
-              <div class="modal">
-                <div class="modal__title">${t(tr.day.coinTossTitle)}</div>
-                <div class="modal__body">${t(tr.day.coinTossChoose)}<br><strong>${nameA} ↔ ${nameB}</strong></div>
-                <div class="modal__actions">
-                  <button class="btn btn--primary btn--block" id="modal-shir">${t(tr.day.shir)}</button>
-                  <button class="btn btn--ghost btn--block" id="modal-khat">${t(tr.day.khat)}</button>
-                </div>
-              </div>
-            `;
-
-            document.body.appendChild(overlay);
-
-            const doCoin = (chosenSide) => {
-              const coin = Math.random() < 0.5 ? 'shir' : 'khat';
-              const pickedId = (coin === chosenSide) ? a : b;
-              const pickedName = game.getPlayer(pickedId)?.name || '—';
-              overlay.remove();
-
-              const coinLabel = coin === 'shir' ? t(tr.day.shir) : t(tr.day.khat);
-              const title2 = t(tr.day.coinTossTitle);
-              const body2 = t(tr.day.coinTossResult).replace('%s', coinLabel).replace('%s', pickedName) + '\n\n' + t(tr.day.executeConfirm).replace('%s', pickedName);
-
-              // Let God confirm execution — do not auto-execute
-              this.confirm(title2, body2, () => {
-                if (game.isVoteImmune(pickedId)) { this.app.showToast(t(tr.day.immuneVote).replace('%s', pickedName), 'error'); return; }
-                const extra = game.eliminateByVote(pickedId);
-                this.app.saveGame();
-                if (extra.jackCurseTriggered) this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
-                const winner = game.checkWinCondition();
-                if (winner) this.app.navigate('summary'); else this._goToNextNight();
-              });
-            };
-
-            overlay.querySelector('#modal-shir')?.addEventListener('click', () => doCoin('shir'));
-            overlay.querySelector('#modal-khat')?.addEventListener('click', () => doCoin('khat'));
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-            return;
-          }
-
-          // fallback: random pick and ask God to confirm execution
-          const pick = winners[Math.floor(Math.random() * winners.length)];
-          const pickName = game.getPlayer(pick)?.name || '—';
-          const tieList = winners.map(id => game.getPlayer(id)?.name).filter(Boolean).join('، ');
-          const title = t(tr.day.runoffTie);
-          const body = `${tieList}. ${t(tr.day.executeConfirm).replace('%s', pickName)}`;
-          this.confirm(title, body, () => {
-            if (game.isVoteImmune(pick)) { this.app.showToast(t(tr.day.immuneVote).replace('%s', game.getPlayer(pick)?.name), 'error'); return; }
-            const extra = game.eliminateByVote(pick);
-            this.app.saveGame();
-            if (extra.jackCurseTriggered) this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
-            const winner = game.checkWinCondition();
-            if (winner) this.app.navigate('summary'); else this._goToNextNight();
-          });
-          return;
-        }
-
-        const targetId = winners[0];
-        if (game.isVoteImmune(targetId)) {
-          const target = game.getPlayer(targetId);
-          this.app.showToast(t(tr.day.immuneVote).replace('%s', target?.name), 'error');
-          return;
-        }
-
-        this.confirm(t(tr.day.confirmExecution), t(tr.day.executeConfirm).replace('%s', game.getPlayer(targetId)?.name), () => {
-          const extra = game.eliminateByVote(targetId);
-          this.app.saveGame();
-          if (extra.jackCurseTriggered) this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
-          const winner = game.checkWinCondition();
-          if (winner) this.app.navigate('summary');
-          else this._goToNextNight();
-        });
-      });
+      container.querySelector('#btn-execute-runoff')?.addEventListener('click', () => this._runoffExecuteClicked(aliveCount));
 
       container.querySelector('#btn-cancel-runoff')?.addEventListener('click', () => {
         this.votingPhase = 'first';
@@ -723,7 +725,7 @@ export class DayView extends BaseView {
   }
 
   _showVoteRecorder(container, playerId) {
-    const game = this.app.game;
+    const game = this.game;
     const target = game.getPlayer(playerId);
     const recorder = container.querySelector('#vote-recorder');
     const nameEl = container.querySelector('#vote-target-name');
@@ -770,6 +772,136 @@ export class DayView extends BaseView {
     });
   }
 
+  /** Handle Last Action UI flow after a player is eliminated by vote */
+  _handleLastActionFor(victimId, extra, done) {
+    const game = this.game;
+    const victim = game.getPlayer(victimId);
+    if (!victim) { done(); return; }
+
+    const remaining = game.lastActionManager?.remainingCount() || 0;
+    if (remaining <= 0) { done(); return; }
+
+    // helper to create a consistent overlay modal with cancel
+    const createModal = (titleHtml, bodyHtml, actionsHtml = '') => {
+      const o = document.createElement('div');
+      o.className = 'modal-overlay';
+      o.innerHTML = `
+        <div class="modal">
+          <div class="modal__title">${titleHtml}</div>
+          <div class="modal__body">${bodyHtml}</div>
+          <div class="modal__actions">${actionsHtml}<button class="btn btn--ghost" data-cancel> ${t(tr.common.cancel)} </button></div>
+        </div>
+      `;
+      document.body.appendChild(o);
+      // cancel button removes modal
+      o.querySelector('[data-cancel]')?.addEventListener('click', () => o.remove());
+      return o;
+    };
+
+    const overlay = createModal(
+      t(tr.history.lastActionDraw).replace('%s', ''),
+      `${t(tr.history.lastActionDraw).replace('%s', '')}<br>${t(tr.day.announceAloud)}<br><strong>${victim.name}</strong>`,
+      Array.from({ length: remaining }).map((_, i) => `<button class="btn btn--primary" data-num="${i+1}">${i+1}</button>`).join('')
+    );
+
+    const cleanup = () => { overlay.remove(); };
+
+    const proceed = () => { cleanup(); done && done(); };
+
+    const handleCardResult = (card) => {
+      if (!card) { proceed(); return; }
+      switch (card.id) {
+        case 1: {
+          // Final shoot: ask to choose a target
+          const alive = game.getAlivePlayers().filter(p => p.id !== victimId);
+          const actions = alive.map(p => `<button class="btn" data-id="${p.id}">${p.name}</button>`).join('');
+          const bodyModal = createModal(t(tr.history.lastActionFinalShoot), t(tr.day.selectTarget), actions);
+          bodyModal.querySelectorAll('button[data-id]').forEach(btn => btn.addEventListener('click', () => {
+            const targetId = Number(btn.dataset.id);
+            const res = game.applyCard1FinalShoot(victimId, targetId);
+            this.app.saveGame();
+            if (!res.success) this.app.showToast(t(tr.history.lastActionFinalShootImmune).replace('%s', game.getPlayer(targetId)?.name || '—'));
+            else this.app.showToast(t(tr.history.mafiaKill).replace('%s', game.getPlayer(targetId)?.name || '—'));
+            bodyModal.remove();
+            proceed();
+          }));
+          break;
+        }
+        case 2:
+          this.app.showToast(t(tr.history.lastActionSkipNight) || 'Night skipped', 'info');
+          proceed();
+          break;
+        case 3:
+          // Reveal already handled in model history; show simple toast
+          this.app.showToast(t(tr.history.lastActionReveal).replace('%s', victim.name).replace('%s', Roles.get(victim.roleId)?.getLocalizedName?.() || victim.roleId), 'info');
+          proceed();
+          break;
+        case 4: {
+          const alive = game.getAlivePlayers().filter(p => p.id !== victimId);
+          const actions = alive.map(p => `<button class="btn" data-id="${p.id}">${p.name}</button>`).join('');
+          const guessModal = createModal(t(tr.history.lastActionGuess), t(tr.day.guessRole), actions);
+          guessModal.querySelectorAll('button[data-id]').forEach(btn => btn.addEventListener('click', () => {
+            const guessedId = Number(btn.dataset.id);
+            const res = game.applyCard4Guess(victimId, guessedId);
+            this.app.saveGame();
+            if (res.success) this.app.showToast(t(tr.history.lastActionGuessSuccess).replace('%s', game.getPlayer(guessedId)?.name || '—'));
+            else this.app.showToast(t(tr.history.lastActionGuessFail).replace('%s', game.getPlayer(guessedId)?.name || '—'));
+            guessModal.remove();
+            proceed();
+          }));
+          break;
+        }
+        case 5: {
+          const alive = game.getAlivePlayers().filter(p => p.id !== victimId);
+          const actions = alive.map(p => `<button class="btn" data-id="${p.id}">${p.name}</button>`).join('');
+          const faceModal = createModal(t(tr.history.lastActionFaceOff), t(tr.history.lastActionFaceOff), actions);
+          faceModal.querySelectorAll('button[data-id]').forEach(btn => btn.addEventListener('click', () => {
+            const chosenId = Number(btn.dataset.id);
+            const res = game.applyCard5FaceOff(victimId, chosenId);
+            this.app.saveGame();
+            if (res.success) this.app.showToast(t(tr.history.lastActionFaceOffApplied).replace('%s', victim.name).replace('%s', game.getPlayer(chosenId)?.name || '—').replace('%s', Roles.get(victim.roleId)?.getLocalizedName?.() || victim.roleId), 'info');
+            faceModal.remove();
+            proceed();
+          }));
+          break;
+        }
+        default:
+          proceed();
+      }
+    };
+
+    // Pick a number (1..N). For RTL languages we reverse the visual order so numbers read left→right
+    const numButtons = overlay.querySelectorAll('button[data-num]');
+    const nums = Array.from({ length: remaining }).map((_, i) => i + 1);
+    if (Settings.getLanguage() !== Language.ENGLISH) nums.reverse();
+    // Reorder buttons DOM to match desired visual order
+    const choicesContainer = overlay.querySelector('#lastaction-choices');
+    if (choicesContainer) {
+      choicesContainer.innerHTML = nums.map(n => `<button class="btn btn--primary" data-num="${n}">${n}</button>`).join('');
+    }
+
+    overlay.querySelectorAll('button[data-num]').forEach(btn => btn.addEventListener('click', () => {
+      const num = Number(btn.dataset.num);
+      const res = game.drawLastActionFor(victimId, num);
+      this.app.saveGame();
+      const card = res?.card;
+      // Remove the pick modal
+      overlay.remove();
+      if (!card) { proceed(); return; }
+
+      // Show reveal modal with localized card name and description
+      const cardName = t(tr.lastAction?.cards?.[card.id]?.name || { fa: card.name, en: card.name });
+      const cardDesc = t(tr.lastAction?.cards?.[card.id]?.desc || { fa: '', en: '' });
+      const title = t(tr.history.lastActionDraw).replace('%s', cardName);
+      const body = `${cardDesc}<br><br><strong>${victim.name}</strong>`;
+
+      this.app.showModal(title, body, () => {
+        // on confirm, execute card follow-up
+        handleCardResult(card);
+      }, t(tr.common.confirm), t(tr.common.cancel));
+    }));
+  }
+
   _hasAnyAboveThreshold(threshold) {
     for (const [pid, cnt] of Object.entries(this.voteCounts || {})) {
       if ((cnt || 0) >= threshold) return true;
@@ -777,12 +909,167 @@ export class DayView extends BaseView {
     return false;
   }
 
+  /** Encapsulate elimination flow (eliminate + handle last-action/jack/skip/win) */
+  _eliminateAndHandleExtra(targetId) {
+    const game = this.game;
+    if (game.isVoteImmune(targetId)) {
+      const target = game.getPlayer(targetId);
+      this.app.showToast(t(tr.day.immuneVote).replace('%s', target?.name), 'error');
+      return;
+    }
+    const extra = game.eliminateByVote(targetId);
+    this.app.saveGame();
+    if (extra.lastActionAvailable) {
+      this._handleLastActionFor(targetId, extra, () => {
+        if (extra.jackCurseTriggered) this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
+        const winner = game.checkWinCondition();
+        if (winner) { this.navigate('summary'); return; }
+        if (game.lastActionSkipNight) { this._skipToNextMorning(); return; }
+        this._goToNextNight();
+      });
+      return;
+    }
+    if (extra.jackCurseTriggered) this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
+    const winner = game.checkWinCondition();
+    if (winner) this.navigate('summary'); else this._goToNextNight();
+  }
+
+  /** Handle click on execute-runoff button (refactored for readability) */
+  _runoffExecuteClicked(aliveCount) {
+    const game = this.game;
+    const threshold = Math.floor((Math.max(0, aliveCount - 1)) / 2) + 1; // same threshold as first stage
+
+    // Single-candidate runoff: require threshold
+    if (this.runoffCandidates.length === 1) {
+      const targetId = this.runoffCandidates[0];
+      const votes = this.runoffVoteCounts[targetId] || 0;
+      if (votes < threshold) {
+        this.app.showToast(t(tr.day.noElimination), 'info');
+        this._goToNextNight();
+        return;
+      }
+      // confirm and eliminate
+      this.confirm(t(tr.day.confirmExecution), t(tr.day.executeConfirm).replace('%s', game.getPlayer(targetId)?.name), () => {
+        this._eliminateAndHandleExtra(targetId);
+      });
+      return;
+    }
+
+    // Multiple candidates: find highest
+    let maxCount = -1;
+    let winners = [];
+    for (const id of Object.keys(this.runoffVoteCounts)) {
+      const c = this.runoffVoteCounts[id] || 0;
+      if (c > maxCount) { maxCount = c; winners = [Number(id)]; }
+      else if (c === maxCount) winners.push(Number(id));
+    }
+
+    if (winners.length === 0) {
+      this.app.showToast(t(tr.day.runoffTie), 'info');
+      return;
+    }
+
+    if (winners.length === 2) {
+      const [a, b] = winners;
+      const nameA = game.getPlayer(a)?.name || '—';
+      const nameB = game.getPlayer(b)?.name || '—';
+
+      // Step 1: ask God to choose shir or khat
+      const askOverlay = document.createElement('div');
+      askOverlay.className = 'modal-overlay';
+      askOverlay.innerHTML = `
+        <div class="modal">
+          <div class="modal__title">${t(tr.day.coinTossTitle)}</div>
+          <div class="modal__body">${t(tr.day.coinTossChoose)}<br><strong>${nameA} ↔ ${nameB}</strong></div>
+          <div class="modal__actions">
+            <button class="btn btn--primary btn--block" data-choice="shir">${t(tr.day.shir)}</button>
+            <button class="btn btn--ghost btn--block" data-choice="khat">${t(tr.day.khat)}</button>
+            <button class="btn btn--ghost btn--block" data-cancel>${t(tr.common.cancel)}</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(askOverlay);
+
+      const openResultAndPick = (chosenSide) => {
+        askOverlay.remove();
+        const coin = Math.random() < 0.5 ? 'shir' : 'khat';
+        const coinLabel = coin === 'shir' ? t(tr.day.shir) : t(tr.day.khat);
+
+        const resOverlay = document.createElement('div');
+        resOverlay.className = 'modal-overlay';
+        resOverlay.innerHTML = `
+          <div class="modal">
+            <div class="modal__title">${t(tr.day.coinTossTitle)}</div>
+            <div class="modal__body">${t(tr.day.coinTossResult).replace('%s', coinLabel)}<br><strong>${nameA} ↔ ${nameB}</strong></div>
+            <div class="modal__actions">
+              <div style="width:100%">${t(tr.day.coinTossPick)}</div>
+              <button class="btn btn--primary btn--block" data-pick="${a}">${nameA}</button>
+              <button class="btn btn--primary btn--block" data-pick="${b}">${nameB}</button>
+              <button class="btn btn--ghost btn--block" data-cancel>${t(tr.common.cancel)}</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(resOverlay);
+
+        resOverlay.querySelectorAll('[data-pick]').forEach(but => but.addEventListener('click', (ev) => {
+          const pick = Number(ev.currentTarget.dataset.pick);
+          resOverlay.remove();
+          this.confirm(t(tr.day.confirmExecution), t(tr.day.executeConfirm).replace('%s', game.getPlayer(pick)?.name), () => {
+            this._eliminateAndHandleExtra(pick);
+          });
+        }));
+
+        resOverlay.querySelector('[data-cancel]')?.addEventListener('click', () => resOverlay.remove());
+      };
+
+      askOverlay.querySelectorAll('[data-choice]')?.forEach(b => b.addEventListener('click', (ev) => openResultAndPick(ev.currentTarget.dataset.choice)));
+      askOverlay.querySelector('[data-cancel]')?.addEventListener('click', () => askOverlay.remove());
+      return;
+    }
+
+    // Multi-way tie (>2): ask God to pick one manually
+    const tieList = winners.map(id => game.getPlayer(id)?.name).filter(Boolean).join('، ');
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal__title">${t(tr.day.runoffTie)}</div>
+        <div class="modal__body">${t(tr.day.runoffMultiTie).replace('%s', tieList)}</div>
+        <div class="modal__actions">
+          ${winners.map(id => `<button class="btn btn--primary btn--block" data-pick="${id}">${game.getPlayer(id)?.name || '—'}</button>`).join('')}
+          <button class="btn btn--ghost btn--block" data-cancel>${t(tr.common.cancel)}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', (ev) => {
+      const pick = Number(ev.currentTarget.dataset.pick);
+      overlay.remove();
+      this.confirm(t(tr.day.confirmExecution), t(tr.day.executeConfirm).replace('%s', game.getPlayer(pick)?.name), () => {
+        this._eliminateAndHandleExtra(pick);
+      });
+    }));
+    overlay.querySelector('[data-cancel]')?.addEventListener('click', () => overlay.remove());
+  }
+
   _goToNextNight() {
-    this.app.game.startNight();
+    this.game.startNight();
     this.app.saveGame();
     this.votedPlayers = {};
     this.subView = 'results';
-    this.app.navigate('night');
+    this.navigate('night');
+  }
+
+  /** Skip the upcoming night and start the next morning immediately */
+  _skipToNextMorning() {
+    const game = this.game;
+    // consume the skip flag
+    game.lastActionSkipNight = false;
+    game.startDay();
+    this.app.saveGame();
+    this.votedPlayers = {};
+    this.subView = 'results';
+    this.navigate('day');
   }
 
   _setupTimer(container) {
@@ -791,7 +1078,7 @@ export class DayView extends BaseView {
 
     if (!this.timer) {
       this.timer = new Timer(
-        this.app.game.dayTimerDuration,
+        this.game.dayTimerDuration,
         (remaining, total) => {
           this.timerDisplay = Timer.format(remaining);
           this.timerProgress = (remaining / total) * 100;
@@ -812,8 +1099,8 @@ export class DayView extends BaseView {
     container.querySelector('#btn-timer-start')?.addEventListener('click', () => this.timer.start());
     container.querySelector('#btn-timer-pause')?.addEventListener('click', () => this.timer.pause());
     container.querySelector('#btn-timer-reset')?.addEventListener('click', () => {
-      this.timer.reset(this.app.game.dayTimerDuration);
-      this.timerDisplay = Timer.format(this.app.game.dayTimerDuration);
+      this.timer.reset(this.game.dayTimerDuration);
+      this.timerDisplay = Timer.format(this.game.dayTimerDuration);
       this.timerProgress = 100;
       if (display) {
         display.textContent = this.timerDisplay;
@@ -855,15 +1142,15 @@ export class DayView extends BaseView {
     container.querySelector('#btn-morning-confirm')?.addEventListener('click', () => {
       if (!this.morningShooterId || !this.morningShootTargetId) return;
 
-      const result = this.app.game.resolveMorningShot(this.morningShooterId, this.morningShootTargetId);
+      const result = this.game.resolveMorningShot(this.morningShooterId, this.morningShootTargetId);
       this.app.saveGame();
 
       this.morningShootResult = result;
       this.morningShootActive = false;
 
-      const winner = this.app.game.checkWinCondition();
+      const winner = this.game.checkWinCondition();
       if (winner) {
-        this.app.navigate('summary');
+        this.navigate('summary');
         return;
       }
       this.render();
@@ -878,7 +1165,7 @@ export class DayView extends BaseView {
 
   /** Render the shooting panel (target selection + confirm) */
   _renderMorningShootPanel() {
-    const game = this.app.game;
+    const game = this.game;
     const shooter = game.getPlayer(this.morningShooterId);
     if (!shooter) return '';
     const shooterRole = shooter ? Roles.get(shooter.roleId) : null;
@@ -953,7 +1240,7 @@ export class DayView extends BaseView {
 
   // ─── Bomb Siesta (خواب نیم‌روزی) ───
   _renderSiesta(container) {
-    const game = this.app.game;
+    const game = this.game;
 
     // Start siesta phase if not already started
     if (game.bomb.phase === 'planted') {
@@ -1144,7 +1431,7 @@ export class DayView extends BaseView {
       };
       if (res.result === 'wrong') {
         const winner = game.checkWinCondition();
-        if (winner) { this.app.navigate('summary'); return; }
+        if (winner) { this.navigate('summary'); return; }
       }
       this.siestaStep = 'result';
       this.siestaGuess = null;
@@ -1159,7 +1446,7 @@ export class DayView extends BaseView {
       this.siestaResultData = { result: res.result, targetId: res.targetId };
       if (res.result === 'exploded') {
         const winner = game.checkWinCondition();
-        if (winner) { this.app.navigate('summary'); return; }
+        if (winner) { this.navigate('summary'); return; }
       }
       this.siestaStep = 'result';
       this.siestaGuess = null;
@@ -1174,10 +1461,11 @@ export class DayView extends BaseView {
   }
 
   _hasAliveRole(roleId) {
-    return this.app.game.players.some(p => p.isAlive && p.roleId === roleId);
+    return this.game.players.some(p => p.isAlive && p.roleId === roleId);
   }
 
   destroy() {
+    super.destroy();
     this.timer?.stop();
     this.timer = null;
     this._blindTimer?.stop();

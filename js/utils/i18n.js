@@ -49,6 +49,39 @@ export const translations = {
     mafiaWon: { fa: 'مافیا برد', en: 'Mafia Won' },
     citizenWon: { fa: 'شهروند برد', en: 'Citizen Won' },
     independentWon: { fa: 'مستقل برد', en: 'Independent Won' },
+    openSnapshot: { fa: 'نمایش کامل خلاصه', en: 'Open full summary' },
+    openSnapshotConfirm: { fa: 'این خلاصه ذخیره‌شده را برای نمایش کامل باز می‌کنیم. ادامه می‌دهید؟', en: 'Open this saved summary for full view? (No changes will be applied to the active game)' },
+  },
+  // Setup-specific messages
+  setupExtras: {
+    negotiatorRequiredForReporter: { fa: 'برای انتخاب خبرنگار ابتدا مذاکره‌کننده را انتخاب کنید.', en: 'Select Negotiator first to enable Reporter.' },
+    reporterRemovedWhenNegotiatorDeselected: { fa: 'خبرنگار حذف شد چون مذاکره‌کننده انتخاب نشده است.', en: 'Reporter removed because Negotiator was deselected.' },
+  },
+  // Last Action Cards
+  lastAction: {
+    title: { fa: 'کارت‌های حرکت آخر', en: 'Last Action Cards' },
+    cards: {
+      1: {
+        name: { fa: 'شلیک نهایی', en: 'Final Shoot' },
+        desc: { fa: 'در اول شب به جای مافیا این شخص شلیک می کند.', en: 'At the start of night, this person shoots instead of the Mafia.' }
+      },
+      2: {
+        name: { fa: 'بی‌خوابی', en: 'Insomnia (Skip Night)' },
+        desc: { fa: 'شب نمی شود و مستقیم به روز بعد می رویم.', en: 'The night is skipped and we go directly to the next day.' }
+      },
+      3: {
+        name: { fa: 'افشای هویت', en: 'Reveal Identity' },
+        desc: { fa: 'نقش این شخص توسط گرداننده اعلام می شود.', en: 'The moderator announces this person\'s role.' }
+      },
+      4: {
+        name: { fa: 'ذهن زیبا', en: 'Beautiful Mind (Guess)' },
+        desc: { fa: 'نقش جک یا زودیاک رو حدس می زنند؛ اگر درست بود مستقل حدس زده شده حذف می شود.', en: 'Guess Jack or Zodiac role; if correct and the guessed player is Independent, that player is eliminated.' }
+      },
+      5: {
+        name: { fa: 'تغییر چهره', en: 'Face Change (Face Off)' },
+        desc: { fa: 'کسی که از بازی بیرون می رود نقشش را با یکی از بازیکنان به صورت کامل عوض می کند و آن بازیکن با نقش جدید ادامه می دهد.', en: 'The player leaving swaps roles completely with a chosen player; the chosen player continues with the new role.' }
+      },
+    }
   },
 
   // Settings
@@ -205,6 +238,7 @@ export const translations = {
     liveBullet: { fa: '🔴 جنگی (%d)', en: '🔴 Live (%d)' },
     confirmBullets: { fa: '✓ تأیید تیرها (%d)', en: '✓ Confirm Bullets (%d)' },
     skipGunner: { fa: 'رد شدن', en: 'Skip' },
+    blockedBySorcerer: { fa: 'شما توسط جادوگر بلاک شده‌اید — امشب نمی‌توانید اقدام کنید.', en: 'You were blocked by the Sorcerer — you cannot act tonight.' },
     negotiationSuccess: { fa: '👍 خریداری انجام شده است!', en: '👍 Negotiation succeeded!' },
     negotiationFailed: { fa: '👎 خریداری انجام نشده.', en: '👎 Negotiation failed.' },
     showToReporter: { fa: 'نتیجه را به خبرنگار نشان دهید و تأیید کنید.', en: 'Show result to reporter and confirm.' },
@@ -269,6 +303,13 @@ export const translations = {
     kaneRevealLabel: { fa: '🎖️ اعلام همشهری کین:', en: '🎖️ Citizen Kane Reveal:' },
     kaneRevealNote: { fa: 'هدف در بازی می‌ماند — مردم می‌توانند رأی بدهند. شب بعد همشهری کین حذف می‌شود.', en: 'Target remains in game — people can vote. Next night Citizen Kane is eliminated.' },
     godSecretInfo: { fa: '👁️ اطلاعات محرمانه خدا', en: '👁️ God\'s Secret Info' },
+    godTools: { fa: 'ابزار خدا', en: 'God Tools' },
+    setRole: { fa: 'تنظیم نقش', en: 'Set role' },
+    setAlive: { fa: 'زنده', en: 'Alive' },
+    setSilenced: { fa: 'ساکت', en: 'Silenced' },
+    setHealed: { fa: 'در حال درمان', en: 'Healed' },
+    setShield: { fa: 'سپر فعال', en: 'Shield active' },
+    saveGodSettings: { fa: 'ذخیره تنظیمات خدا', en: 'Save God Settings' },
     investigationResult: { fa: '🔍 نتیجه استعلام کارآگاه:', en: '🔍 Detective investigation result:' },
     blocked: { fa: '✊ بلاک شده', en: '✊ Blocked' },
     bombPlanted: { fa: '💣 بمب روی:', en: '💣 Bomb on:' },
@@ -388,6 +429,13 @@ export const translations = {
     newGame: { fa: '🎮 بازی جدید', en: '🎮 New Game' },
     backHome: { fa: '← بازگشت به خانه', en: '← Back to Home' },
     backGame: { fa: 'بازگشت به بازی', en: 'Back to Game' },
+    viewRaw: { fa: 'نمایش خام', en: 'View raw' },
+    hideRaw: { fa: 'پنهان کردن خام', en: 'Hide raw' },
+    eventType: { fa: 'نوع رویداد', en: 'Event Type' },
+    actor: { fa: 'عامل', en: 'Actor' },
+    target: { fa: 'هدف', en: 'Target' },
+    viewRole: { fa: 'نمایش نقش', en: 'View role' },
+    hideRole: { fa: 'پنهان کردن نقش', en: 'Hide role' },
   },
 
   // Teams
@@ -496,6 +544,19 @@ export const translations = {
     win_mafia: { fa: '🏆 تیم مافیا پیروز شد!', en: '🏆 Mafia Team Wins!' },
     win_independent: { fa: '🏆 بازیکن مستقل پیروز شد!', en: '🏆 Independent Player Wins!' },
     reveal_jack: { fa: '🔪 %s revealed as Jack — طلسم ثابت شد.', en: '🔪 %s revealed as Jack — curse confirmed.' },
+    jack_blocked_curse_preserved: { fa: '✊ جادوگر طلسم جک را مسدود کرد؛ طلسم بدون تغییر باقی ماند (%s).', en: '✊ Sorcerer blocked Jack — his curse remained unchanged (%s).' },
+    lastActionDraw: { fa: '🃏 کارت حرکت آخر کشیده شد: %s', en: '🃏 Last Action card drawn: %s' },
+    lastActionFinalShoot: { fa: '🃏 کارت: شلیک نهایی فعال شد — انتخاب هدف مورد نیاز است.', en: '🃏 Card: Final Shoot activated — target selection required.' },
+    lastActionSkipNight: { fa: '🃏 کارت: شب بعد لغو شد — هیچ اقدامی انجام نمی‌شود.', en: '🃏 Card: Next night skipped — no night actions will occur.' },
+    lastActionReveal: { fa: '🃏 کارت: نقش %s فاش شد — (%s).', en: '🃏 Card: %s revealed — role: %s.' },
+    lastActionGuess: { fa: '🃏 کارت: حدس — اگر حدس درست باشد اثر رخ می‌دهد.', en: '🃏 Card: Guess — if correct the effect occurs.' },
+    lastActionFaceOff: { fa: '🃏 کارت: فِیس‌آف — انتقال نقش به بازیکن منتخب.', en: '🃏 Card: Face Off — transfer role to chosen player.' },
+    lastActionFinalShootImmune: { fa: '🃏 شلیک نهایی بی‌اثر بود — %s مصون بود.', en: '🃏 Final shoot had no effect — %s was immune.' },
+    lastActionFinalShootHealed: { fa: '🃏 شلیک نهایی بی‌اثر شد — %s توسط دکتر نجات یافت.', en: '🃏 Final shoot wasted — %s was healed by a doctor.' },
+    lastActionGuessSuccess: { fa: '🃏 حدس درست بود — %s حذف شد.', en: '🃏 Guess correct — %s was eliminated.' },
+    lastActionVictimSaved: { fa: '🃏 قربانی کارت نجات یافت: %s', en: '🃏 Card victim was saved: %s' },
+    lastActionGuessFail: { fa: '🃏 حدس نادرست — هیچ اتفاقی نیفتاد (%s).', en: '🃏 Guess failed — nothing happened (%s).' },
+    lastActionFaceOffApplied: { fa: '🃏 فِیس‌آف اجرا شد: نقش %s به %s منتقل شد (%s).', en: '🃏 Face Off applied: %s role transferred to %s (%s).' },
   },
 };
 

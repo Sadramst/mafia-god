@@ -25,65 +25,67 @@
 <body>
 
   <div id="app">
-    <!-- Header -->
+
+    <!-- ─── Header ─── -->
     <header class="app-header">
       <div class="app-header__left">
-        <h1 class="app-header__title">Mafia God | خدای مافیا</h1>
-        <span class="app-header__badge" style="display:none;"></span>
+        <button class="app-header__back hidden" id="btn-back" aria-label="Back">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="app-header__info">
+          <h1 class="app-header__title">Mafia God</h1>
+          <span class="app-header__badge" style="display:none;"></span>
+        </div>
       </div>
       <div class="app-header__right">
-        <button class="lang-toggle" id="lang-toggle" title="Toggle language">FA</button>
-        <button class="theme-toggle" id="theme-toggle" title="Change accent color">
-          <span class="theme-toggle__dot" id="theme-toggle-dot"></span>
+        <button class="header-btn" id="lang-toggle" title="Toggle language">FA</button>
+        <button class="header-btn header-btn--dot" id="theme-toggle" title="Change accent color">
+          <span class="header-btn__dot" id="theme-toggle-dot"></span>
         </button>
       </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- ─── Main Content ─── -->
     <main class="app-main" id="main-content">
-      <!-- Views render here -->
       <div class="hero">
         <div class="hero__icon">🎭</div>
-        <h1 class="hero__title">Mafia God | خدای مافیا</h1>
-        <p class="hero__subtitle">Loading... / در حال بارگذاری...</p>
+        <h1 class="hero__title">Mafia God</h1>
+        <p class="hero__subtitle">Loading...</p>
       </div>
     </main>
 
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
+    <!-- ─── Bottom Navigation ─── -->
+    <nav class="bottom-nav" id="bottom-nav">
       <button class="nav-item active" data-route="home">
-        <span class="nav-item__icon">🏠</span>
-        <span class="nav-item__label" data-nav-key="home">خانه</span>
+        <svg class="nav-item__svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 21V14h6v7" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span class="nav-item__label" data-nav-key="home">Home</span>
       </button>
       <button class="nav-item" data-route="setup">
-        <span class="nav-item__icon">⚙️</span>
-        <span class="nav-item__label" data-nav-key="setup">تنظیمات</span>
+        <svg class="nav-item__svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span class="nav-item__label" data-nav-key="setup">Setup</span>
       </button>
       <button class="nav-item disabled" data-route="night">
-        <span class="nav-item__icon">🌙</span>
-        <span class="nav-item__label" data-nav-key="night">شب</span>
+        <svg class="nav-item__svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="nav-item__label" data-nav-key="night">Night</span>
       </button>
       <button class="nav-item disabled" data-route="day">
-        <span class="nav-item__icon">☀️</span>
-        <span class="nav-item__label" data-nav-key="day">روز</span>
+        <svg class="nav-item__svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="nav-item__label" data-nav-key="day">Day</span>
       </button>
       <button class="nav-item disabled" data-route="summary">
-        <span class="nav-item__icon">📊</span>
-        <span class="nav-item__label" data-nav-key="summary">خلاصه</span>
+        <svg class="nav-item__svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="nav-item__label" data-nav-key="summary">Summary</span>
       </button>
     </nav>
   </div>
 
   <!-- App Script (ES Module) -->
   <script type="module" src="js/app.js"></script>
-
   <!-- Capacitor (native apps) -->
   <script type="module" src="js/native.js"></script>
-  
 
-  <!-- Service Worker Registration (PWA only, skip in native) -->
+  <!-- Service Worker Registration (PWA only) -->
   <script>
-    // Only register service worker when running as a PWA (not in Capacitor native)
     if (!window.Capacitor && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')

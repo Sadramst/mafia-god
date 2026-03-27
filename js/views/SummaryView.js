@@ -10,7 +10,16 @@ import { Settings, Language } from '../utils/Settings.js';
 export class SummaryView extends BaseView {
 
   render() {
-    const game = this.app.game;
+    // If a history preview is set (from Home history), render that snapshot instead of the active game
+    const preview = this.app._historyPreview;
+    if (preview) {
+      this._renderSnapshot(preview);
+      // clear preview after rendering
+      this.app._historyPreview = null;
+      return;
+    }
+
+    const game = this.game;
 
     if (game.phase === 'ended' && game.winner) {
       this._renderWinScreen();
@@ -19,8 +28,67 @@ export class SummaryView extends BaseView {
     }
   }
 
+  /** Render a saved snapshot object (history entry) as a full summary without loading into game */
+  _renderSnapshot(snapshot) {
+    const g = snapshot;
+    const title = g.winner === 'mafia' ? t(tr.summary.mafiaWins) : g.winner === 'citizen' ? t(tr.summary.citizenWins) : t(tr.summary.independentWins);
+
+    this.container.innerHTML = `
+      <div class="view">
+        <div class="win-screen">
+          <div class="win-screen__icon">${g.winner === 'mafia' ? '🔴' : g.winner === 'citizen' ? '🔵' : '🟣'}</div>
+          <h1 class="win-screen__title">${title}</h1>
+          <p class="win-screen__subtitle">${t(tr.summary.afterRounds).replace('%d', g.rounds || g.round || 0)}</p>
+        </div>
+
+        <div class="section mt-lg">
+          <h2 class="section__title">${t(tr.summary.finalPlayerStatus)}</h2>
+          <div class="player-list">
+            ${ (g.players || []).map(p => {
+              const role = Roles.get(p.roleId);
+              const roleName = role ? (Settings.getLanguage() === Language.ENGLISH ? role.getLocalizedName() : role.getLocalizedName()) : (p.roleId || '—');
+              return `
+                <div class="player-item ${!p.isAlive ? 'player-item--dead' : ''}">
+                  <span class="dot ${p.isAlive ? 'dot--alive' : 'dot--dead'}"></span>
+                  <div class="player-item__name">${p.name}</div>
+                  <span class="role-badge role-badge--${role?.team || 'citizen'}">
+                    ${role?.icon || ''} ${roleName}
+                  </span>
+                </div>
+              `;
+            }).join('') }
+          </div>
+        </div>
+
+        <div class="section mt-lg">
+          <h2 class="section__title">${t(tr.summary.timeline)}</h2>
+          <div class="timeline">
+            ${ (g.history || []).map(h => {
+                const when = h.timestamp ? new Date(h.timestamp).toLocaleString() : '';
+                const phaseLabel = h.phase ? ` (${h.phase})` : '';
+                const text = h.text || '';
+                const itemClass = h.type && (h.type.includes('death') || h.type === 'death') ? 'timeline-item--death' : (h.phase === 'night' ? 'timeline-item--night' : 'timeline-item--day');
+                return `
+                  <div class="timeline-item ${itemClass}">
+                    <div class="timeline-item__title">${t(tr.summary.roundInTimeline).replace('%d', h.round)}${phaseLabel} <span style="font-weight:400; color:var(--text-secondary);">${when}</span></div>
+                    <div class="timeline-item__desc">${text || ''}</div>
+                  </div>
+                `;
+              }).join('') }
+          </div>
+        </div>
+
+        <div class="mt-lg">
+          <button class="btn btn--ghost btn--block mt-sm" id="btn-home-summary">${t(tr.summary.backHome)}</button>
+        </div>
+      </div>
+    `;
+
+    this.listen('#btn-home-summary', 'click', () => this.navigate('home'));
+  }
+
   _renderWinScreen() {
-    const game = this.app.game;
+    const game = this.game;
     const counts = game.getTeamCounts();
 
     const winnerData = {
@@ -30,12 +98,14 @@ export class SummaryView extends BaseView {
     };
     const w = winnerData[game.winner] || winnerData.citizen;
 
-    // Save to history
+    // Save full game snapshot to history (include timeline + players)
     Storage.addToHistory({
       date: Date.now(),
       winner: game.winner,
       rounds: game.round,
       playerCount: game.players.length,
+      history: game.history.slice(),
+      players: game.players.map(p => ({ id: p.id, name: p.name, roleId: p.roleId, isAlive: p.isAlive })),
     });
     Storage.deleteSave();
 
@@ -70,7 +140,7 @@ export class SummaryView extends BaseView {
         ${this._renderTimeline()}
 
         <div class="mt-lg">
-          <button class="btn btn--primary btn--lg btn--block" id="btn-new-game-summary">
+          <button class="btn btn--accent btn--lg btn--block" id="btn-new-game-summary">
             ${t(tr.summary.newGame)}
           </button>
           <button class="btn btn--ghost btn--block mt-sm" id="btn-home-summary">
@@ -80,19 +150,19 @@ export class SummaryView extends BaseView {
       </div>
     `;
 
-    this.container.querySelector('#btn-new-game-summary')?.addEventListener('click', () => {
+    this.listen('#btn-new-game-summary', 'click', () => {
       game.reset();
-      this.app.navigate('setup');
+      this.navigate('setup');
     });
 
-    this.container.querySelector('#btn-home-summary')?.addEventListener('click', () => {
+    this.listen('#btn-home-summary', 'click', () => {
       game.reset();
-      this.app.navigate('home');
+      this.navigate('home');
     });
   }
 
   _renderGameLog() {
-    const game = this.app.game;
+    const game = this.game;
 
     this.container.innerHTML = `
       <div class="view">
@@ -122,15 +192,15 @@ export class SummaryView extends BaseView {
       </div>
     `;
 
-    this.container.querySelector('#btn-back-game')?.addEventListener('click', () => {
-      if (game.phase === 'night') this.app.navigate('night');
-      else if (game.phase === 'day') this.app.navigate('day');
-      else this.app.navigate('home');
+    this.listen('#btn-back-game', 'click', () => {
+      if (game.phase === 'night') this.navigate('night');
+      else if (game.phase === 'day') this.navigate('day');
+      else this.navigate('home');
     });
   }
 
   _renderTimeline() {
-    const game = this.app.game;
+    const game = this.game;
     if (game.history.length === 0) {
       return `
         <div class="empty-state">
@@ -151,10 +221,22 @@ export class SummaryView extends BaseView {
                 ? 'timeline-item--night'
                 : 'timeline-item--day';
 
+            const when = h.timestamp ? new Date(h.timestamp).toLocaleString() : '';
+            const phaseLabel = h.phase ? ` (${h.phase})` : '';
+            const mainText = h.text && h.text.length ? h.text : null;
+            const fallback = () => {
+              const parts = [];
+              if (h.type) parts.push(t(tr.summary.eventType) + ': ' + h.type);
+              if (h.actor) parts.push(t(tr.summary.actor) + ': ' + h.actor);
+              if (h.target) parts.push(t(tr.summary.target) + ': ' + h.target);
+              if (h.extra) parts.push(JSON.stringify(h.extra));
+              return parts.join(' — ') || JSON.stringify(h);
+            };
+
             return `
               <div class="timeline-item ${itemClass}">
-                <div class="timeline-item__title">${t(tr.summary.roundInTimeline).replace('%d', h.round)}</div>
-                <div class="timeline-item__desc">${h.text}</div>
+                <div class="timeline-item__title">${t(tr.summary.roundInTimeline).replace('%d', h.round)}${phaseLabel} <span style="font-weight:400; color:var(--text-secondary);">${when}</span></div>
+                <div class="timeline-item__desc">${mainText || fallback()}</div>
               </div>
             `;
           }).join('')}

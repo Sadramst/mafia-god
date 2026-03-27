@@ -15,11 +15,9 @@ export class RoleRevealView extends BaseView {
   }
 
   render() {
-    const game = this.app.game;
-    const player = game.players[this.currentIndex];
+    const player = this.game.players[this.currentIndex];
 
     if (!player) {
-      // All revealed — go to first night
       this._renderComplete();
       return;
     }
@@ -30,7 +28,7 @@ export class RoleRevealView extends BaseView {
     this.container.innerHTML = `
       <div class="view">
         <div class="text-center mb-lg">
-          <span class="chip">${t(tr.roleReveal.playerOfTotal).replace('%d', this.currentIndex + 1).replace('%d', game.players.length)}</span>
+          <span class="chip">${t(tr.roleReveal.playerOfTotal).replace('%d', this.currentIndex + 1).replace('%d', this.game.players.length)}</span>
         </div>
 
         <div class="reveal-container">
@@ -43,12 +41,10 @@ export class RoleRevealView extends BaseView {
 
           <div class="reveal-card ${this.isFlipped ? 'flipped' : ''}" id="reveal-card">
             <div class="reveal-card__inner">
-              <!-- Front (hidden role) -->
               <div class="reveal-card__front">
                 <div class="reveal-card__front-icon">❓</div>
                 <div class="reveal-card__front-text">${t(tr.roleReveal.tapCard)}</div>
               </div>
-              <!-- Back (role shown) -->
               <div class="reveal-card__back reveal-card__back--${teamClass}">
                 <div class="reveal-card__back-icon">${role?.icon || '👤'}</div>
                 <div class="reveal-card__back-role">${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedName() || '—'}</span>` : (role?.getLocalizedName() || '—')}</div>
@@ -59,8 +55,8 @@ export class RoleRevealView extends BaseView {
           </div>
 
           ${this.isFlipped ? `
-            <button class="btn btn--primary btn--lg" id="btn-next-reveal">
-              ${this.currentIndex < game.players.length - 1 ? t(tr.roleReveal.nextPlayer) : t(tr.roleReveal.startGame)}
+            <button class="btn btn--accent btn--lg" id="btn-next-reveal">
+              ${this.currentIndex < this.game.players.length - 1 ? t(tr.roleReveal.nextPlayer) : t(tr.roleReveal.startGame)}
             </button>
           ` : `
             <div class="text-muted" style="font-size: var(--text-xs);">
@@ -71,17 +67,14 @@ export class RoleRevealView extends BaseView {
       </div>
     `;
 
-    // Flip card
-    const card = this.container.querySelector('#reveal-card');
     if (!this.isFlipped) {
-      card.addEventListener('click', () => {
+      this.listen('#reveal-card', 'click', () => {
         this.isFlipped = true;
         this.render();
       });
     }
 
-    // Next player
-    this.container.querySelector('#btn-next-reveal')?.addEventListener('click', () => {
+    this.listen('#btn-next-reveal', 'click', () => {
       this.currentIndex++;
       this.isFlipped = false;
       this.render();
@@ -97,20 +90,21 @@ export class RoleRevealView extends BaseView {
             ${t(tr.roleReveal.allRevealed)}
           </h2>
           <p class="text-secondary">${t(tr.roleReveal.readyForBlindDay)}</p>
-          <button class="btn btn--primary btn--lg" id="btn-start-blind-day">
+          <button class="btn btn--accent btn--lg" id="btn-start-blind-day">
             ${t(tr.roleReveal.startBlindDay)}
           </button>
         </div>
       </div>
     `;
 
-    this.container.querySelector('#btn-start-blind-day')?.addEventListener('click', () => {
-      this.app.game.startBlindDay();
-      this.app.navigate('day');
+    this.listen('#btn-start-blind-day', 'click', () => {
+      this.game.startBlindDay();
+      this.navigate('day');
     });
   }
 
   destroy() {
+    super.destroy();
     this.currentIndex = 0;
     this.isFlipped = false;
   }

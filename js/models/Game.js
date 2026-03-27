@@ -8,6 +8,7 @@ import { Roles } from './Roles.js';
 import { Bomb } from './Bomb.js';
 import { Framason } from './Framason.js';
 import { BulletManager } from './BulletManager.js';
+import { LastActionManager } from './LastActionManager.js';
 import { t, translations as tr } from '../utils/i18n.js';
 
 export class Game {
@@ -34,6 +35,9 @@ export class Game {
     this.blindDayDuration = 60;  // 1 minute for blind day
     this.constantineUsed = false;
     this.bulletManager = new BulletManager();
+    this.lastActionManager = new LastActionManager();
+    this.lastActionSkipNight = false; // when true, the upcoming night is skipped
+    this.lastActionBlockMafiaShoot = false; // when true, mafia loses regular shoot this night
     this.gunnerBlankMax = 2;
     this.gunnerLiveMax = 2;
     this.jackMorningShotImmune = false;
@@ -297,6 +301,11 @@ export class Game {
     // Build night steps based on active roles
     this.nightSteps = this._buildNightSteps();
 
+    // If a last-action flagged blocking mafia shoot this night, clear it after building steps
+    if (this.lastActionBlockMafiaShoot) {
+      this.lastActionBlockMafiaShoot = false;
+    }
+
     this._addHistory('night_start', t(tr.history.nightStart).replace('%d', String(this.round)));
   }
 
@@ -304,7 +313,13 @@ export class Game {
   _clearJackCurse() {
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
     if (jackPlayer) {
-      jackPlayer.curse.clear();
+      // If Jadoogar blocked Jack last night, Jack cannot change his curse — preserve and lock it
+      if (this._jadoogarLastBlockedId && this._jadoogarLastBlockedId === jackPlayer.id) {
+        jackPlayer.curse.lock();
+        this._addHistory('info', t(tr.history.jack_blocked_curse_preserved).replace('%s', jackPlayer.name));
+      } else {
+        jackPlayer.curse.clear();
+      }
     }
   }
 
@@ -334,6 +349,9 @@ export class Game {
       let actors = this.players.filter(
         p => p.isAlive && p.roleId === role.id
       );
+
+      // If last-action has blocked mafia shoot for this night, skip godfather night action
+      if (role.id === 'godfather' && this.lastActionBlockMafiaShoot) continue;
 
       // If Godfather is dead but other mafia are alive, use mafia members as actors
       if (actors.length === 0 && role.id === 'godfather') {
@@ -897,6 +915,11 @@ export class Game {
       this._addHistory('death', t(tr.history.execution_with_curse).replace('%s', player.name));
     }
 
+    // If last-action deck has remaining cards, signal UI to offer last-action
+    if (this.lastActionManager && this.lastActionManager.hasRemaining()) {
+      extra.lastActionAvailable = true;
+    }
+
     return extra;
   }
 
@@ -1286,6 +1309,99 @@ export class Game {
     return this.history.filter(h => h.round === round);
   }
 
+  /** Draw a last-action card for a just-eliminated player and apply immediate effects where possible.
+   * Returns { card } or null
+   */
+  drawLastActionFor(victimId, chosenNumber = null) {
+    if (!this.lastActionManager || !this.lastActionManager.hasRemaining()) return null;
+    const card = this.lastActionManager.drawRandom(chosenNumber);
+    if (!card) return null;
+    // Use localized card name from translations
+    const cardName = t(tr.lastAction?.cards?.[card.id]?.name || { fa: card.name, en: card.name });
+    this._addHistory('last_action_draw', t(tr.history.lastActionDraw).replace('%s', cardName));
+
+    switch (card.id) {
+      case 1:
+        // final shoot — UI should call applyCard1FinalShoot with chosen target
+        this._addHistory('last_action', t(tr.history.lastActionFinalShoot));
+        break;
+      case 2:
+        this.lastActionSkipNight = true;
+        this._addHistory('last_action', t(tr.history.lastActionSkipNight));
+        break;
+      case 3:
+        // reveal and permanent (victim already killed by vote) — make non-revivable
+        const victim = this.getPlayer(victimId);
+        if (victim) {
+          victim.isRevivable = false;
+          this._addHistory('last_action', t(tr.history.lastActionReveal).replace('%s', victim.name).replace('%s', Roles.get(victim.roleId)?.getLocalizedName?.() || victim.roleId));
+        }
+        break;
+      case 4:
+        this._addHistory('last_action', t(tr.history.lastActionGuess));
+        break;
+      case 5:
+        this._addHistory('last_action', t(tr.history.lastActionFaceOff));
+        break;
+      default:
+        break;
+    }
+    return { card };
+  }
+
+  /** Apply card 1 (final shoot): voted-out player shoots the given target immediately. */
+  applyCard1FinalShoot(victimId, targetId) {
+    const target = this.getPlayer(targetId);
+    if (!target || !target.isAlive) return { success: false, reason: 'invalid_target' };
+    const targetRole = Roles.get(target.roleId);
+    if (targetRole?.shootImmune) {
+      this._addHistory('last_action', t(tr.history.lastActionFinalShootImmune).replace('%s', target.name));
+      return { success: false, reason: 'immune' };
+    }
+    if (target.healed) {
+      this._addHistory('last_action', t(tr.history.lastActionFinalShootHealed).replace('%s', target.name));
+      return { success: false, reason: 'healed' };
+    }
+    const died = target.tryKill(this.round, 'lastaction_mafia');
+    if (died) this._addHistory('death', t(tr.history.mafiaKill).replace('%s', target.name));
+    else this._addHistory('shield', t(tr.history.shielded).replace('%s', target.name));
+    // Block mafia regular shoot for upcoming night
+    this.lastActionBlockMafiaShoot = true;
+    return { success: true };
+  }
+
+  /** Apply card 4 (guess independent): if guess correct, eliminate guessed and revive victim */
+  applyCard4Guess(victimId, guessedId) {
+    const guessed = this.getPlayer(guessedId);
+    const victim = this.getPlayer(victimId);
+    if (!guessed || !victim) return { success: false, reason: 'invalid' };
+    const role = Roles.get(guessed.roleId);
+    if (role?.team === 'independent') {
+      guessed.kill(this.round, 'lastaction_guess');
+      this._addHistory('death', t(tr.history.lastActionGuessSuccess).replace('%s', guessed.name));
+      // revive victim
+      victim.revive();
+      this._addHistory('last_action', t(tr.history.lastActionVictimSaved).replace('%s', victim.name));
+      return { success: true };
+    }
+    this._addHistory('last_action', t(tr.history.lastActionGuessFail).replace('%s', guessed.name));
+    return { success: false, reason: 'wrong' };
+  }
+
+  /** Apply card 5 (Face Off): transfer victim's role to chosen player; victim remains dead and non-revivable */
+  applyCard5FaceOff(victimId, chosenId) {
+    const victim = this.getPlayer(victimId);
+    const chosen = this.getPlayer(chosenId);
+    if (!victim || !chosen) return { success: false, reason: 'invalid' };
+    const victimRole = victim.roleId;
+    chosen.roleId = victimRole;
+    const roleDef = Roles.get(chosen.roleId);
+    chosen.initShield(roleDef);
+    victim.isRevivable = false;
+    this._addHistory('last_action', t(tr.history.lastActionFaceOffApplied).replace('%s', victim.name).replace('%s', chosen.name).replace('%s', Roles.get(victimRole)?.getLocalizedName?.() || victimRole));
+    return { success: true };
+  }
+
   // ──────────────────────────────────
   //  SERIALIZATION
   // ──────────────────────────────────
@@ -1323,6 +1439,9 @@ export class Game {
       drLecterSelfHealMax: this.drLecterSelfHealMax,
       _drWatsonSelfHealCount: this._drWatsonSelfHealCount,
       _drLecterSelfHealCount: this._drLecterSelfHealCount,
+      lastActionManager: this.lastActionManager?.toJSON(),
+      lastActionSkipNight: this.lastActionSkipNight,
+      lastActionBlockMafiaShoot: this.lastActionBlockMafiaShoot,
     };
   }
 
@@ -1358,6 +1477,11 @@ export class Game {
     this.drLecterSelfHealMax = data.drLecterSelfHealMax ?? 2;
     this._drWatsonSelfHealCount = data._drWatsonSelfHealCount ?? 0;
     this._drLecterSelfHealCount = data._drLecterSelfHealCount ?? 0;
+
+    // Last Action manager and flags
+    this.lastActionManager = LastActionManager.fromJSON(data.lastActionManager);
+    this.lastActionSkipNight = data.lastActionSkipNight || false;
+    this.lastActionBlockMafiaShoot = data.lastActionBlockMafiaShoot || false;
 
     // Restore Player ID counter
     const maxId = Math.max(0, ...this.players.map(p => p.id));
