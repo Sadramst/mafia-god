@@ -38,6 +38,8 @@ export class Role {
     this.maxCount = config.maxCount ?? 1;
     this.unique = config.unique !== undefined ? config.unique : true;
     this.hasShield = config.hasShield ?? false;
+    this.shootImmune = config.shootImmune ?? false;
+    this.voteImmune = config.voteImmune ?? false;
   }
 
   /**

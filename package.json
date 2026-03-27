@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "node build.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "cap:sync": "npm run build; npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios",
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^6.0.0",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "vitest": "^4.1.2"
   }
 }
