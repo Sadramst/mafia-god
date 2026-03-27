@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خدای مافیا — کتاب قوانین کامل</title>
+<style>
+  @page { margin: 1.5cm; size: A4; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+    color: #1a1a2e; background: #fff;
+    line-height: 2; font-size: 13px;
+    padding: 32px; direction: rtl;
+  }
+  h1 {
+    text-align: center; font-size: 28px; font-weight: 800;
+    color: #e63946; margin-bottom: 4px;
+  }
+  .subtitle {
+    text-align: center; font-size: 13px; color: #666;
+    margin-bottom: 24px; border-bottom: 3px solid #e63946;
+    padding-bottom: 16px;
+  }
+  .toc { margin-bottom: 24px; page-break-after: avoid; }
+  .toc h2 { font-size: 16px; color: #e63946; margin-bottom: 8px; }
+  .toc ol { padding-right: 20px; columns: 2; column-gap: 24px; }
+  .toc li { font-size: 12px; margin-bottom: 3px; color: #333; }
+  .toc a { color: #1d3557; text-decoration: none; }
+  section {
+    margin-bottom: 20px; padding: 16px;
+    border: 1px solid #e0e0e0; border-radius: 8px;
+    background: #fafafa; page-break-inside: avoid;
+  }
+  section h2 {
+    font-size: 17px; font-weight: 700; color: #e63946;
+    border-bottom: 2px solid #e6394633; padding-bottom: 6px;
+    margin-bottom: 10px;
+  }
+  section p, section ul { margin-bottom: 8px; }
+  .role-block { margin-bottom: 12px; }
+  .role-block h3 { font-size: 14px; font-weight: 700; color: #1d3557; margin-bottom: 2px; }
+  .role-block p { font-size: 12.5px; }
+  ul { padding-right: 18px; }
+  li { margin-bottom: 3px; }
+  .badge {
+    display: inline-block; padding: 1px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; color: #fff;
+  }
+  .badge--mafia { background: #e63946; }
+  .badge--citizen { background: #457b9d; }
+  .badge--indie { background: #6c5ce7; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; direction: rtl; }
+  th, td { border: 1px solid #ddd; padding: 5px 8px; text-align: right; }
+  th { background: #f1f1f1; font-weight: 600; }
+  .note { background: #fff3cd; border-right: 4px solid #ffc107; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin: 8px 0; }
+  .footer { text-align: center; font-size: 11px; color: #999; margin-top: 24px; border-top: 1px solid #eee; padding-top: 8px; }
+  @media print {
+    body { padding: 0; }
+    section { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<h1>📖 خدای مافیا — کتاب قوانین کامل</h1>
+<p class="subtitle">ابزار حرفه‌ای مدیریت بازی مافیا — تمام قوانین و مکانیک‌ها</p>
+
+<nav class="toc">
+  <h2>فهرست مطالب</h2>
+  <ol>
+    <li><a href="#overview">هدف بازی</a></li>
+    <li><a href="#victory">شرایط پیروزی</a></li>
+    <li><a href="#phases">فازهای بازی</a></li>
+    <li><a href="#night-order">ترتیب اقدامات شبانه</a></li>
+    <li><a href="#day-rules">قوانین روز</a></li>
+    <li><a href="#mafia-roles">نقش‌های تیم مافیا</a></li>
+    <li><a href="#citizen-roles">نقش‌های تیم شهروند</a></li>
+    <li><a href="#independent-roles">نقش‌های مستقل</a></li>
+    <li><a href="#special-mechanics">مکانیک‌های ویژه</a></li>
+    <li><a href="#last-action">کارت‌های حرکت آخر</a></li>
+    <li><a href="#setup">قوانین راه‌اندازی و تنظیمات</a></li>
+  </ol>
+</nav>
+
+<!-- 1. هدف بازی -->
+<section id="overview">
+  <h2>🎯 ۱. هدف بازی</h2>
+  <p>مافیا یک بازی گروهی بین سه تیم است: <span class="badge badge--mafia">مافیا</span>، <span class="badge badge--citizen">شهروند</span> و <span class="badge badge--indie">مستقل</span>. بازی توسط یک «خدا» (گرداننده) مدیریت می‌شود.</p>
+  <ul>
+    <li><strong>تیم مافیا:</strong> در تاریکی شب اعضای شهروند و مستقل را حذف می‌کنند.</li>
+    <li><strong>تیم شهروند:</strong> تلاش می‌کنند اعضای مافیا و مستقل را شناسایی و حذف کنند.</li>
+    <li><strong>مستقل‌ها:</strong> هدف‌های جداگانه خود را دارند.</li>
+  </ul>
+  <p>بازی بین فازهای شب و روز جابجا می‌شود تا یکی از تیم‌ها به شرایط پیروزی برسد.</p>
+</section>
+
+<!-- 2. شرایط پیروزی -->
+<section id="victory">
+  <h2>🏆 ۲. شرایط پیروزی</h2>
+  <p><span class="badge badge--citizen">🔵 پیروزی شهروندان</span> — تمام اعضای مافیا (پدرخوانده و همه همراهانش) <strong>و</strong> تمام مستقل‌ها (جک و زودیاک) حذف شوند.</p>
+  <p><span class="badge badge--mafia">🔴 پیروزی مافیا</span> — تعداد اعضای زنده مافیا برابر یا بیشتر از مجموع شهروندان و مستقل‌ها باشد.</p>
+  <p><span class="badge badge--indie">🟣 پیروزی مستقل</span> — شرایط نادر: حداقل یک مستقل زنده، تمام مافیا مرده، و ۲ نفر یا کمتر در بازی مانده باشند.</p>
+</section>
+
+<!-- 3. فازهای بازی -->
+<section id="phases">
+  <h2>🔄 ۳. فازهای بازی</h2>
+  <p><strong>۱️⃣ راه‌اندازی:</strong> بازیکنان اضافه، نقش‌ها انتخاب و تخصیص داده می‌شوند (حداقل ۸ بازیکن).</p>
+  <p><strong>۲️⃣ نمایش نقش‌ها:</strong> هر بازیکن به ترتیب نقش خود را می‌بیند.</p>
+  <p><strong>۳️⃣ روز کور (۱ دقیقه):</strong> بحث آزاد بدون رأی‌گیری یا چالش.</p>
+  <p><strong>۴️⃣ شب کور:</strong> فقط مافیا بیدار می‌شوند و همدیگر را می‌شناسند. جک هم طلسم می‌گذارد.</p>
+  <p><strong>۵️⃣ شب (دورهای بعد):</strong> تمام نقش‌های دارای اقدام شبانه بیدار می‌شوند و عمل می‌کنند.</p>
+  <p><strong>۶️⃣ روز:</strong> نتایج شب اعلام، بحث، خواب نیم‌روزی (اگر بمب باشد)، تیر صبحگاهی (اگر کسی تیر داشته باشد)، و سپس رأی‌گیری.</p>
+  <p><strong>۷️⃣ پایان بازی:</strong> وقتی شرایط پیروزی یکی از تیم‌ها برقرار شود.</p>
+</section>
+
+<!-- 4. ترتیب اقدامات شبانه -->
+<section id="night-order">
+  <h2>🌙 ۴. ترتیب اقدامات شبانه</h2>
+  <p><strong>ترتیب بیداری:</strong></p>
+  <table>
+    <tr><th>#</th><th>نقش</th><th>اقدام</th></tr>
+    <tr><td>۱</td><td>🎩 پدرخوانده</td><td>شلیک / سلاخی / مذاکره</td></tr>
+    <tr><td>۲</td><td>📰 خبرنگار</td><td>بررسی نتیجه مذاکره</td></tr>
+    <tr><td>۳</td><td>💉 دکتر لکتر</td><td>هیل عضو مافیا</td></tr>
+    <tr><td>۴</td><td>💣 بمب‌گذار</td><td>کارگذاری بمب (یک‌بار)</td></tr>
+    <tr><td>۵</td><td>🤐 ماتادور</td><td>سکوت یک بازیکن</td></tr>
+    <tr><td>۶</td><td>🧙 جادوگر</td><td>بلاک شهروند/مستقل</td></tr>
+    <tr><td>۷</td><td>⚕️ دکتر واتسون</td><td>هیل هر بازیکن</td></tr>
+    <tr><td>۸</td><td>🔍 کارآگاه</td><td>استعلام بازیکن</td></tr>
+    <tr><td>۹</td><td>🎖️ همشهری کین</td><td>افشا (یک‌بار)</td></tr>
+    <tr><td>۱۰</td><td>🎯 اسنایپر</td><td>شلیک</td></tr>
+    <tr><td>۱۱</td><td>🔺 فراماسون</td><td>عضوگیری</td></tr>
+    <tr><td>۱۲</td><td>✝️ کنستانتین</td><td>احیای مرده (یک‌بار)</td></tr>
+    <tr><td>۱۳</td><td>🔫 تفنگدار</td><td>دادن تیر</td></tr>
+    <tr><td>۱۴</td><td>🔪 جک</td><td>طلسم</td></tr>
+    <tr><td>۱۵</td><td>♈ زودیاک</td><td>شلیک (بر اساس تنظیمات)</td></tr>
+  </table>
+  <p><strong>ترتیب حل اقدامات (ریزالو):</strong> بلاک جادوگر ← هیل واتسون ← هیل لکتر ← اقدام پدرخوانده ← طلسم جک ← شلیک زودیاک ← شلیک اسنایپر ← استعلام کارآگاه ← سکوت ماتادور ← بمب‌گذاری ← احیای کنستانتین ← عضوگیری فراماسون ← تیر تفنگدار ← افشای کین ← زنجیره طلسم جک</p>
+</section>
+
+<!-- 5. قوانین روز -->
+<section id="day-rules">
+  <h2>☀️ ۵. قوانین روز</h2>
+  <div class="role-block">
+    <h3>📢 اعلام نتایج شب</h3>
+    <p>خدا اعلام می‌کند چه کسانی کشته شدند، نجات یافتند، سپرشان فعال شد، سکوت شدند، و افشاگری کین.</p>
+  </div>
+  <div class="role-block">
+    <h3>💬 بحث</h3>
+    <p>بازیکنان بحث می‌کنند (زمان پیش‌فرض ۶۰ ثانیه). بازیکنان سکوت‌شده حق صحبت ندارند.</p>
+  </div>
+  <div class="role-block">
+    <h3>🔫 تیر صبحگاهی</h3>
+    <ul>
+      <li>تیر مشقی ← هدف زنده می‌ماند</li>
+      <li>تیر جنگی بدون محافظت ← هدف حذف و سمتش اعلام می‌شود</li>
+      <li>تیر جنگی با هیل/سپر/بلاک ← مشقی حساب می‌شود</li>
+      <li>⚠️ تیرهای جنگی استفاده‌نشده در شروع رأی‌گیری منفجر شده و دارنده‌شان حذف می‌شوند!</li>
+    </ul>
+  </div>
+  <div class="role-block">
+    <h3>💣 خواب نیم‌روزی (اگر بمب فعال باشد)</h3>
+    <p><strong>مرحله ۱:</strong> محافظ رمز بمب را حدس می‌زند (درست ← خنثی، غلط ← محافظ حذف).</p>
+    <p><strong>مرحله ۲:</strong> اگر محافظ نباشد یا رد کند، فرد بمب‌شده حدس می‌زند (درست ← خنثی، غلط ← حذف).</p>
+  </div>
+  <div class="role-block">
+    <h3>🗳️ رأی‌گیری</h3>
+    <ul>
+      <li>هر بازیکن زنده به یک نفر رأی می‌دهد یا رأی نمی‌دهد.</li>
+      <li><strong>جک:</strong> مصونیت از رأی دارد (قابل حذف نیست).</li>
+      <li><strong>تساوی آرا:</strong> تمام بازیکنان با بیشترین رأی حذف می‌شوند.</li>
+      <li><strong>بدون رأی:</strong> اگر کسی رأی کافی نداشته باشد، کسی حذف نمی‌شود.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 6. نقش‌های تیم مافیا -->
+<section id="mafia-roles">
+  <h2>🔴 ۶. نقش‌های تیم مافیا</h2>
+
+  <div class="role-block">
+    <h3>🎩 پدرخوانده <span class="badge badge--mafia">یکتا</span></h3>
+    <p>رهبر مافیا. هر شب یکی از سه کار را انتخاب می‌کند:</p>
+    <ul>
+      <li><strong>شلیک:</strong> کشتن معمولی (روی جک و زودیاک بی‌تأثیر).</li>
+      <li><strong>سلاخی:</strong> حدس نقش دقیق هدف. درست ← حذف بدون هیچ محافظتی (دکتر/سپر/محافظ بی‌تأثیر). غلط ← هیچ اتفاقی. در شب سلاخی مافیا شلیک ندارد. مرگ سلاخی قابل احیا نیست.</li>
+      <li><strong>مذاکره:</strong> فقط وقتی مذاکره‌کننده زنده و مافیای زنده ≤ آستانه. شهروند ساده یا مظنون ← به مافیا. غیر ← شکست و از دست رفتن شلیک.</li>
+    </ul>
+    <p>یک‌بار سپر دارد. در استعلام کارآگاه شهروند نشان داده می‌شود.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>💉 دکتر لکتر <span class="badge badge--mafia">یکتا</span></h3>
+    <p>هر شب یک عضو مافیا (یا خودش) را هیل می‌کند. هیل دیگران نامحدود، هیل خود محدود (پیش‌فرض ۲). هیل تا صبح باقی می‌ماند — اگر هدف مورد شلیک قرار بگیرد، هیل مصرف شده و فرد زنده می‌ماند.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>💣 بمب‌گذار <span class="badge badge--mafia">یکتا</span></h3>
+    <p>یک‌بار در بازی بمب با رمز ۱ تا ۴ روی کسی می‌گذارد. صبح خدا اعلام می‌کند. نتیجه در خواب نیم‌روزی مشخص می‌شود.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🕵️ جاسوس <span class="badge badge--mafia">یکتا</span></h3>
+    <p>اقدام شبانه ندارد. اگر فراماسون بیدارش کند، بدون آلودگی وارد تیم فراماسون می‌شود و به نفع مافیا عمل می‌کند.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🤐 ماتادور <span class="badge badge--mafia">یکتا</span></h3>
+    <p>هر شب یک بازیکن (مافیا/شهروند/مستقل) را سکوت می‌کند. آن بازیکن فردا حق صحبت ندارد.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🧙 جادوگر <span class="badge badge--mafia">یکتا</span></h3>
+    <p>هر شب اقدام شبانه یک شهروند یا مستقل را بلاک می‌کند. نمی‌تواند دو شب متوالی یک نفر را بلاک کند. تیر بلاک‌شده مشقی حساب می‌شود. طلسم بلاک‌شده جک قفل و ثابت می‌ماند.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🤝 مذاکره‌کننده <span class="badge badge--mafia">یکتا</span></h3>
+    <p>اقدام شبانه ندارد. وجودش امکان مذاکره را برای پدرخوانده فعال می‌کند (وقتی مافیا ≤ آستانه، پیش‌فرض ۲).</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔫 مافیای ساده <span class="badge badge--mafia">حداکثر ۱۰</span></h3>
+    <p>عضو عادی بدون توانایی خاص.</p>
+  </div>
+</section>
+
+<!-- 7. نقش‌های تیم شهروند -->
+<section id="citizen-roles">
+  <h2>🔵 ۷. نقش‌های تیم شهروند</h2>
+
+  <div class="role-block">
+    <h3>⚕️ دکتر واتسون <span class="badge badge--citizen">یکتا</span></h3>
+    <p>هر شب یک نفر (یا خودش) را هیل می‌کند. هیل دیگران نامحدود، هیل خود محدود (پیش‌فرض ۲). هدف هیل‌شده اگر مورد شلیک قرار بگیرد زنده می‌ماند.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔍 کارآگاه <span class="badge badge--citizen">یکتا</span></h3>
+    <p>هر شب یک بازیکن را استعلام می‌کند:</p>
+    <ul>
+      <li>مافیا (غیر پدرخوانده) یا مظنون ← 👍 (مثبت)</li>
+      <li>پدرخوانده، مستقل یا شهروند (غیر مظنون) ← 👎 (منفی)</li>
+      <li>بلاک‌شده توسط جادوگر ← ✊ (بلاک)</li>
+    </ul>
+  </div>
+
+  <div class="role-block">
+    <h3>🎖️ همشهری کین <span class="badge badge--citizen">یکتا</span></h3>
+    <p>یک‌بار در بازی هدفی را انتخاب می‌کند. اگر هدف تا صبح زنده بماند و مافیا یا مستقل باشد ← خدا صبح نقشش را اعلام می‌کند. هدف در بازی می‌ماند. شب بعد خدا کین را حذف می‌کند (قابل احیا نیست). اگر هدف همان شب بمیرد ← توانایی برمی‌گردد.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🎯 اسنایپر <span class="badge badge--citizen">یکتا</span></h3>
+    <p>تعداد شلیک محدود (پیش‌فرض ۲). مستقل ← هیچی. پدرخوانده با سپر ← هیچی. مافیا هیل‌شده ← هدر. مافیا بدون محافظت ← کشته. شهروند ← اسنایپر خودش می‌میرد. یک‌بار سپر دارد.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔫 تفنگدار <span class="badge badge--citizen">یکتا</span></h3>
+    <p>هر شب تیر (مشقی یا جنگی) به بازیکنان می‌دهد — حداکثر یک تیر به هر نفر. صبح دارنده شلیک می‌کند. تیر جنگی استفاده‌نشده در شروع رأی‌گیری منفجر می‌شود!</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔺 فراماسون <span class="badge badge--citizen">یکتا</span></h3>
+    <p>هر شب یک نفر عضوگیری. حداکثر ۲ متحد (قابل تنظیم). شهروند یا جاسوس ← امن. مافیا (غیر جاسوس) یا مستقل ← صبح تمام تیم فراماسون حذف (آلودگی).</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🛡️ محافظ <span class="badge badge--citizen">یکتا</span></h3>
+    <p>اقدام شبانه ندارد. ۱) خواب نیم‌روزی: حدس رمز بمب (درست ← خنثی، غلط ← محافظ حذف). ۲) اگر زودیاک به محافظ شلیک ← زودیاک حذف، محافظ زنده.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>📰 خبرنگار <span class="badge badge--citizen">یکتا</span></h3>
+    <p>بعد از خریداری، یک بار از خدا می‌پرسد آیا موفق بوده. خدا 👍 یا 👎 نشان می‌دهد. نیاز به مذاکره‌کننده دارد.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>✝️ کنستانتین <span class="badge badge--citizen">یکتا</span></h3>
+    <p>یک‌بار در بازی یک مرده را احیا می‌کند. نمی‌تواند قربانیان سلاخی یا کین را احیا کند.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>👤 شهروند ساده <span class="badge badge--citizen">حداکثر ۱۰</span></h3>
+    <p>بدون توانایی.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔎 مظنون <span class="badge badge--citizen">حداکثر ۱۰</span></h3>
+    <p>بدون توانایی. تفاوت: در استعلام کارآگاه مافیا نشان داده می‌شود (مثبت کاذب). قابل خریداری توسط مذاکره‌کننده.</p>
+  </div>
+</section>
+
+<!-- 8. نقش‌های مستقل -->
+<section id="independent-roles">
+  <h2>🟣 ۸. نقش‌های مستقل</h2>
+
+  <div class="role-block">
+    <h3>🔪 جک <span class="badge badge--indie">یکتا</span></h3>
+    <p>هر شب روی یک نفر طلسم می‌گذارد. اگر فرد طلسم‌شده کشته شود یا رأی بگیرد ← جک هم حذف می‌شود.</p>
+    <ul>
+      <li>مصونیت از شلیک شبانه (مافیا/زودیاک/اسنایپر)</li>
+      <li>مصونیت از رأی روز</li>
+      <li>نمی‌تواند دو شب متوالی یک نفر را طلسم کند</li>
+      <li>تنها راه حذف: سلاخی صحیح پدرخوانده، زنجیره طلسم، یا کارت‌های حرکت آخر</li>
+      <li>اگر جادوگر بلاک کند: طلسم قفل می‌شود و جابجا نمی‌شود</li>
+    </ul>
+  </div>
+
+  <div class="role-block">
+    <h3>♈ زودیاک <span class="badge badge--indie">یکتا</span></h3>
+    <p>قاتل مستقل. شلیک بر اساس تنظیمات (هر شب / فرد / زوج).</p>
+    <ul>
+      <li>مصونیت از شلیک شبانه</li>
+      <li>اگر به محافظ شلیک ← زودیاک حذف، محافظ زنده</li>
+      <li>با رأی روز قابل حذف است</li>
+      <li>با سلاخی صحیح قابل حذف است</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 9. مکانیک‌های ویژه -->
+<section id="special-mechanics">
+  <h2>⚡ ۹. مکانیک‌های ویژه</h2>
+
+  <div class="role-block">
+    <h3>🗡️ سلاخی</h3>
+    <p>پدرخوانده نقش دقیق هدف را حدس می‌زند. درست ← حذف بدون محافظت. غلط ← هیچی. در شب سلاخی مافیا شلیک ندارد. مرگ غیرقابل احیا. می‌تواند جک و زودیاک را حذف کند.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🤝 مذاکره (خریداری)</h3>
+    <p>وقتی مافیای زنده ≤ آستانه و مذاکره‌کننده زنده باشد. فقط شهروند ساده یا مظنون قابل خریداری. هر نقش دیگر ← شکست و از دست رفتن شلیک.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>💣 بمب</h3>
+    <p>بمب‌گذار یک‌بار بمب با رمز ۱ تا ۴ می‌گذارد. صبح اعلام. در خواب نیم‌روزی: محافظ ← فرد بمب‌شده حدس می‌زنند.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔪 طلسم جک</h3>
+    <p>هر شب روی یک نفر. اگر آن فرد بمیرد ← جک هم می‌میرد. بلاک جادوگر ← طلسم ثابت.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🛡️ سپر</h3>
+    <p>پدرخوانده و اسنایپر هر کدام یک‌بار سپر دارند. یک شلیک شبانه را جذب می‌کند. سلاخی/بمب/رأی/انفجار تیر از سپر رد می‌شوند.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔺 اتحاد فراماسون</h3>
+    <p>هر شب یک عضوگیری. شهروند/جاسوس ← امن. مافیا/مستقل ← آلودگی (تمام تیم فردا حذف). اگر رهبر بمیرد ← اتحاد غیرفعال.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔫 تیر صبحگاهی</h3>
+    <p>تفنگدار شب تیر می‌دهد. صبح دارنده شلیک می‌کند. مشقی = امن. جنگی = کشنده اگر بدون محافظت. جنگی استفاده‌نشده = انفجار در رأی‌گیری.</p>
+  </div>
+</section>
+
+<!-- 10. کارت‌های حرکت آخر -->
+<section id="last-action">
+  <h2>🃏 ۱۰. کارت‌های حرکت آخر</h2>
+  <p>وقتی بازیکنی با رأی حذف می‌شود و کارت حرکت آخر فعال باشد، یک کارت می‌کشد:</p>
+  <table>
+    <tr><th>#</th><th>کارت</th><th>اثر</th></tr>
+    <tr><td>۱</td><td>شلیک نهایی</td><td>در اول شب به جای مافیا یک نفر را هدف می‌گیرد.</td></tr>
+    <tr><td>۲</td><td>بی‌خوابی</td><td>شب بعد کامل حذف — مستقیم به روز بعد.</td></tr>
+    <tr><td>۳</td><td>افشای هویت</td><td>خدا نقش یک بازیکن مشخص را اعلام می‌کند.</td></tr>
+    <tr><td>۴</td><td>ذهن زیبا</td><td>نقش جک یا زودیاک را حدس. درست و مستقل ← حذف.</td></tr>
+    <tr><td>۵</td><td>تغییر چهره</td><td>بازیکن خروجی نقشش را با یک بازیکن انتخابی کامل عوض می‌کند.</td></tr>
+  </table>
+</section>
+
+<!-- 11. قوانین راه‌اندازی -->
+<section id="setup">
+  <h2>⚙️ ۱۱. قوانین راه‌اندازی و تنظیمات</h2>
+  <div class="role-block">
+    <h3>محدودیت‌ها</h3>
+    <ul>
+      <li>حداقل ۸ بازیکن</li>
+      <li>حداقل ۱ نقش مافیا الزامی</li>
+      <li>حداکثر مافیا: floor((کل بازیکنان − مستقل‌ها − ۱) / ۲)</li>
+      <li>زودیاک نیاز به محافظ دارد (خودکار اضافه)</li>
+      <li>خبرنگار نیاز به مذاکره‌کننده دارد</li>
+      <li>تعداد نقش‌ها باید دقیقاً برابر تعداد بازیکنان باشد</li>
+    </ul>
+  </div>
+  <div class="role-block">
+    <h3>تنظیمات قابل تغییر</h3>
+    <table>
+      <tr><th>تنظیم</th><th>پیش‌فرض</th><th>محدوده</th></tr>
+      <tr><td>تیر مشقی تفنگدار</td><td>۲</td><td>۰–۵</td></tr>
+      <tr><td>تیر جنگی تفنگدار</td><td>۲</td><td>۰–۵</td></tr>
+      <tr><td>هیل خود واتسون</td><td>۲</td><td>۱–۵</td></tr>
+      <tr><td>هیل خود لکتر</td><td>۲</td><td>۱–۵</td></tr>
+      <tr><td>متحدان فراماسون</td><td>۲</td><td>۱–۵</td></tr>
+      <tr><td>آستانه مذاکره</td><td>۲</td><td>۱–۵</td></tr>
+      <tr><td>شلیک اسنایپر</td><td>۲</td><td>۱–۵</td></tr>
+      <tr><td>دوره شلیک زودیاک</td><td>هر شب</td><td>هر شب / فرد / زوج</td></tr>
+      <tr><td>مصونیت صبحگاهی جک</td><td>خیر</td><td>بله / خیر</td></tr>
+      <tr><td>مصونیت صبحگاهی زودیاک</td><td>خیر</td><td>بله / خیر</td></tr>
+    </table>
+  </div>
+</section>
+
+<div class="footer">
+  خدای مافیا — کتاب قوانین کامل نسخه ۱.۰ — تولید شده از کد منبع بازی
+</div>
+
+</body>
+</html>

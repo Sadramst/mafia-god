@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mafia God — Complete Rulebook (English)</title>
+<style>
+  @page { margin: 1.5cm; size: A4; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    color: #1a1a2e; background: #fff;
+    line-height: 1.7; font-size: 13px;
+    padding: 32px;
+  }
+  h1 {
+    text-align: center; font-size: 28px; font-weight: 800;
+    color: #e63946; margin-bottom: 4px;
+  }
+  .subtitle {
+    text-align: center; font-size: 13px; color: #666;
+    margin-bottom: 24px; border-bottom: 3px solid #e63946;
+    padding-bottom: 16px;
+  }
+  .toc { margin-bottom: 24px; page-break-after: avoid; }
+  .toc h2 { font-size: 16px; color: #e63946; margin-bottom: 8px; }
+  .toc ol { padding-left: 20px; columns: 2; column-gap: 24px; }
+  .toc li { font-size: 12px; margin-bottom: 3px; color: #333; }
+  .toc a { color: #1d3557; text-decoration: none; }
+  section {
+    margin-bottom: 20px; padding: 16px;
+    border: 1px solid #e0e0e0; border-radius: 8px;
+    background: #fafafa; page-break-inside: avoid;
+  }
+  section h2 {
+    font-size: 17px; font-weight: 700; color: #e63946;
+    border-bottom: 2px solid #e6394633; padding-bottom: 6px;
+    margin-bottom: 10px;
+  }
+  section p, section ul { margin-bottom: 8px; }
+  .role-block { margin-bottom: 12px; }
+  .role-block h3 { font-size: 14px; font-weight: 700; color: #1d3557; margin-bottom: 2px; }
+  .role-block p { font-size: 12.5px; }
+  ul { padding-left: 18px; }
+  li { margin-bottom: 3px; }
+  .badge {
+    display: inline-block; padding: 1px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; color: #fff;
+  }
+  .badge--mafia { background: #e63946; }
+  .badge--citizen { background: #457b9d; }
+  .badge--indie { background: #6c5ce7; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+  th, td { border: 1px solid #ddd; padding: 5px 8px; text-align: left; }
+  th { background: #f1f1f1; font-weight: 600; }
+  .note { background: #fff3cd; border-left: 4px solid #ffc107; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin: 8px 0; }
+  .footer { text-align: center; font-size: 11px; color: #999; margin-top: 24px; border-top: 1px solid #eee; padding-top: 8px; }
+  @media print {
+    body { padding: 0; }
+    section { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<h1>📖 Mafia God — Complete Rulebook</h1>
+<p class="subtitle">Professional Mafia Game Management Tool — All Rules &amp; Mechanics</p>
+
+<nav class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#overview">Game Objective</a></li>
+    <li><a href="#victory">Victory Conditions</a></li>
+    <li><a href="#phases">Game Phases</a></li>
+    <li><a href="#night-order">Night Action Order</a></li>
+    <li><a href="#day-rules">Day Rules</a></li>
+    <li><a href="#mafia-roles">Mafia Team Roles</a></li>
+    <li><a href="#citizen-roles">Citizen Team Roles</a></li>
+    <li><a href="#independent-roles">Independent Roles</a></li>
+    <li><a href="#special-mechanics">Special Mechanics</a></li>
+    <li><a href="#last-action">Last Action Cards</a></li>
+    <li><a href="#setup">Setup Rules &amp; Configuration</a></li>
+  </ol>
+</nav>
+
+<!-- 1. OVERVIEW -->
+<section id="overview">
+  <h2>🎯 1. Game Objective</h2>
+  <p>Mafia is a party game between three teams: <span class="badge badge--mafia">Mafia</span>, <span class="badge badge--citizen">Citizens</span>, and <span class="badge badge--indie">Independents</span>. The game is managed by a "God" (moderator).</p>
+  <ul>
+    <li><strong>Mafia Team:</strong> Eliminates citizens and independents during the night.</li>
+    <li><strong>Citizen Team:</strong> Tries to identify and eliminate mafia and independents.</li>
+    <li><strong>Independents:</strong> Have their own separate goals.</li>
+  </ul>
+  <p>The game alternates between night and day phases until one team meets their victory condition.</p>
+</section>
+
+<!-- 2. VICTORY -->
+<section id="victory">
+  <h2>🏆 2. Victory Conditions</h2>
+  <p><span class="badge badge--citizen">🔵 Citizen Victory</span> — All mafia members (Godfather and all associates) <strong>AND</strong> all independents (Jack &amp; Zodiac) are eliminated.</p>
+  <p><span class="badge badge--mafia">🔴 Mafia Victory</span> — Alive mafia count is ≥ the total of alive citizens + independents.</p>
+  <p><span class="badge badge--indie">🟣 Independent Victory</span> — Rare: at least 1 independent alive, all mafia dead, and 2 or fewer total players remaining.</p>
+</section>
+
+<!-- 3. PHASES -->
+<section id="phases">
+  <h2>🔄 3. Game Phases</h2>
+  <p><strong>1️⃣ Setup:</strong> Players are added, roles are selected and assigned (minimum 8 players).</p>
+  <p><strong>2️⃣ Role Reveal:</strong> Each player sees their role in order.</p>
+  <p><strong>3️⃣ Blind Day (1 minute):</strong> Free discussion, no voting or challenges.</p>
+  <p><strong>4️⃣ Blind Night:</strong> Only mafia wakes up and sees each other. Jack also places his curse.</p>
+  <p><strong>5️⃣ Night (subsequent rounds):</strong> All roles with night actions wake up and act.</p>
+  <p><strong>6️⃣ Day:</strong> Night results announced, discussion, noon nap (if bomb), morning shots (if bullets), then voting.</p>
+  <p><strong>7️⃣ Game End:</strong> When any team's victory condition is met.</p>
+</section>
+
+<!-- 4. NIGHT ORDER -->
+<section id="night-order">
+  <h2>🌙 4. Night Action Order</h2>
+  <p><strong>Wake Order:</strong></p>
+  <table>
+    <tr><th>#</th><th>Role</th><th>Action</th></tr>
+    <tr><td>1</td><td>🎩 Godfather</td><td>Shoot / Salakhi / Negotiate</td></tr>
+    <tr><td>2</td><td>📰 Reporter</td><td>Check negotiation result</td></tr>
+    <tr><td>3</td><td>💉 Dr. Lecter</td><td>Heal mafia member</td></tr>
+    <tr><td>4</td><td>💣 Bomber</td><td>Plant bomb (one-time)</td></tr>
+    <tr><td>5</td><td>🤐 Matador</td><td>Silence a player</td></tr>
+    <tr><td>6</td><td>🧙 Sorcerer</td><td>Block a citizen/independent</td></tr>
+    <tr><td>7</td><td>⚕️ Dr. Watson</td><td>Heal any player</td></tr>
+    <tr><td>8</td><td>🔍 Detective</td><td>Investigate a player</td></tr>
+    <tr><td>9</td><td>🎖️ Citizen Kane</td><td>Reveal a player (one-time)</td></tr>
+    <tr><td>10</td><td>🎯 Sniper</td><td>Shoot a player</td></tr>
+    <tr><td>11</td><td>🔺 Freemason</td><td>Recruit to alliance</td></tr>
+    <tr><td>12</td><td>✝️ Constantine</td><td>Revive a dead player (one-time)</td></tr>
+    <tr><td>13</td><td>🔫 Gunner</td><td>Give bullets to players</td></tr>
+    <tr><td>14</td><td>🔪 Jack</td><td>Place curse</td></tr>
+    <tr><td>15</td><td>♈ Zodiac</td><td>Shoot (based on frequency)</td></tr>
+  </table>
+  <p><strong>Resolution Order:</strong> Sorcerer block → Watson heal → Lecter heal → Godfather action → Jack curse → Zodiac kill → Sniper shoot → Detective investigate → Matador silence → Bomb plant → Constantine revive → Freemason recruit → Gunner bullets → Kane reveal → Jack curse chain</p>
+</section>
+
+<!-- 5. DAY RULES -->
+<section id="day-rules">
+  <h2>☀️ 5. Day Rules</h2>
+  <div class="role-block">
+    <h3>📢 Night Results Announcement</h3>
+    <p>God announces who was killed, saved, whose shield activated, who is silenced, and Kane's reveal.</p>
+  </div>
+  <div class="role-block">
+    <h3>💬 Discussion</h3>
+    <p>Players discuss (default 60 seconds). Silenced players cannot speak.</p>
+  </div>
+  <div class="role-block">
+    <h3>🔫 Morning Shots</h3>
+    <ul>
+      <li>Blank bullet → target survives</li>
+      <li>Live bullet without protection → target eliminated, side revealed</li>
+      <li>Live bullet with heal/shield/block → treated as blank</li>
+      <li>⚠️ Unused live bullets explode at voting start, eliminating their holders!</li>
+    </ul>
+  </div>
+  <div class="role-block">
+    <h3>💣 Noon Nap (if bomb active)</h3>
+    <p><strong>Stage 1:</strong> Bodyguard guesses bomb code (correct → defused, wrong → bodyguard eliminated).<br>
+    <strong>Stage 2:</strong> If no bodyguard or skips, bombed player guesses (correct → defused, wrong → eliminated).</p>
+  </div>
+  <div class="role-block">
+    <h3>🗳️ Voting</h3>
+    <ul>
+      <li>Each alive player votes for one player or abstains.</li>
+      <li><strong>Jack:</strong> Has vote immunity (cannot be executed).</li>
+      <li><strong>Tied votes:</strong> ALL tied players are eliminated.</li>
+      <li><strong>No votes:</strong> If no one gets enough votes, no one is eliminated.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 6. MAFIA ROLES -->
+<section id="mafia-roles">
+  <h2>🔴 6. Mafia Team Roles</h2>
+
+  <div class="role-block">
+    <h3>🎩 Godfather <span class="badge badge--mafia">Unique</span></h3>
+    <p>Mafia leader. Each night chooses one of three actions:</p>
+    <ul>
+      <li><strong>Shoot:</strong> Regular kill (no effect on Jack or Zodiac).</li>
+      <li><strong>Salakhi:</strong> Guess exact role. Correct → eliminated, bypasses ALL protections (doctor/shield/bodyguard). Wrong → nothing. On salakhi night, mafia has no regular shot. Death NOT revivable.</li>
+      <li><strong>Negotiate:</strong> Only when Negotiator alive and alive mafia ≤ threshold. Target simple citizen or suspect → joins mafia. Others → fails and mafia loses shot.</li>
+    </ul>
+    <p>Has one-time shield. Appears as citizen in detective investigation.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>💉 Dr. Lecter <span class="badge badge--mafia">Unique</span></h3>
+    <p>Each night heals one mafia member (or self). Unlimited heals on others, limited self-heal (default 2). Heal persists until morning — consumed if target is shot.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>💣 Bomber <span class="badge badge--mafia">Unique</span></h3>
+    <p>Once per game, plants bomb on someone with code 1-4. God announces in morning. Result determined during noon nap.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🕵️ Spy <span class="badge badge--mafia">Unique</span></h3>
+    <p>No night action. If recruited by Freemason, joins without contamination and works for mafia.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🤐 Matador <span class="badge badge--mafia">Unique</span></h3>
+    <p>Each night silences one player (mafia/citizen/independent). That player cannot speak next day.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🧙 Sorcerer (Jadoogar) <span class="badge badge--mafia">Unique</span></h3>
+    <p>Each night blocks one citizen or independent's night action. Cannot block same person two nights in a row. Blocked bullets become blank. Blocked Jack's curse is locked and preserved.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🤝 Negotiator <span class="badge badge--mafia">Unique</span></h3>
+    <p>No night action. Enables Godfather's negotiate option when alive mafia ≤ threshold (default 2).</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔫 Simple Mafia <span class="badge badge--mafia">Up to 10</span></h3>
+    <p>Regular member with no special abilities.</p>
+  </div>
+</section>
+
+<!-- 7. CITIZEN ROLES -->
+<section id="citizen-roles">
+  <h2>🔵 7. Citizen Team Roles</h2>
+
+  <div class="role-block">
+    <h3>⚕️ Dr. Watson <span class="badge badge--citizen">Unique</span></h3>
+    <p>Each night heals one person (or self). Unlimited heals on others, limited self-heal (default 2). Healed target survives one lethal shot.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔍 Detective <span class="badge badge--citizen">Unique</span></h3>
+    <p>Each night investigates one player:</p>
+    <ul>
+      <li>Mafia (not Godfather) or Suspect → 👍 (positive)</li>
+      <li>Godfather, independent, or citizen (not Suspect) → 👎 (negative)</li>
+      <li>Blocked by Sorcerer → ✊ (blocked)</li>
+    </ul>
+  </div>
+
+  <div class="role-block">
+    <h3>🎖️ Citizen Kane <span class="badge badge--citizen">Unique</span></h3>
+    <p>Once per game, selects a target. If target survives until morning and is mafia or independent → God announces their role. Target stays in game. Next night, God eliminates Kane (NOT revivable). If target dies same night → ability returns.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🎯 Sniper <span class="badge badge--citizen">Unique</span></h3>
+    <p>Limited shots (default 2). Independent target → nothing. Godfather with shield → nothing. Mafia healed → wasted. Mafia unprotected → killed. Citizen target → sniper dies. Has one-time shield.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔫 Gunner <span class="badge badge--citizen">Unique</span></h3>
+    <p>Each night gives bullets (blank or live) to players — max one per person. Morning: holder shoots. Unused live bullets explode at voting start!</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔺 Freemason <span class="badge badge--citizen">Unique</span></h3>
+    <p>Each night recruits one person. Max 2 allies (configurable). Citizen or Spy → safe. Mafia (not spy) or independent → morning: entire freemason team eliminated (contamination).</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🛡️ Bodyguard <span class="badge badge--citizen">Unique</span></h3>
+    <p>No night action. 1) Noon nap: Guesses bomb code (correct → defused, wrong → bodyguard eliminated). 2) If Zodiac shoots bodyguard → Zodiac dies, bodyguard survives.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>📰 Reporter <span class="badge badge--citizen">Unique</span></h3>
+    <p>After negotiation, one chance to ask God if it succeeded. God shows 👍 or 👎. Requires Negotiator in game.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>✝️ Constantine <span class="badge badge--citizen">Unique</span></h3>
+    <p>Once per game, revives one dead player. Cannot revive salakhi victims or Kane sacrifice.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>👤 Simple Citizen <span class="badge badge--citizen">Up to 10</span></h3>
+    <p>No abilities.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔎 Suspect <span class="badge badge--citizen">Up to 10</span></h3>
+    <p>No abilities. Appears as mafia in detective investigation (false positive). Recruitable via negotiation.</p>
+  </div>
+</section>
+
+<!-- 8. INDEPENDENT ROLES -->
+<section id="independent-roles">
+  <h2>🟣 8. Independent Roles</h2>
+
+  <div class="role-block">
+    <h3>🔪 Jack <span class="badge badge--indie">Unique</span></h3>
+    <p>Each night curses one person. If cursed player is killed or voted out → Jack is also eliminated.</p>
+    <ul>
+      <li>Immune to night shots (mafia/zodiac/sniper)</li>
+      <li>Immune to day votes</li>
+      <li>Cannot curse same person two nights in a row</li>
+      <li>Only ways to eliminate: correct salakhi, curse chain, or last action cards</li>
+      <li>If blocked by Sorcerer: curse is locked and cannot be moved</li>
+    </ul>
+  </div>
+
+  <div class="role-block">
+    <h3>♈ Zodiac <span class="badge badge--indie">Unique</span></h3>
+    <p>Independent killer. Shoots based on settings (every night / odd / even).</p>
+    <ul>
+      <li>Immune to night shots</li>
+      <li>If shoots Bodyguard → Zodiac dies, bodyguard survives</li>
+      <li>Can be voted out during day</li>
+      <li>Can be eliminated by correct salakhi</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 9. SPECIAL MECHANICS -->
+<section id="special-mechanics">
+  <h2>⚡ 9. Special Mechanics</h2>
+
+  <div class="role-block">
+    <h3>🗡️ Salakhi</h3>
+    <p>Godfather guesses exact role. Correct → eliminated, bypasses all protection. Wrong → nothing. On salakhi night, mafia has no shot. Death NOT revivable. Can kill Jack and Zodiac.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🤝 Negotiation</h3>
+    <p>When alive mafia ≤ threshold and Negotiator alive. Only simple citizen or suspect can be recruited. Any other role → fails, mafia loses shot.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>💣 Bomb</h3>
+    <p>Bomber plants once with code 1-4. Morning: announced. Noon nap: Bodyguard → bombed player guess.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔪 Jack's Curse</h3>
+    <p>Each night on one person. If that person dies → Jack dies too. Sorcerer block → curse locked.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🛡️ Shield</h3>
+    <p>Godfather and Sniper each have one-time shield. Absorbs one night shot. Salakhi/bomb/vote/bullet explosion bypass shield.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔺 Freemason Alliance</h3>
+    <p>Each night recruits one. Citizen/spy → safe. Mafia/independent → contamination (entire team eliminated next morning). If leader dies → alliance inactive.</p>
+  </div>
+
+  <div class="role-block">
+    <h3>🔫 Morning Shots &amp; Bullets</h3>
+    <p>Gunner gives bullets at night. Morning: holder shoots. Blank = safe. Live = lethal if unprotected. Unused live = explosion at voting.</p>
+  </div>
+</section>
+
+<!-- 10. LAST ACTION CARDS -->
+<section id="last-action">
+  <h2>🃏 10. Last Action Cards</h2>
+  <p>When a voted-out player has last action cards enabled, they draw one:</p>
+  <table>
+    <tr><th>#</th><th>Card</th><th>Effect</th></tr>
+    <tr><td>1</td><td>Final Shoot</td><td>At start of night, shoots one person instead of Mafia.</td></tr>
+    <tr><td>2</td><td>Insomnia</td><td>Next night is completely skipped — go directly to next day.</td></tr>
+    <tr><td>3</td><td>Reveal Identity</td><td>God announces a designated player's role.</td></tr>
+    <tr><td>4</td><td>Beautiful Mind</td><td>Guess Jack or Zodiac. If correct and independent → eliminated.</td></tr>
+    <tr><td>5</td><td>Face Off</td><td>Leaving player completely swaps roles with a chosen player.</td></tr>
+  </table>
+</section>
+
+<!-- 11. SETUP -->
+<section id="setup">
+  <h2>⚙️ 11. Setup Rules &amp; Configuration</h2>
+  <div class="role-block">
+    <h3>Constraints</h3>
+    <ul>
+      <li>Minimum 8 players</li>
+      <li>At least 1 Mafia role required</li>
+      <li>Max mafia: floor((total players − independents − 1) / 2)</li>
+      <li>Zodiac requires Bodyguard (auto-added)</li>
+      <li>Reporter requires Negotiator</li>
+      <li>Role count must exactly match player count</li>
+    </ul>
+  </div>
+  <div class="role-block">
+    <h3>Configurable Settings</h3>
+    <table>
+      <tr><th>Setting</th><th>Default</th><th>Range</th></tr>
+      <tr><td>Gunner blank bullets</td><td>2</td><td>0–5</td></tr>
+      <tr><td>Gunner live bullets</td><td>2</td><td>0–5</td></tr>
+      <tr><td>Watson self-heals</td><td>2</td><td>1–5</td></tr>
+      <tr><td>Lecter self-heals</td><td>2</td><td>1–5</td></tr>
+      <tr><td>Freemason allies</td><td>2</td><td>1–5</td></tr>
+      <tr><td>Negotiation threshold</td><td>2</td><td>1–5</td></tr>
+      <tr><td>Sniper shots</td><td>2</td><td>1–5</td></tr>
+      <tr><td>Zodiac frequency</td><td>Every</td><td>Every / Odd / Even</td></tr>
+      <tr><td>Jack morning immunity</td><td>No</td><td>Yes / No</td></tr>
+      <tr><td>Zodiac morning immunity</td><td>No</td><td>Yes / No</td></tr>
+    </table>
+  </div>
+</section>
+
+<div class="footer">
+  Mafia God — Complete Rulebook v1.0 — Generated from game source code
+</div>
+
+</body>
+</html>
