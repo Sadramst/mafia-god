@@ -3,6 +3,7 @@
  */
 import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
+import { CARD, LastActionManager } from '../models/LastActionManager.js';
 import { Timer } from '../utils/Timer.js';
 import { t, translations as tr } from '../utils/i18n.js';
 import { Settings, Language } from '../utils/Settings.js';
@@ -772,7 +773,9 @@ export class DayView extends BaseView {
     });
   }
 
-  /** Handle Last Action UI flow after a player is eliminated by vote */
+  /** Handle Last Action UI flow after a player is eliminated by vote.
+   *  Flow: Step 1 — pick a number  →  Step 2 — reveal card  →  Step 3 — target (if needed)  →  done
+   */
   _handleLastActionFor(victimId, extra, done) {
     const game = this.game;
     const victim = game.getPlayer(victimId);
@@ -781,125 +784,118 @@ export class DayView extends BaseView {
     const remaining = game.lastActionManager?.remainingCount() || 0;
     if (remaining <= 0) { done(); return; }
 
-    // helper to create a consistent overlay modal with cancel
-    const createModal = (titleHtml, bodyHtml, actionsHtml = '') => {
+    const ICONS = { [CARD.FINAL_SHOOT]: '🔫', [CARD.SKIP_NIGHT]: '🌙', [CARD.REVEAL]: '👁️', [CARD.BEAUTIFUL_MIND]: '🧠', [CARD.FACE_OFF]: '🎭' };
+
+    /* ── helpers ─────────────────────────────── */
+    const makeOverlay = (html) => {
       const o = document.createElement('div');
       o.className = 'modal-overlay';
-      o.innerHTML = `
-        <div class="modal">
-          <div class="modal__title">${titleHtml}</div>
-          <div class="modal__body">${bodyHtml}</div>
-          <div class="modal__actions">${actionsHtml}<button class="btn btn--ghost" data-cancel> ${t(tr.common.cancel)} </button></div>
-        </div>
-      `;
+      o.innerHTML = `<div class="modal">${html}</div>`;
       document.body.appendChild(o);
-      // cancel button removes modal
-      o.querySelector('[data-cancel]')?.addEventListener('click', () => o.remove());
       return o;
     };
+    const finish = () => done?.();
 
-    const overlay = createModal(
-      t(tr.history.lastActionDraw).replace('%s', ''),
-      `${t(tr.history.lastActionDraw).replace('%s', '')}<br>${t(tr.day.announceAloud)}<br><strong>${victim.name}</strong>`,
-      Array.from({ length: remaining }).map((_, i) => `<button class="btn btn--primary" data-num="${i+1}">${i+1}</button>`).join('')
-    );
+    /* ── STEP 1: pick a number ───────────────── */
+    const nums = Array.from({ length: remaining }, (_, i) => i + 1);
+    const pickHtml = `
+      <div class="modal__title">${t(tr.lastAction.title)}</div>
+      <div class="modal__body">${t(tr.lastAction.drawPrompt).replace('%s', `<strong>${victim.name}</strong>`).replace('%n', remaining)}</div>
+      <div class="la-pick-grid">${nums.map(n => `<button class="la-pick-btn" data-num="${n}">${n}</button>`).join('')}</div>
+    `;
+    const pickOverlay = makeOverlay(pickHtml);
 
-    const cleanup = () => { overlay.remove(); };
+    pickOverlay.querySelectorAll('[data-num]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        pickOverlay.remove();
+        const res = game.drawLastActionFor(victimId);
+        this.app.saveGame();
+        const card = res?.card;
+        if (!card) { finish(); return; }
+        this._showCardReveal(card, victim, ICONS, makeOverlay, finish);
+      });
+    });
+  }
 
-    const proceed = () => { cleanup(); done && done(); };
+  /** Step 2: animated card reveal + description, then step 3 if target needed */
+  _showCardReveal(card, victim, ICONS, makeOverlay, finish) {
+    const game = this.game;
+    const cardName = t(tr.lastAction?.cards?.[card.id]?.name ?? { fa: card.name, en: card.name });
+    const cardDesc = t(tr.lastAction?.cards?.[card.id]?.desc ?? { fa: '', en: '' });
+    const icon = ICONS[card.id] || '🃏';
+    const needsTarget = LastActionManager.needsTarget(card.id);
 
-    const handleCardResult = (card) => {
-      if (!card) { proceed(); return; }
-      switch (card.id) {
-        case 1: {
-          // Final shoot: ask to choose a target
-          const alive = game.getAlivePlayers().filter(p => p.id !== victimId);
-          const actions = alive.map(p => `<button class="btn" data-id="${p.id}">${p.name}</button>`).join('');
-          const bodyModal = createModal(t(tr.history.lastActionFinalShoot), t(tr.day.selectTarget), actions);
-          bodyModal.querySelectorAll('button[data-id]').forEach(btn => btn.addEventListener('click', () => {
-            const targetId = Number(btn.dataset.id);
-            const res = game.applyCard1FinalShoot(victimId, targetId);
-            this.app.saveGame();
-            if (!res.success) this.app.showToast(t(tr.history.lastActionFinalShootImmune).replace('%s', game.getPlayer(targetId)?.name || '—'));
-            else this.app.showToast(t(tr.history.mafiaKill).replace('%s', game.getPlayer(targetId)?.name || '—'));
-            bodyModal.remove();
-            proceed();
-          }));
-          break;
+    const revealHtml = `
+      <div class="la-card">
+        <div class="la-card__number">${card.id}</div>
+        <div class="la-card__icon">${icon}</div>
+        <div class="la-card__name">${cardName}</div>
+        <div class="la-card__desc">${cardDesc}</div>
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--accent btn--block" data-ok>${needsTarget ? t(tr.lastAction.selectTarget) : t(tr.common.confirm)}</button>
+      </div>
+    `;
+    const revealOverlay = makeOverlay(revealHtml);
+
+    revealOverlay.querySelector('[data-ok]').addEventListener('click', () => {
+      revealOverlay.remove();
+
+      if (!needsTarget) {
+        // Cards 2 (skip night) and 3 (reveal) already resolved in drawLastActionFor
+        if (card.id === CARD.REVEAL) {
+          const roleName = Roles.get(victim.roleId)?.getLocalizedName?.() ?? victim.roleId;
+          this.app.showToast(`${cardName}: ${victim.name} — ${roleName}`, 'info');
+        } else if (card.id === CARD.SKIP_NIGHT) {
+          this.app.showToast(t(tr.history.lastActionSkipNight), 'info');
         }
-        case 2:
-          this.app.showToast(t(tr.history.lastActionSkipNight) || 'Night skipped', 'info');
-          proceed();
-          break;
-        case 3:
-          // Reveal already handled in model history; show simple toast
-          this.app.showToast(t(tr.history.lastActionReveal).replace('%s', victim.name).replace('%s', Roles.get(victim.roleId)?.getLocalizedName?.() || victim.roleId), 'info');
-          proceed();
-          break;
-        case 4: {
-          const alive = game.getAlivePlayers().filter(p => p.id !== victimId);
-          const actions = alive.map(p => `<button class="btn" data-id="${p.id}">${p.name}</button>`).join('');
-          const guessModal = createModal(t(tr.history.lastActionGuess), t(tr.day.guessRole), actions);
-          guessModal.querySelectorAll('button[data-id]').forEach(btn => btn.addEventListener('click', () => {
-            const guessedId = Number(btn.dataset.id);
-            const res = game.applyCard4Guess(victimId, guessedId);
-            this.app.saveGame();
-            if (res.success) this.app.showToast(t(tr.history.lastActionGuessSuccess).replace('%s', game.getPlayer(guessedId)?.name || '—'));
-            else this.app.showToast(t(tr.history.lastActionGuessFail).replace('%s', game.getPlayer(guessedId)?.name || '—'));
-            guessModal.remove();
-            proceed();
-          }));
-          break;
-        }
-        case 5: {
-          const alive = game.getAlivePlayers().filter(p => p.id !== victimId);
-          const actions = alive.map(p => `<button class="btn" data-id="${p.id}">${p.name}</button>`).join('');
-          const faceModal = createModal(t(tr.history.lastActionFaceOff), t(tr.history.lastActionFaceOff), actions);
-          faceModal.querySelectorAll('button[data-id]').forEach(btn => btn.addEventListener('click', () => {
-            const chosenId = Number(btn.dataset.id);
-            const res = game.applyCard5FaceOff(victimId, chosenId);
-            this.app.saveGame();
-            if (res.success) this.app.showToast(t(tr.history.lastActionFaceOffApplied).replace('%s', victim.name).replace('%s', game.getPlayer(chosenId)?.name || '—').replace('%s', Roles.get(victim.roleId)?.getLocalizedName?.() || victim.roleId), 'info');
-            faceModal.remove();
-            proceed();
-          }));
-          break;
-        }
-        default:
-          proceed();
+        finish();
+        return;
       }
-    };
 
-    // Pick a number (1..N). For RTL languages we reverse the visual order so numbers read left→right
-    const numButtons = overlay.querySelectorAll('button[data-num]');
-    const nums = Array.from({ length: remaining }).map((_, i) => i + 1);
-    if (Settings.getLanguage() !== Language.ENGLISH) nums.reverse();
-    // Reorder buttons DOM to match desired visual order
-    const choicesContainer = overlay.querySelector('#lastaction-choices');
-    if (choicesContainer) {
-      choicesContainer.innerHTML = nums.map(n => `<button class="btn btn--primary" data-num="${n}">${n}</button>`).join('');
-    }
+      // Step 3: target selection for cards 1, 4, 5
+      this._showTargetSelection(card, victim, makeOverlay, finish);
+    });
+  }
 
-    overlay.querySelectorAll('button[data-num]').forEach(btn => btn.addEventListener('click', () => {
-      const num = Number(btn.dataset.num);
-      const res = game.drawLastActionFor(victimId, num);
-      this.app.saveGame();
-      const card = res?.card;
-      // Remove the pick modal
-      overlay.remove();
-      if (!card) { proceed(); return; }
+  /** Step 3: target selection for cards that need it (Final Shoot, Beautiful Mind, Face Off) */
+  _showTargetSelection(card, victim, makeOverlay, finish) {
+    const game = this.game;
+    const alive = game.getAlivePlayers().filter(p => p.id !== victim.id);
+    const cardName = t(tr.lastAction?.cards?.[card.id]?.name ?? { fa: card.name, en: card.name });
 
-      // Show reveal modal with localized card name and description
-      const cardName = t(tr.lastAction?.cards?.[card.id]?.name || { fa: card.name, en: card.name });
-      const cardDesc = t(tr.lastAction?.cards?.[card.id]?.desc || { fa: '', en: '' });
-      const title = t(tr.history.lastActionDraw).replace('%s', cardName);
-      const body = `${cardDesc}<br><br><strong>${victim.name}</strong>`;
+    const targetHtml = `
+      <div class="modal__title">${cardName}</div>
+      <div class="modal__body">${t(tr.lastAction.selectTarget)}</div>
+      <div class="la-target-list">
+        ${alive.map(p => `<button class="la-target-btn" data-id="${p.id}">${p.name}</button>`).join('')}
+      </div>
+    `;
+    const targetOverlay = makeOverlay(targetHtml);
 
-      this.app.showModal(title, body, () => {
-        // on confirm, execute card follow-up
-        handleCardResult(card);
-      }, t(tr.common.confirm), t(tr.common.cancel));
-    }));
+    targetOverlay.querySelectorAll('[data-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = Number(btn.dataset.id);
+        targetOverlay.remove();
+        const res = game.applyLastActionCard(card.id, victim.id, targetId);
+        this.app.saveGame();
+
+        // Show result toast
+        const target = game.getPlayer(targetId);
+        const targetName = target?.name ?? '—';
+        if (card.id === CARD.FINAL_SHOOT) {
+          if (res.reason === 'immune') this.app.showToast(t(tr.history.lastActionFinalShootImmune).replace('%s', targetName), 'error');
+          else if (res.reason === 'healed') this.app.showToast(t(tr.history.lastActionFinalShootHealed).replace('%s', targetName), 'error');
+          else this.app.showToast(t(tr.history.lastActionFinalShootKill).replace('%s', targetName), 'info');
+        } else if (card.id === CARD.BEAUTIFUL_MIND) {
+          if (res.success) this.app.showToast(t(tr.history.lastActionGuessSuccess).replace('%s', targetName), 'info');
+          else this.app.showToast(t(tr.history.lastActionGuessFail).replace('%s', targetName), 'error');
+        } else if (card.id === CARD.FACE_OFF) {
+          this.app.showToast(t(tr.history.lastActionFaceOffApplied).replace('%s', victim.name).replace('%s', targetName).replace('%s', Roles.get(victim.roleId)?.getLocalizedName?.() ?? ''), 'info');
+        }
+        finish();
+      });
+    });
   }
 
   _hasAnyAboveThreshold(threshold) {

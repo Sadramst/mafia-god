@@ -9,6 +9,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Game } from '../js/models/Game.js';
 import { Roles } from '../js/models/Roles.js';
+import { CARD, LastActionManager } from '../js/models/LastActionManager.js';
 
 /* ───────────── helpers ───────────── */
 
@@ -1378,5 +1379,306 @@ describe('S23 — Jack Curse Self-Destructs, Zodiac Continues', () => {
     const hsResult = game.resolveHandshake(p.P10.id, p.P2.id);
     expect(hsResult.winner).toBe('independent');
     expect(dead(p.P9)).toBe(true);
+  });
+});
+
+/* ╔═══════════════════════════════════════════════════════════════════╗
+   ║  LAST ACTION CARD TESTS (S24–S28)                               ║
+   ╚═══════════════════════════════════════════════════════════════════╝ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   S24 — Card 1: Final Shoot
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S24 — Last Action Card 1: Final Shoot', () => {
+  it('Final Shoot kills a normal citizen target', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    // Draw card: force Final Shoot by marking all others used
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FINAL_SHOOT) c.used = true; });
+
+    const drawResult = game.drawLastActionFor(p.P4.id);
+    expect(drawResult.card.id).toBe(CARD.FINAL_SHOOT);
+
+    const res = game.applyLastActionCard(CARD.FINAL_SHOOT, p.P4.id, p.P5.id);
+    expect(res.success).toBe(true);
+    expect(dead(p.P5)).toBe(true);
+    expect(game.lastActionBlockMafiaShoot).toBe(true);
+  });
+
+  it('Final Shoot on shoot-immune Jack has no effect', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'jack',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FINAL_SHOOT) c.used = true; });
+    game.drawLastActionFor(p.P4.id);
+
+    const res = game.applyLastActionCard(CARD.FINAL_SHOOT, p.P4.id, p.P3.id);
+    expect(res.success).toBe(false);
+    expect(res.reason).toBe('immune');
+    expect(alive(p.P3)).toBe(true);
+  });
+
+  it('Final Shoot on healed target has no effect', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+    p.P5.healed = true;
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FINAL_SHOOT) c.used = true; });
+    game.drawLastActionFor(p.P4.id);
+
+    const res = game.applyLastActionCard(CARD.FINAL_SHOOT, p.P4.id, p.P5.id);
+    expect(res.success).toBe(false);
+    expect(res.reason).toBe('healed');
+    expect(alive(p.P5)).toBe(true);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S25 — Card 2: Insomnia (Skip Night)
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S25 — Last Action Card 2: Insomnia (Skip Night)', () => {
+  it('Drawing Insomnia sets lastActionSkipNight flag', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.SKIP_NIGHT) c.used = true; });
+
+    expect(game.lastActionSkipNight).toBe(false);
+    const drawResult = game.drawLastActionFor(p.P4.id);
+    expect(drawResult.card.id).toBe(CARD.SKIP_NIGHT);
+    expect(game.lastActionSkipNight).toBe(true);
+  });
+
+  it('Skip Night card is auto-resolved (no target needed)', () => {
+    expect(LastActionManager.needsTarget(CARD.SKIP_NIGHT)).toBe(false);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S26 — Card 3: Reveal Identity
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S26 — Last Action Card 3: Reveal Identity', () => {
+  it('Reveal makes victim non-revivable and auto-resolves', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.REVEAL) c.used = true; });
+
+    // Eliminate P4 by vote then draw card
+    game.eliminateByVote(p.P4.id);
+    expect(dead(p.P4)).toBe(true);
+
+    const drawResult = game.drawLastActionFor(p.P4.id);
+    expect(drawResult.card.id).toBe(CARD.REVEAL);
+    expect(p.P4.isRevivable).toBe(false);
+  });
+
+  it('Reveal card needs no target', () => {
+    expect(LastActionManager.needsTarget(CARD.REVEAL)).toBe(false);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S27 — Card 4: Beautiful Mind
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S27 — Last Action Card 4: Beautiful Mind', () => {
+  it('Correct guess eliminates independent and revives victim', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'jack',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    // P4 eliminated by vote
+    game.eliminateByVote(p.P4.id);
+    expect(dead(p.P4)).toBe(true);
+
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.BEAUTIFUL_MIND) c.used = true; });
+    game.drawLastActionFor(p.P4.id);
+
+    // P4 guesses P3 is independent (Jack) — correct!
+    const res = game.applyLastActionCard(CARD.BEAUTIFUL_MIND, p.P4.id, p.P3.id);
+    expect(res.success).toBe(true);
+    expect(dead(p.P3)).toBe(true);     // Jack eliminated
+    expect(alive(p.P4)).toBe(true);    // Victim revived!
+    expect(res.eliminated).toBe(p.P3.id);
+    expect(res.revived).toBe(p.P4.id);
+  });
+
+  it('Wrong guess (citizen target) has no effect', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'jack',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+    game.eliminateByVote(p.P4.id);
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.BEAUTIFUL_MIND) c.used = true; });
+    game.drawLastActionFor(p.P4.id);
+
+    // Guess P5 (citizen) — wrong!
+    const res = game.applyLastActionCard(CARD.BEAUTIFUL_MIND, p.P4.id, p.P5.id);
+    expect(res.success).toBe(false);
+    expect(res.reason).toBe('wrong');
+    expect(alive(p.P5)).toBe(true);    // Target unharmed
+    expect(dead(p.P4)).toBe(true);     // Victim still dead
+  });
+
+  it('Wrong guess (mafia target) has no effect', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'jack',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+    game.eliminateByVote(p.P4.id);
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.BEAUTIFUL_MIND) c.used = true; });
+    game.drawLastActionFor(p.P4.id);
+
+    // Guess P1 (godfather) — wrong!
+    const res = game.applyLastActionCard(CARD.BEAUTIFUL_MIND, p.P4.id, p.P1.id);
+    expect(res.success).toBe(false);
+    expect(res.reason).toBe('wrong');
+    expect(alive(p.P1)).toBe(true);
+  });
+
+  it('Beautiful Mind + correct Zodiac guess works', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'zodiac',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'bodyguard',
+    });
+    game.round = 1; game.phase = 'day';
+    game.eliminateByVote(p.P4.id);
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.BEAUTIFUL_MIND) c.used = true; });
+    game.drawLastActionFor(p.P4.id);
+
+    const res = game.applyLastActionCard(CARD.BEAUTIFUL_MIND, p.P4.id, p.P3.id);
+    expect(res.success).toBe(true);
+    expect(dead(p.P3)).toBe(true);     // Zodiac eliminated
+    expect(alive(p.P4)).toBe(true);    // Victim revived
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S28 — Card 5: Face Off
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S28 — Last Action Card 5: Face Off', () => {
+  it('Face Off transfers role from victim to chosen player', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'detective', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    // Eliminate P4 (detective) by vote
+    game.eliminateByVote(p.P4.id);
+    expect(dead(p.P4)).toBe(true);
+    expect(p.P4.roleId).toBe('detective');
+
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FACE_OFF) c.used = true; });
+    game.drawLastActionFor(p.P4.id);
+
+    // Face Off: transfer detective role to P5 (simpleCitizen)
+    const res = game.applyLastActionCard(CARD.FACE_OFF, p.P4.id, p.P5.id);
+    expect(res.success).toBe(true);
+    expect(res.swappedRole).toBe('detective');
+    expect(p.P5.roleId).toBe('detective');     // P5 is now detective
+    expect(p.P4.isRevivable).toBe(false);      // Victim can't be revived
+  });
+
+  it('Face Off transfers shield to chosen player', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    // Eliminate P1 (godfather) by vote
+    game.eliminateByVote(p.P1.id);
+    expect(dead(p.P1)).toBe(true);
+
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FACE_OFF) c.used = true; });
+    game.drawLastActionFor(p.P1.id);
+
+    // Face Off: transfer godfather role to P5
+    const res = game.applyLastActionCard(CARD.FACE_OFF, p.P1.id, p.P5.id);
+    expect(res.success).toBe(true);
+    expect(p.P5.roleId).toBe('godfather');
+    // Shield reinited from godfather definition
+    expect(p.P5.shield).toBeDefined();
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   S29 — LastActionManager Unit Tests
+   ═══════════════════════════════════════════════════════════════════ */
+describe('S29 — LastActionManager Core Logic', () => {
+  it('Starts with 5 cards, all unused', () => {
+    const m = new LastActionManager();
+    expect(m.remainingCount()).toBe(5);
+    expect(m.hasRemaining()).toBe(true);
+  });
+
+  it('drawRandom returns a card and decrements remaining', () => {
+    const m = new LastActionManager();
+    const card = m.drawRandom();
+    expect(card).not.toBeNull();
+    expect(card.id).toBeGreaterThanOrEqual(1);
+    expect(card.id).toBeLessThanOrEqual(5);
+    expect(m.remainingCount()).toBe(4);
+  });
+
+  it('Drawing all 5 cards exhausts the deck', () => {
+    const m = new LastActionManager();
+    for (let i = 0; i < 5; i++) m.drawRandom();
+    expect(m.remainingCount()).toBe(0);
+    expect(m.hasRemaining()).toBe(false);
+    expect(m.drawRandom()).toBeNull();
+  });
+
+  it('needsTarget returns correct values for each card', () => {
+    expect(LastActionManager.needsTarget(CARD.FINAL_SHOOT)).toBe(true);
+    expect(LastActionManager.needsTarget(CARD.SKIP_NIGHT)).toBe(false);
+    expect(LastActionManager.needsTarget(CARD.REVEAL)).toBe(false);
+    expect(LastActionManager.needsTarget(CARD.BEAUTIFUL_MIND)).toBe(true);
+    expect(LastActionManager.needsTarget(CARD.FACE_OFF)).toBe(true);
+  });
+
+  it('Serialization round-trip preserves state', () => {
+    const m = new LastActionManager();
+    m.drawRandom(); m.drawRandom(); // use 2 cards
+    const json = m.toJSON();
+    const restored = LastActionManager.fromJSON(json);
+    expect(restored.remainingCount()).toBe(3);
+    expect(restored.cards.filter(c => c.used).length).toBe(2);
+  });
+
+  it('CARD constants have correct values', () => {
+    expect(CARD.FINAL_SHOOT).toBe(1);
+    expect(CARD.SKIP_NIGHT).toBe(2);
+    expect(CARD.REVEAL).toBe(3);
+    expect(CARD.BEAUTIFUL_MIND).toBe(4);
+    expect(CARD.FACE_OFF).toBe(5);
   });
 });

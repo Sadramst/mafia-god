@@ -8,7 +8,7 @@ import { Roles } from './Roles.js';
 import { Bomb } from './Bomb.js';
 import { Framason } from './Framason.js';
 import { BulletManager } from './BulletManager.js';
-import { LastActionManager } from './LastActionManager.js';
+import { LastActionManager, CARD } from './LastActionManager.js';
 import { t, translations as tr } from '../utils/i18n.js';
 
 export class Game {
@@ -1384,52 +1384,58 @@ export class Game {
     return this.history.filter(h => h.round === round);
   }
 
-  /** Draw a last-action card for a just-eliminated player and apply immediate effects where possible.
-   * Returns { card } or null
+  /** Draw a last-action card for a just-eliminated player.
+   *  Returns { card } or null.
+   *  Cards 2 & 3 resolve immediately; 1, 4, 5 need a follow-up applyLastActionCard() call.
    */
-  drawLastActionFor(victimId, chosenNumber = null) {
-    if (!this.lastActionManager || !this.lastActionManager.hasRemaining()) return null;
-    const card = this.lastActionManager.drawRandom(chosenNumber);
+  drawLastActionFor(victimId) {
+    if (!this.lastActionManager?.hasRemaining()) return null;
+    const card = this.lastActionManager.drawRandom();
     if (!card) return null;
-    // Use localized card name from translations
-    const cardName = t(tr.lastAction?.cards?.[card.id]?.name || { fa: card.name, en: card.name });
+
+    const cardName = t(tr.lastAction?.cards?.[card.id]?.name ?? { fa: card.name, en: card.name });
     this._addHistory('last_action_draw', t(tr.history.lastActionDraw).replace('%s', cardName));
 
-    switch (card.id) {
-      case 1:
-        // final shoot — UI should call applyCard1FinalShoot with chosen target
-        this._addHistory('last_action', t(tr.history.lastActionFinalShoot));
-        break;
-      case 2:
-        this.lastActionSkipNight = true;
-        this._addHistory('last_action', t(tr.history.lastActionSkipNight));
-        break;
-      case 3:
-        // reveal and permanent (victim already killed by vote) — make non-revivable
-        const victim = this.getPlayer(victimId);
-        if (victim) {
-          victim.isRevivable = false;
-          this._addHistory('last_action', t(tr.history.lastActionReveal).replace('%s', victim.name).replace('%s', Roles.get(victim.roleId)?.getLocalizedName?.() || victim.roleId));
-        }
-        break;
-      case 4:
-        this._addHistory('last_action', t(tr.history.lastActionGuess));
-        break;
-      case 5:
-        this._addHistory('last_action', t(tr.history.lastActionFaceOff));
-        break;
-      default:
-        break;
+    // Auto-resolve cards that need no target selection
+    if (card.id === CARD.SKIP_NIGHT) {
+      this.lastActionSkipNight = true;
+      this._addHistory('last_action', t(tr.history.lastActionSkipNight));
+    } else if (card.id === CARD.REVEAL) {
+      const victim = this.getPlayer(victimId);
+      if (victim) {
+        victim.isRevivable = false;
+        this._addHistory('last_action',
+          t(tr.history.lastActionReveal)
+            .replace('%s', victim.name)
+            .replace('%s', Roles.get(victim.roleId)?.getLocalizedName?.() ?? victim.roleId));
+      }
     }
     return { card };
   }
 
-  /** Apply card 1 (final shoot): voted-out player shoots the given target immediately. */
-  applyCard1FinalShoot(victimId, targetId) {
+  /**
+   * Apply a drawn last-action card that requires a target.
+   * @param {number} cardId — the CARD constant
+   * @param {number} victimId — player who was voted out
+   * @param {number} targetId — chosen target for card effect
+   * @returns {{ success: boolean, reason?: string }}
+   */
+  applyLastActionCard(cardId, victimId, targetId) {
+    switch (cardId) {
+      case CARD.FINAL_SHOOT:  return this._applyFinalShoot(targetId);
+      case CARD.BEAUTIFUL_MIND: return this._applyBeautifulMind(victimId, targetId);
+      case CARD.FACE_OFF:     return this._applyFaceOff(victimId, targetId);
+      default: return { success: false, reason: 'no_action_needed' };
+    }
+  }
+
+  /* ── Card 1: Final Shoot ─────────────────────────────────── */
+  _applyFinalShoot(targetId) {
     const target = this.getPlayer(targetId);
-    if (!target || !target.isAlive) return { success: false, reason: 'invalid_target' };
-    const targetRole = Roles.get(target.roleId);
-    if (targetRole?.shootImmune) {
+    if (!target?.isAlive) return { success: false, reason: 'invalid_target' };
+
+    const role = Roles.get(target.roleId);
+    if (role?.shootImmune) {
       this._addHistory('last_action', t(tr.history.lastActionFinalShootImmune).replace('%s', target.name));
       return { success: false, reason: 'immune' };
     }
@@ -1437,44 +1443,51 @@ export class Game {
       this._addHistory('last_action', t(tr.history.lastActionFinalShootHealed).replace('%s', target.name));
       return { success: false, reason: 'healed' };
     }
-    const died = target.tryKill(this.round, 'lastaction_mafia');
-    if (died) this._addHistory('death', t(tr.history.mafiaKill).replace('%s', target.name));
+
+    const died = target.tryKill(this.round, 'lastaction_shoot');
+    if (died) this._addHistory('death', t(tr.history.lastActionFinalShootKill).replace('%s', target.name));
     else this._addHistory('shield', t(tr.history.shielded).replace('%s', target.name));
-    // Block mafia regular shoot for upcoming night
+
     this.lastActionBlockMafiaShoot = true;
-    return { success: true };
+    return { success: true, died };
   }
 
-  /** Apply card 4 (guess independent): if guess correct, eliminate guessed and revive victim */
-  applyCard4Guess(victimId, guessedId) {
+  /* ── Card 4: Beautiful Mind ──────────────────────────────── */
+  _applyBeautifulMind(victimId, guessedId) {
     const guessed = this.getPlayer(guessedId);
     const victim = this.getPlayer(victimId);
     if (!guessed || !victim) return { success: false, reason: 'invalid' };
+
     const role = Roles.get(guessed.roleId);
     if (role?.team === 'independent') {
       guessed.kill(this.round, 'lastaction_guess');
       this._addHistory('death', t(tr.history.lastActionGuessSuccess).replace('%s', guessed.name));
-      // revive victim
       victim.revive();
       this._addHistory('last_action', t(tr.history.lastActionVictimSaved).replace('%s', victim.name));
-      return { success: true };
+      return { success: true, eliminated: guessedId, revived: victimId };
     }
+
     this._addHistory('last_action', t(tr.history.lastActionGuessFail).replace('%s', guessed.name));
     return { success: false, reason: 'wrong' };
   }
 
-  /** Apply card 5 (Face Off): transfer victim's role to chosen player; victim remains dead and non-revivable */
-  applyCard5FaceOff(victimId, chosenId) {
+  /* ── Card 5: Face Off ────────────────────────────────────── */
+  _applyFaceOff(victimId, chosenId) {
     const victim = this.getPlayer(victimId);
     const chosen = this.getPlayer(chosenId);
     if (!victim || !chosen) return { success: false, reason: 'invalid' };
+
     const victimRole = victim.roleId;
     chosen.roleId = victimRole;
-    const roleDef = Roles.get(chosen.roleId);
-    chosen.initShield(roleDef);
+    chosen.initShield(Roles.get(victimRole));
     victim.isRevivable = false;
-    this._addHistory('last_action', t(tr.history.lastActionFaceOffApplied).replace('%s', victim.name).replace('%s', chosen.name).replace('%s', Roles.get(victimRole)?.getLocalizedName?.() || victimRole));
-    return { success: true };
+
+    this._addHistory('last_action',
+      t(tr.history.lastActionFaceOffApplied)
+        .replace('%s', victim.name)
+        .replace('%s', chosen.name)
+        .replace('%s', Roles.get(victimRole)?.getLocalizedName?.() ?? victimRole));
+    return { success: true, swappedRole: victimRole };
   }
 
   // ──────────────────────────────────

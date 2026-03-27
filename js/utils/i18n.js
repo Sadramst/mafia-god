@@ -60,26 +60,29 @@ export const translations = {
   // Last Action Cards
   lastAction: {
     title: { fa: 'کارت‌های حرکت آخر', en: 'Last Action Cards' },
+    drawPrompt: { fa: '%s یک عدد از ۱ تا %n انتخاب کن', en: '%s pick a number from 1 to %n' },
+    cardRevealed: { fa: 'کارت شما: %s', en: 'Your card: %s' },
+    selectTarget: { fa: 'یک بازیکن انتخاب کنید', en: 'Select a player' },
     cards: {
       1: {
         name: { fa: 'شلیک نهایی', en: 'Final Shoot' },
-        desc: { fa: 'در اول شب به جای مافیا این شخص شلیک می کند.', en: 'At the start of night, this person shoots instead of the Mafia.' }
+        desc: { fa: 'یک بازیکن زنده را انتخاب کن — فوری شلیک می‌شود. اگر هدف مصون باشد بی‌اثر است. شب بعد مافیا نمی‌تواند شلیک کند.', en: 'Choose an alive player — they are immediately shot. No effect if the target is shoot-immune. Mafia loses their shot the following night.' }
       },
       2: {
-        name: { fa: 'بی‌خوابی', en: 'Insomnia (Skip Night)' },
-        desc: { fa: 'شب نمی شود و مستقیم به روز بعد می رویم.', en: 'The night is skipped and we go directly to the next day.' }
+        name: { fa: 'بی‌خوابی', en: 'Insomnia' },
+        desc: { fa: 'شب بعد کاملاً حذف می‌شود — هیچ اقدام شبانه‌ای انجام نمی‌شود و مستقیم به روز بعد می‌رویم.', en: 'The next night is completely skipped — no night actions occur and the game goes directly to the next day.' }
       },
       3: {
         name: { fa: 'افشای هویت', en: 'Reveal Identity' },
-        desc: { fa: 'نقش این شخص توسط گرداننده اعلام می شود.', en: 'The moderator announces this person\'s role.' }
+        desc: { fa: 'خدا نقش واقعی بازیکن حذف‌شده را به همه اعلام می‌کند. این بازیکن دیگر قابل احیا نیست.', en: 'God announces the eliminated player\'s true role to everyone. This player can no longer be revived.' }
       },
       4: {
-        name: { fa: 'ذهن زیبا', en: 'Beautiful Mind (Guess)' },
-        desc: { fa: 'نقش جک یا زودیاک رو حدس می زنند؛ اگر درست بود مستقل حدس زده شده حذف می شود.', en: 'Guess Jack or Zodiac role; if correct and the guessed player is Independent, that player is eliminated.' }
+        name: { fa: 'ذهن زیبا', en: 'Beautiful Mind' },
+        desc: { fa: 'یک بازیکن زنده را انتخاب کن و حدس بزن آیا مستقل (جک/زودیاک) است. اگر درست باشد آن بازیکن حذف می‌شود و بازیکن اخراجی به بازی برمی‌گردد!', en: 'Choose an alive player and guess if they are independent (Jack/Zodiac). If correct, that player is eliminated and the voted-out player is revived!' }
       },
       5: {
-        name: { fa: 'تغییر چهره', en: 'Face Change (Face Off)' },
-        desc: { fa: 'کسی که از بازی بیرون می رود نقشش را با یکی از بازیکنان به صورت کامل عوض می کند و آن بازیکن با نقش جدید ادامه می دهد.', en: 'The player leaving swaps roles completely with a chosen player; the chosen player continues with the new role.' }
+        name: { fa: 'تغییر چهره', en: 'Face Off' },
+        desc: { fa: 'یک بازیکن زنده را انتخاب کن — نقش بازیکن حذف‌شده کاملاً به آن بازیکن منتقل می‌شود (شامل سپر و توانایی‌ها). بازیکن حذف‌شده قابل احیا نیست.', en: 'Choose an alive player — the eliminated player\'s role is fully transferred to them (including shield and abilities). The eliminated player cannot be revived.' }
       },
     }
   },
@@ -547,17 +550,15 @@ export const translations = {
     reveal_jack: { fa: '🔪 %s revealed as Jack — طلسم ثابت شد.', en: '🔪 %s revealed as Jack — curse confirmed.' },
     jack_blocked_curse_preserved: { fa: '✊ جادوگر طلسم جک را مسدود کرد؛ طلسم بدون تغییر باقی ماند (%s).', en: '✊ Sorcerer blocked Jack — his curse remained unchanged (%s).' },
     lastActionDraw: { fa: '🃏 کارت حرکت آخر کشیده شد: %s', en: '🃏 Last Action card drawn: %s' },
-    lastActionFinalShoot: { fa: '🃏 کارت: شلیک نهایی فعال شد — انتخاب هدف مورد نیاز است.', en: '🃏 Card: Final Shoot activated — target selection required.' },
-    lastActionSkipNight: { fa: '🃏 کارت: شب بعد لغو شد — هیچ اقدامی انجام نمی‌شود.', en: '🃏 Card: Next night skipped — no night actions will occur.' },
-    lastActionReveal: { fa: '🃏 کارت: نقش %s فاش شد — (%s).', en: '🃏 Card: %s revealed — role: %s.' },
-    lastActionGuess: { fa: '🃏 کارت: حدس — اگر حدس درست باشد اثر رخ می‌دهد.', en: '🃏 Card: Guess — if correct the effect occurs.' },
-    lastActionFaceOff: { fa: '🃏 کارت: فِیس‌آف — انتقال نقش به بازیکن منتخب.', en: '🃏 Card: Face Off — transfer role to chosen player.' },
-    lastActionFinalShootImmune: { fa: '🃏 شلیک نهایی بی‌اثر بود — %s مصون بود.', en: '🃏 Final shoot had no effect — %s was immune.' },
-    lastActionFinalShootHealed: { fa: '🃏 شلیک نهایی بی‌اثر شد — %s توسط دکتر نجات یافت.', en: '🃏 Final shoot wasted — %s was healed by a doctor.' },
-    lastActionGuessSuccess: { fa: '🃏 حدس درست بود — %s حذف شد.', en: '🃏 Guess correct — %s was eliminated.' },
-    lastActionVictimSaved: { fa: '🃏 قربانی کارت نجات یافت: %s', en: '🃏 Card victim was saved: %s' },
-    lastActionGuessFail: { fa: '🃏 حدس نادرست — هیچ اتفاقی نیفتاد (%s).', en: '🃏 Guess failed — nothing happened (%s).' },
-    lastActionFaceOffApplied: { fa: '🃏 فِیس‌آف اجرا شد: نقش %s به %s منتقل شد (%s).', en: '🃏 Face Off applied: %s role transferred to %s (%s).' },
+    lastActionSkipNight: { fa: '🃏 کارت بی‌خوابی: شب بعد لغو شد — هیچ اقدامی انجام نمی‌شود.', en: '🃏 Insomnia card: Next night skipped — no night actions will occur.' },
+    lastActionReveal: { fa: '🃏 افشای هویت: نقش %s فاش شد — %s.', en: '🃏 Reveal Identity: %s\'s role revealed — %s.' },
+    lastActionFinalShootKill: { fa: '🃏 شلیک نهایی: %s کشته شد.', en: '🃏 Final Shoot: %s was killed.' },
+    lastActionFinalShootImmune: { fa: '🃏 شلیک نهایی بی‌اثر — %s مصون بود.', en: '🃏 Final Shoot had no effect — %s was immune.' },
+    lastActionFinalShootHealed: { fa: '🃏 شلیک نهایی بی‌اثر — %s توسط دکتر نجات یافت.', en: '🃏 Final Shoot had no effect — %s was healed.' },
+    lastActionGuessSuccess: { fa: '🃏 ذهن زیبا: حدس درست! %s حذف شد.', en: '🃏 Beautiful Mind: Correct guess! %s eliminated.' },
+    lastActionVictimSaved: { fa: '🃏 ذهن زیبا: %s به بازی برگشت!', en: '🃏 Beautiful Mind: %s returned to the game!' },
+    lastActionGuessFail: { fa: '🃏 ذهن زیبا: حدس نادرست — %s مستقل نبود.', en: '🃏 Beautiful Mind: Wrong guess — %s is not independent.' },
+    lastActionFaceOffApplied: { fa: '🃏 تغییر چهره: نقش %s به %s منتقل شد (%s).', en: '🃏 Face Off: %s\'s role transferred to %s (%s).' },
   },
 
   // Rulebook
@@ -630,8 +631,8 @@ export const translations = {
     lastActionCards: {
       title: { fa: '🃏 کارت‌های حرکت آخر', en: '🃏 Last Action Cards' },
       body: {
-        fa: 'وقتی بازیکنی با رأی حذف می‌شود و کارت حرکت آخر فعال باشد، یک کارت می‌کشد:\n\n1️⃣ شلیک نهایی:\nدر اول شب به جای مافیا یک نفر را هدف می‌گیرد.\n\n2️⃣ بی‌خوابی:\nشب بعد کامل حذف می‌شود — مستقیم به روز بعد می‌رویم.\n\n3️⃣ افشای هویت:\nخدا نقش یک بازیکن مشخص را اعلام می‌کند.\n\n4️⃣ ذهن زیبا:\nنقش جک یا زودیاک را حدس می‌زند. اگر درست و هدف مستقل باشد → حذف.\n\n5️⃣ تغییر چهره (فِیس‌آف):\nبازیکن خروجی نقشش را با یک بازیکن انتخابی کامل عوض می‌کند. آن بازیکن با نقش جدید ادامه می‌دهد.',
-        en: 'When a voted-out player has last action cards enabled, they draw one:\n\n1️⃣ Final Shoot:\nAt start of night, shoots one person instead of Mafia.\n\n2️⃣ Insomnia (Skip Night):\nNext night is completely skipped — go directly to next day.\n\n3️⃣ Reveal Identity:\nGod announces a designated player\'s role.\n\n4️⃣ Beautiful Mind (Guess):\nGuess Jack or Zodiac role. If correct and target is independent → eliminated.\n\n5️⃣ Face Off:\nLeaving player completely swaps roles with a chosen player. That player continues with the new role.'
+        fa: 'وقتی بازیکنی با رأی حذف می‌شود، عدد ۱ تا تعداد کارت‌های باقیمانده را انتخاب می‌کند و یک کارت تصادفی می‌کشد. در هر بازی ۵ کارت وجود دارد و هر کارت فقط یک بار استفاده می‌شود.\n\n1️⃣ شلیک نهایی:\nبازیکن حذف‌شده فوراً یک بازیکن زنده را انتخاب و شلیک می‌کند. اگر هدف مصون از شلیک باشد بی‌اثر است. شب بعد مافیا نمی‌تواند شلیک کند.\n\n2️⃣ بی‌خوابی:\nشب بعد کاملاً حذف می‌شود — هیچ اقدام شبانه‌ای انجام نمی‌شود و مستقیم به روز بعد می‌رویم.\n\n3️⃣ افشای هویت:\nخدا نقش واقعی بازیکن حذف‌شده را به همه اعلام می‌کند. این بازیکن دیگر قابل احیا نیست.\n\n4️⃣ ذهن زیبا:\nبازیکن حذف‌شده یک بازیکن زنده را انتخاب و حدس می‌زند آیا مستقل (جک/زودیاک) است. اگر درست باشد آن بازیکن حذف می‌شود و بازیکن اخراجی به بازی برمی‌گردد!\n\n5️⃣ تغییر چهره:\nبازیکن حذف‌شده یک بازیکن زنده را انتخاب می‌کند — نقش بازیکن حذف‌شده کاملاً به آن بازیکن منتقل می‌شود (شامل سپر و توانایی‌ها). بازیکن حذف‌شده قابل احیا نیست.',
+        en: 'When a player is eliminated by vote, they choose a number from 1 to the number of remaining cards and draw a random card. Each game has 5 cards and each card can only be used once.\n\n1️⃣ Final Shoot:\nThe eliminated player immediately chooses an alive player and shoots them. No effect if the target is shoot-immune. Mafia loses their shot the following night.\n\n2️⃣ Insomnia:\nThe next night is completely skipped — no night actions occur and the game goes directly to the next day.\n\n3️⃣ Reveal Identity:\nGod announces the eliminated player\'s true role to everyone. This player can no longer be revived.\n\n4️⃣ Beautiful Mind:\nThe eliminated player chooses an alive player and guesses if they are independent (Jack/Zodiac). If correct, that player is eliminated and the voted-out player is revived!\n\n5️⃣ Face Off:\nThe eliminated player chooses an alive player — their role is fully transferred to the chosen player (including shield and abilities). The eliminated player cannot be revived.'
       }
     },
     setupRules: {

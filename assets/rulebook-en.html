@@ -372,15 +372,57 @@
 <!-- 10. LAST ACTION CARDS -->
 <section id="last-action">
   <h2>🃏 10. Last Action Cards</h2>
-  <p>When a voted-out player has last action cards enabled, they draw one:</p>
-  <table>
-    <tr><th>#</th><th>Card</th><th>Effect</th></tr>
-    <tr><td>1</td><td>Final Shoot</td><td>At start of night, shoots one person instead of Mafia.</td></tr>
-    <tr><td>2</td><td>Insomnia</td><td>Next night is completely skipped — go directly to next day.</td></tr>
-    <tr><td>3</td><td>Reveal Identity</td><td>God announces a designated player's role.</td></tr>
-    <tr><td>4</td><td>Beautiful Mind</td><td>Guess Jack or Zodiac. If correct and independent → eliminated.</td></tr>
-    <tr><td>5</td><td>Face Off</td><td>Leaving player completely swaps roles with a chosen player.</td></tr>
-  </table>
+  <p>When a player is eliminated by vote, they choose a number from 1 to the number of remaining cards and draw a random card. Each game has 5 cards, and each card can only be used once.</p>
+
+  <div class="role-block">
+    <h3>🔫 1. Final Shoot</h3>
+    <ul>
+      <li>The eliminated player immediately chooses an alive player and shoots them</li>
+      <li>If the target is <strong>shoot-immune</strong> (Jack, Zodiac, Godfather), the shot has no effect</li>
+      <li>If the target was healed by Watson, the shot has no effect</li>
+      <li>If successful, the target dies immediately</li>
+      <li><strong>Side effect:</strong> Mafia loses their regular shoot the following night</li>
+    </ul>
+  </div>
+
+  <div class="role-block">
+    <h3>🌙 2. Insomnia</h3>
+    <ul>
+      <li>The next night is completely skipped</li>
+      <li>No night actions occur (no mafia shoot, no Watson heal, no detective inquiry, etc.)</li>
+      <li>The game goes directly to the next day phase</li>
+      <li>This is automatic — no target selection needed</li>
+    </ul>
+  </div>
+
+  <div class="role-block">
+    <h3>👁️ 3. Reveal Identity</h3>
+    <ul>
+      <li>God announces the eliminated player's true role to all remaining players</li>
+      <li>This is automatic — no target selection needed</li>
+      <li><strong>Side effect:</strong> The eliminated player can <strong>no longer be revived</strong> by Constantine</li>
+    </ul>
+  </div>
+
+  <div class="role-block">
+    <h3>🧠 4. Beautiful Mind</h3>
+    <ul>
+      <li>The eliminated player chooses an alive player and guesses they are an <strong>independent</strong> (Jack or Zodiac)</li>
+      <li>If the guess is correct (target is independent), the target is <strong>eliminated</strong></li>
+      <li><strong>Bonus:</strong> If the guess is correct, the voted-out player is <strong>revived</strong> and returns to the game!</li>
+      <li>If the guess is wrong, nothing happens</li>
+    </ul>
+  </div>
+
+  <div class="role-block">
+    <h3>🎭 5. Face Off</h3>
+    <ul>
+      <li>The eliminated player chooses an alive player</li>
+      <li>The eliminated player's role is <strong>fully transferred</strong> to the chosen player (including shield and abilities)</li>
+      <li>The chosen player continues the game with this new role</li>
+      <li><strong>Side effect:</strong> The eliminated player can <strong>no longer be revived</strong></li>
+    </ul>
+  </div>
 </section>
 
 <!-- 11. SETUP -->

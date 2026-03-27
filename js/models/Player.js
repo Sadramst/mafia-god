@@ -91,12 +91,12 @@ export class Player {
 
   /** Kill this player */
   kill(round, cause, revivable = true) {
-    // Jack: immune to everything except salakhi, curse, kane_sacrifice
-    if (this.roleId === 'jack' && !['salakhi', 'curse', 'kane_sacrifice'].includes(cause)) {
+    // Jack: immune to everything except salakhi, curse, kane_sacrifice, lastaction_guess
+    if (this.roleId === 'jack' && !['salakhi', 'curse', 'kane_sacrifice', 'lastaction_guess'].includes(cause)) {
       return false;
     }
-    // Zodiac: immune to generic night kills but can die from vote, bomb, morning shot, etc.
-    if (this.roleId === 'zodiac' && !['salakhi', 'curse', 'kane_sacrifice', 'zodiac_bodyguard', 'morning_shot', 'live_explosion', 'bomb', 'vote'].includes(cause)) {
+    // Zodiac: immune to generic night kills but can die from vote, bomb, morning shot, lastaction_guess, etc.
+    if (this.roleId === 'zodiac' && !['salakhi', 'curse', 'kane_sacrifice', 'zodiac_bodyguard', 'morning_shot', 'live_explosion', 'bomb', 'vote', 'lastaction_guess'].includes(cause)) {
       return false;
     }
 
