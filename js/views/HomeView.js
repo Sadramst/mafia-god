@@ -313,11 +313,14 @@ export class HomeView extends BaseView {
           </div>
 
           <button class="btn btn--primary btn--block" id="btn-save-settings">✓ ${t(tr.settings.save)}</button>
+
+          <button class="btn btn--accent btn--block mt-md" id="btn-rulebook">${t(tr.rulebook.btnLabel)}</button>
         </div>
       </div>
     `;
 
     this.listen('#btn-back-home', 'click', () => this.render());
+    this.listen('#btn-rulebook', 'click', () => this._showRulebook());
 
     this.delegate('change', 'input[name="language"]', (e) => {
       this.$$('.radio-option').forEach(opt => opt.classList.remove('radio-option--active'));
@@ -345,6 +348,48 @@ export class HomeView extends BaseView {
         Storage.deleteRoster();
         this.toast(t(tr.setup.clearRosterCleared), 'success');
       });
+    });
+  }
+
+  _showRulebook() {
+    const rb = tr.rulebook;
+    const sectionKeys = ['overview', 'victory', 'phases', 'nightOrder', 'dayRules', 'mafiaRoles', 'citizenRoles', 'independentRoles', 'specialMechanics', 'lastActionCards', 'setupRules'];
+
+    const tocHtml = sectionKeys.map((key, i) => {
+      const sec = rb[key];
+      return `<a class="rulebook-toc__item" href="#rb-${key}">${t(sec.title)}</a>`;
+    }).join('');
+
+    const sectionsHtml = sectionKeys.map(key => {
+      const sec = rb[key];
+      const body = t(sec.body).replace(/\n/g, '<br>');
+      return `
+        <div class="rulebook-section" id="rb-${key}">
+          <h3 class="rulebook-section__title">${t(sec.title)}</h3>
+          <div class="rulebook-section__body">${body}</div>
+        </div>`;
+    }).join('');
+
+    this.container.innerHTML = `
+      <div class="view rulebook-view">
+        <button class="btn btn--ghost mb-md" id="btn-back-settings">→ ${t(tr.common.back)}</button>
+        <h2 class="rulebook-header">${t(rb.title)}</h2>
+        <nav class="rulebook-toc">${tocHtml}</nav>
+        ${sectionsHtml}
+        <button class="btn btn--ghost btn--block mt-lg" id="btn-back-settings-bottom">→ ${t(tr.common.back)}</button>
+      </div>
+    `;
+
+    this.listen('#btn-back-settings', 'click', () => this._showSettings());
+    this.listen('#btn-back-settings-bottom', 'click', () => this._showSettings());
+
+    // Smooth scroll for TOC links
+    this.delegate('click', '.rulebook-toc__item', (e) => {
+      e.preventDefault();
+      const targetId = e.target.getAttribute('href')?.slice(1);
+      if (targetId) {
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     });
   }
 }

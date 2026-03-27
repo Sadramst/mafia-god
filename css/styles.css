@@ -398,6 +398,51 @@ html[dir="ltr"] .input { direction:ltr; text-align:left; }
 .radio-option__title { font-size:var(--text-md); font-weight:600; color:var(--text-primary); }
 .radio-option__desc { font-size:var(--text-sm); color:var(--text-secondary); line-height:1.5; }
 
+/* ═══════ Rulebook ═══════ */
+.rulebook-view { padding-bottom:var(--space-2xl); }
+.rulebook-header {
+  font-size:var(--text-xl); font-weight:700; color:var(--text-primary);
+  text-align:center; margin-bottom:var(--space-lg);
+}
+.rulebook-toc {
+  display:flex; flex-wrap:wrap; gap:var(--space-xs);
+  margin-bottom:var(--space-xl);
+  padding:var(--space-md);
+  background:var(--bg-glass);
+  border-radius:var(--radius-lg);
+  border:1px solid var(--border);
+}
+.rulebook-toc__item {
+  display:inline-block;
+  padding:6px 12px;
+  font-size:var(--text-sm); font-weight:500;
+  color:var(--accent);
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-pill);
+  text-decoration:none;
+  transition:all var(--duration) var(--ease);
+}
+.rulebook-toc__item:hover { background:var(--accent); color:#fff; }
+.rulebook-section {
+  margin-bottom:var(--space-lg);
+  padding:var(--space-lg);
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  scroll-margin-top:80px;
+}
+.rulebook-section__title {
+  font-size:var(--text-lg); font-weight:700; color:var(--accent);
+  margin-bottom:var(--space-md);
+  padding-bottom:var(--space-sm);
+  border-bottom:2px solid var(--border);
+}
+.rulebook-section__body {
+  font-size:var(--text-sm); color:var(--text-secondary);
+  line-height:1.8; white-space:pre-wrap; word-wrap:break-word;
+}
+
 /* ═══════ Player List ═══════ */
 .player-list { display:flex; flex-direction:column; gap:var(--space-sm); }
 .player-item {
