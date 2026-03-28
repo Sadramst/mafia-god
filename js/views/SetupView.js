@@ -449,20 +449,19 @@ export class SetupView extends BaseView {
     let html = `
       <div class="section">
         <h2 class="section__title">🎭 ${t(tr.setup.selectRolesTitle)}</h2>
-        <p class="section__subtitle">
-          ${t(tr.setup.playersLabel)} <strong>${game.players.length}</strong> ${t(tr.setup.person)} · 
+        <div class="section__subtitle" style="line-height:1.8;">
+          ${t(tr.setup.playersLabel)} <strong>${game.players.length}</strong> ${t(tr.setup.person)}<br>
           ${t(tr.setup.selectedRolesLabel)} <strong id="role-count-display">${game.getTotalRoleCount()}</strong>
           ${game.getTotalRoleCount() !== game.players.length 
             ? `<span style="color: var(--danger)"> ${t(tr.setup.shouldBe).replace('%d', game.players.length)}</span>` 
-            : '<span style="color: var(--success)"> ✓</span>'}
-          <!-- remaining roles helper -->
-          <span id="roles-remaining" style="margin-left:10px; font-weight:600; color: var(--muted);">
+            : '<span style="color: var(--success)"> ✓</span>'}<br>
+          <span id="roles-remaining" style="font-weight:600; color: var(--muted);">
             ${(() => {
               const rem = Math.max(0, game.players.length - game.getTotalRoleCount());
               return rem > 0 ? t(tr.setup.remainingRoles).replace('%d', rem) : '';
             })()}
           </span>
-        </p>
+        </div>
         <!-- desired counts will appear inline on team headers -->
     `;
 
@@ -937,22 +936,6 @@ export class SetupView extends BaseView {
     container.innerHTML = `
       <div class="section">
         <h2 class="section__title">🎲 ${t(tr.setup.assignRolesTitle)}</h2>
-        
-        <!-- Summary -->
-        <div class="stats-row">
-          <div class="stat-card">
-            <div class="stat-card__value">${game.players.length}</div>
-            <div class="stat-card__label">${t(tr.setup.playerSingular)}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card__value">${game.getTotalRoleCount()}</div>
-            <div class="stat-card__label">${t(tr.setup.roleSingular)}</div>
-          </div>
-          <div class="stat-card ${game.getTotalRoleCount() === game.players.length ? 'stat-card--citizen' : 'stat-card--mafia'}">
-            <div class="stat-card__value">${game.getTotalRoleCount() === game.players.length ? '✓' : '✕'}</div>
-            <div class="stat-card__label">${t(tr.setup.matchLabel)}</div>
-          </div>
-        </div>
 
         <!-- Selected roles summary -->
         <div class="card mb-lg">

@@ -107,7 +107,7 @@ export const translations = {
     title: { fa: 'راه‌اندازی بازی', en: 'Game Setup' },
     playersTab: { fa: 'بازیکنان', en: 'Players' },
     rolesTab: { fa: 'نقش‌ها', en: 'Roles' },
-    assignTab: { fa: 'تخصیص', en: 'Assign' },
+    assignTab: { fa: 'پخش نقش', en: 'Deal' },
     playersTitle: { fa: 'بازیکنان', en: 'Players' },
     playersSubtitle: { fa: 'اسم بازیکنان را اضافه کنید', en: 'Add player names' },
     playerName: { fa: 'نام بازیکن...', en: 'Player name...' },
@@ -127,7 +127,7 @@ export const translations = {
     framasonAllies: { fa: '👥 متحدان:', en: '👥 Allies:' },
     negotiatorThreshold: { fa: '📉 آستانه:', en: '📉 Threshold:' },
     sniperShots: { fa: '🎯 تیرها:', en: '🎯 Shots:' },
-    assignRolesTitle: { fa: 'تخصیص نقش‌ها', en: 'Role Assignment' },
+    assignRolesTitle: { fa: 'پخش نقش‌ها', en: 'Role Deal' },
     playerSingular: { fa: 'بازیکن', en: 'Player' },
     roleSingular: { fa: 'نقش', en: 'Role' },
     matchLabel: { fa: 'تطابق', en: 'Match' },
@@ -472,7 +472,7 @@ export const translations = {
   // Navigation & Headers
   nav: {
     home: { fa: 'خانه', en: 'Home' },
-    setup: { fa: 'تنظیمات', en: 'Setup' },
+    setup: { fa: 'چیدمان بازی', en: 'Game Setup' },
     night: { fa: 'شب', en: 'Night' },
     day: { fa: 'روز', en: 'Day' },
     summary: { fa: 'خلاصه', en: 'Summary' },

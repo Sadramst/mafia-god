@@ -20,3 +20,6 @@ capacitor.config.json
 package.json
 package-lock.json
 BUILD_NATIVE.md
+playwright-report/
+test-results/
+e2e-run.log
