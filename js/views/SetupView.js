@@ -1014,17 +1014,21 @@ export class SetupView extends BaseView {
 
         <!-- freemason settings removed from Assign page to avoid duplication and blinking -->
 
-        ${game.selectedRoles['gunner'] ? `
+        ${game.selectedRoles['gunner'] && (game.selectedRoles['jack'] || game.selectedRoles['zodiac']) ? `
           <div class="card mb-lg" style="border-color: rgba(234,179,8,0.4);">
             <div class="font-bold mb-sm">🔫 ${t(tr.setup.gunnerSettings)}</div>
             <div class="font-bold mb-sm" style="font-size: var(--text-sm);">${t(tr.setup.morningShotImmunity)}</div>
             <div class="flex gap-sm">
-              <button class="btn btn--sm ${game.jackMorningShotImmune ? 'btn--primary' : 'btn--ghost'}" id="btn-jack-immune">
-                ${t(tr.setup.jackImmune)} ${game.jackMorningShotImmune ? '✓' : ''}
-              </button>
-              <button class="btn btn--sm ${game.zodiacMorningShotImmune ? 'btn--primary' : 'btn--ghost'}" id="btn-zodiac-immune">
-                ${t(tr.setup.zodiacImmune)} ${game.zodiacMorningShotImmune ? '✓' : ''}
-              </button>
+              ${game.selectedRoles['jack'] ? `
+                <button class="btn btn--sm ${game.jackMorningShotImmune ? 'btn--primary' : 'btn--ghost'}" id="btn-jack-immune">
+                  ${t(tr.setup.jackImmune)} ${game.jackMorningShotImmune ? '✓' : ''}
+                </button>
+              ` : ''}
+              ${game.selectedRoles['zodiac'] ? `
+                <button class="btn btn--sm ${game.zodiacMorningShotImmune ? 'btn--primary' : 'btn--ghost'}" id="btn-zodiac-immune">
+                  ${t(tr.setup.zodiacImmune)} ${game.zodiacMorningShotImmune ? '✓' : ''}
+                </button>
+              ` : ''}
             </div>
           </div>
         ` : ''}

@@ -1468,6 +1468,10 @@ export class DayView extends BaseView {
     this._blindTimer = null;
     this.subView = 'results';
     this.votedPlayers = {};
+    this.voteCounts = {};
+    this.votingPhase = 'first';
+    this.runoffCandidates = [];
+    this.runoffVoteCounts = {};
     this.siestaStep = 'guardian';
     this.siestaGuess = null;
     this.siestaResultData = null;

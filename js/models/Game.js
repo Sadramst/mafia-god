@@ -47,6 +47,7 @@ export class Game {
     this.framason = new Framason();   // Freemason alliance mechanic
     this.framasonMaxMembers = 2;     // Configurable in settings
     this.negotiatorThreshold = 2;    // Negotiate unlocks when alive mafia <= this
+    this._negotiationUsed = false;     // Negotiate is one-time only (success or fail)
     this.sniperMaxShots = 2;          // Sniper's max number of shots
     this._sniperShotCount = 0;        // Sniper shots used so far
     this._kaneUsed = false;            // Kane has used his one-time ability
@@ -338,8 +339,9 @@ export class Game {
     }
   }
 
-  /** Check if negotiation option is available (negotiator alive + alive mafia <= threshold) */
+  /** Check if negotiation option is available (negotiator alive + alive mafia <= threshold + not used yet) */
   canNegotiate() {
+    if (this._negotiationUsed) return false;
     const negotiatorAlive = this.players.some(p => p.isAlive && p.roleId === 'negotiator');
     if (!negotiatorAlive) return false;
     const mafiaAlive = this.players.filter(p => p.isAlive && Roles.get(p.roleId)?.team === 'mafia').length;
@@ -547,7 +549,8 @@ export class Game {
           this._addHistory('salakhi_fail', t(tr.history.salakhiFail).replace('%s', target.name));
         }
       } else if (target && mode === 'negotiate') {
-        // ── Negotiate — recruit simpleCitizen or suspect ──
+        // ── Negotiate — recruit simpleCitizen or suspect (one-time only) ──
+        this._negotiationUsed = true;
         const isRecruitable = target.roleId === 'simpleCitizen' || target.roleId === 'suspect';
         results.negotiated = { playerId: targetId, success: isRecruitable };
         if (isRecruitable) {
@@ -678,12 +681,16 @@ export class Game {
           results.investigated = { playerId: targetId, result: 'blocked' };
           this._addHistory('investigate', t(tr.history.investigate_blocked));
         } else {
+          // If target was recruited by negotiation this same night, they are now mafia
+          const wasNegotiatedThisNight = results.negotiated?.playerId === targetId && results.negotiated?.success;
           const role = Roles.get(target.roleId);
           const targetTeam = role?.team;
-          // 👍 if: mafia (not godfather) OR suspect
+          // 👍 if: mafia (not godfather) OR suspect OR just-negotiated
           // 👎 if: godfather, independent, or citizen (not suspect)
           let thumbsUp;
-          if (target.roleId === 'suspect') {
+          if (wasNegotiatedThisNight) {
+            thumbsUp = true;  // Just recruited into mafia → 👍
+          } else if (target.roleId === 'suspect') {
             thumbsUp = true;  // Suspect → false positive 👍
           } else if (target.roleId === 'godfather') {
             thumbsUp = false; // Godfather hides → 👎
@@ -818,6 +825,17 @@ export class Game {
       this.framason.onLeaderDeath();
     }
 
+    // Return bullets to gunner pool when a bullet holder dies before using the bullet
+    if (this.bulletManager.isActive) {
+      for (const killedId of results.killed) {
+        const bullet = this.bulletManager.getPlayerBullet(killedId);
+        if (bullet) {
+          this.bulletManager.returnBullet(bullet.type);
+          this.bulletManager.removeBullet(killedId);
+        }
+      }
+    }
+
     return results;
   }
 
@@ -935,6 +953,23 @@ export class Game {
       extra.lastActionAvailable = true;
     }
 
+    // Return bullet to gunner pool when eliminated player was holding one
+    if (this.bulletManager.isActive) {
+      const bullet = this.bulletManager.getPlayerBullet(playerId);
+      if (bullet) {
+        this.bulletManager.returnBullet(bullet.type);
+        this.bulletManager.removeBullet(playerId);
+      }
+      // Also check Jack if curse chain killed him
+      if (extra.jackCurseTriggered && jackPlayer) {
+        const jackBullet = this.bulletManager.getPlayerBullet(jackPlayer.id);
+        if (jackBullet) {
+          this.bulletManager.returnBullet(jackBullet.type);
+          this.bulletManager.removeBullet(jackPlayer.id);
+        }
+      }
+    }
+
     return extra;
   }
 
@@ -1035,6 +1070,15 @@ export class Game {
 
     const teamName = Roles.getTeamName(targetTeam);
     this._addHistory('death', t(tr.history.warshot_death).replace('%s', target.name).replace('%s', teamName));
+
+    // Return bullet to gunner pool if the killed target was also holding a bullet
+    if (this.bulletManager.isActive) {
+      const targetBullet = this.bulletManager.getPlayerBullet(targetId);
+      if (targetBullet) {
+        this.bulletManager.returnBullet(targetBullet.type);
+        this.bulletManager.removeBullet(targetId);
+      }
+    }
 
     // Check Jack curse chain
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
@@ -1527,6 +1571,7 @@ export class Game {
       framason: this.framason.toJSON(),
       framasonMaxMembers: this.framasonMaxMembers,
       negotiatorThreshold: this.negotiatorThreshold,
+      _negotiationUsed: this._negotiationUsed,
       sniperMaxShots: this.sniperMaxShots,
       _sniperShotCount: this._sniperShotCount,
       _kaneUsed: this._kaneUsed,
@@ -1566,6 +1611,7 @@ export class Game {
     this.framason = Framason.fromJSON(data.framason);
     this.framasonMaxMembers = data.framasonMaxMembers ?? 2;
     this.negotiatorThreshold = data.negotiatorThreshold ?? 2;
+    this._negotiationUsed = data._negotiationUsed ?? false;
     this.sniperMaxShots = data.sniperMaxShots ?? 2;
     this._sniperShotCount = data._sniperShotCount ?? 0;
     this._kaneUsed = data._kaneUsed ?? false;
