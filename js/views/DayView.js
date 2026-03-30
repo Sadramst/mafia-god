@@ -954,14 +954,24 @@ export class DayView extends BaseView {
     // Multiple candidates: find highest
     let maxCount = -1;
     let winners = [];
-    for (const id of Object.keys(this.runoffVoteCounts)) {
+    for (const id of this.runoffCandidates) {
       const c = this.runoffVoteCounts[id] || 0;
       if (c > maxCount) { maxCount = c; winners = [Number(id)]; }
       else if (c === maxCount) winners.push(Number(id));
     }
 
-    if (winners.length === 0) {
-      this.app.showToast(t(tr.day.runoffTie), 'info');
+    if (winners.length === 0 || maxCount <= 0) {
+      this.app.showToast(t(tr.day.noElimination), 'info');
+      this._goToNextNight();
+      return;
+    }
+
+    // Clear winner — one person has the most votes, eliminate them
+    if (winners.length === 1) {
+      const targetId = winners[0];
+      this.confirm(t(tr.day.confirmExecution), t(tr.day.executeConfirm).replace('%s', game.getPlayer(targetId)?.name), () => {
+        this._eliminateAndHandleExtra(targetId);
+      });
       return;
     }
 
