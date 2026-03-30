@@ -314,6 +314,9 @@ body::before {
   transition:all var(--duration) var(--ease);
 }
 .card:hover { background:var(--bg-card-hover); }
+.history-item { cursor:pointer; position:relative; }
+.history-item:active { transform:scale(0.98); }
+.history-item__arrow { position:absolute; top:50%; right:var(--space-md); transform:translateY(-50%); font-size:1.4rem; color:var(--text-muted); pointer-events:none; }
 .card--glass { background:var(--bg-glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
 .card--mafia { border-color:var(--mafia); box-shadow:inset 0 0 30px var(--mafia-bg); }
 .card--citizen { border-color:var(--citizen); box-shadow:inset 0 0 30px var(--citizen-bg); }

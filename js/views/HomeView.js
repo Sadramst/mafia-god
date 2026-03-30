@@ -112,6 +112,7 @@ export class HomeView extends BaseView {
                   <div class="text-secondary" style="font-size: var(--text-sm)">
                     ${toEnDigits(g.playerCount)} ${t(tr.home.players)} · ${toEnDigits(g.rounds)} ${t(tr.home.rounds)}
                   </div>
+                  <div class="history-item__arrow">›</div>
                 </div>
               `).join('')}
             </div>
@@ -121,8 +122,12 @@ export class HomeView extends BaseView {
     }
 
     this.listen('#btn-back-home', 'click', () => this.render());
-    this.delegate('click', '.history-item', (_e, el) => {
-      this._showHistoryDetail(Number(el.dataset.historyIndex));
+
+    // Bind click handler directly on each history item for reliability
+    this.container.querySelectorAll('.history-item').forEach(el => {
+      this.listen(el, 'click', () => {
+        this._showHistoryDetail(Number(el.dataset.historyIndex));
+      });
     });
   }
 
@@ -132,55 +137,20 @@ export class HomeView extends BaseView {
     const g = history[index];
     if (!g) return;
 
-    // Build timeline HTML from saved snapshot (use saved history array if present)
     const events = g.history || [];
     const players = g.players || [];
-
-    // Helper to safely escape HTML when injecting raw JSON into modal
-    const escapeHtml = (s) => String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-
-    const title = `📜 ${t(tr.home.historyTitle)} — ${new Date(g.date).toLocaleString()}`;
-
-    const playersHtml = players.map((p, idx) => {
-      const role = Roles.get(p.roleId);
-      const roleName = role ? role.getLocalizedName() : p.roleId || '—';
-      const roleIcon = role?.icon || '';
-      const roleDesc = role ? role.getLocalizedDescription() : '';
-      return `
-        <div class="player-item ${p.isAlive ? '' : 'player-item--dead'}" style="display:flex; align-items:flex-start; gap:12px; padding:8px 0;">
-          <span style="width:10px; height:10px; border-radius:50%; background:${p.isAlive ? 'var(--success)' : 'var(--text-muted)'}; display:inline-block; margin-top:6px;"></span>
-          <div style="flex:1;">
-            <div style="font-weight:700; display:flex; justify-content:space-between; align-items:center; gap:8px;">
-              <div>${p.name}</div>
-              <button class="btn btn--ghost btn--sm btn-toggle-role" data-player-idx="${idx}">${t(tr.summary.viewRole)}</button>
-            </div>
-            <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">${roleIcon} ${roleName}</div>
-            <div class="role-desc" data-player-idx="${idx}" style="display:none; margin-top:8px; color:var(--text); font-size:0.9rem; white-space:pre-wrap;">${roleDesc}</div>
-          </div>
-        </div>
-      `;
-    }).join('');
 
     // Format an individual saved history event into readable text.
     const formatEvent = (h) => {
       if (!h) return '';
       if (h.text && h.text.length) return h.text;
-
-      // Try to use translation template if available
       const key = h.type;
       const tmpl = tr.history && tr.history[key];
       if (tmpl) {
         let s = t(tmpl);
-        // Collect possible replacement values in a sensible order
         const replacements = [];
         if (Array.isArray(h.params)) replacements.push(...h.params);
         ['actor','target','name','role','reason','code','count','who'].forEach(k => { if (h[k] !== undefined && h[k] !== null) replacements.push(h[k]); });
-        // Replace %s and %d sequentially
         let i = 0;
         s = s.replace(/%[sd]/g, () => {
           const val = replacements[i++];
@@ -188,8 +158,6 @@ export class HomeView extends BaseView {
         });
         return s;
       }
-
-      // Generic structured fallback
       const parts = [];
       if (h.type) parts.push(`${t(tr.summary.eventType)}: ${h.type}`);
       if (h.actor) parts.push(`${t(tr.summary.actor)}: ${h.actor}`);
@@ -198,82 +166,77 @@ export class HomeView extends BaseView {
       return parts.join(' — ') || JSON.stringify(h);
     };
 
-    const eventsHtml = events.map(h => {
-      const when = h.timestamp ? new Date(h.timestamp).toLocaleString() : '';
-      const phaseLabel = h.phase ? ` (${h.phase})` : '';
-      const text = formatEvent(h);
+    const winnerLabel = g.winner === 'mafia'
+      ? `🔴 ${t(tr.home.mafiaWon)}`
+      : g.winner === 'citizen'
+        ? `🔵 ${t(tr.home.citizenWon)}`
+        : `🟣 ${t(tr.home.independentWon)}`;
+
+    const winnerClass = g.winner === 'mafia' ? 'mafia' : g.winner === 'citizen' ? 'citizen' : 'independent';
+
+    const playersHtml = players.map(p => {
+      const role = Roles.get(p.roleId);
+      const roleName = role ? role.getLocalizedName() : p.roleId || '—';
+      const roleIcon = role?.icon || '';
       return `
-      <div style="margin-bottom:10px;">
-        <div style="font-weight:700;">${t(tr.summary.roundInTimeline).replace('%d', h.round)}${phaseLabel} <span style="font-weight:400; color:var(--text-secondary);">${when}</span></div>
-        <div style="color:var(--text-secondary);">${text}</div>
-      </div>
-    `;
+        <div class="player-item ${p.isAlive ? '' : 'player-item--dead'}">
+          <span class="dot ${p.isAlive ? 'dot--alive' : 'dot--dead'}"></span>
+          <div class="player-item__name">${p.name}</div>
+          <span class="role-badge role-badge--${role?.team || 'citizen'}">
+            ${roleIcon} ${roleName}
+          </span>
+        </div>
+      `;
     }).join('');
 
-    const body = `
-      <div style="max-height:70vh; overflow:auto; text-align: left;">
-        <div style="display:flex; gap:16px; margin-bottom:12px; align-items:center; justify-content:space-between;">
-          <div style="font-weight:700;">${g.winner === 'mafia' ? `🔴 ${t(tr.home.mafiaWon)}` : g.winner === 'citizen' ? `🔵 ${t(tr.home.citizenWon)}` : `🟣 ${t(tr.home.independentWon)}`}</div>
-          <div style="color:var(--text-secondary);">${new Date(g.date).toLocaleString()}</div>
-        </div>
-        <div style="margin-bottom:12px; font-weight:600;">${t(tr.home.players)}: ${toEnDigits(g.playerCount)} · ${t(tr.home.rounds)}: ${toEnDigits(g.rounds)}</div>
+    const timelineHtml = events.length === 0
+      ? `<div class="empty-state"><div class="empty-state__icon">📭</div><div class="empty-state__text">${t(tr.summary.noEvents)}</div></div>`
+      : `<div class="timeline">${events.map(h => {
+          const when = h.timestamp ? new Date(h.timestamp).toLocaleString() : '';
+          const phaseLabel = h.phase ? ` (${h.phase})` : '';
+          const text = formatEvent(h);
+          const itemClass = h.type && (h.type.includes('death') || h.type === 'death')
+            ? 'timeline-item--death'
+            : h.phase === 'night' ? 'timeline-item--night' : 'timeline-item--day';
+          return `
+            <div class="timeline-item ${itemClass}">
+              <div class="timeline-item__title">${t(tr.summary.roundInTimeline).replace('%d', h.round)}${phaseLabel} <span style="font-weight:400; color:var(--text-secondary);">${when}</span></div>
+              <div class="timeline-item__desc">${text}</div>
+            </div>
+          `;
+        }).join('')}</div>`;
 
-        <div style="margin-bottom:16px;">
-          <h3 style="margin-bottom:8px; font-size:1rem;">👥 ${t(tr.summary.finalPlayerStatus)}</h3>
-          <div>${playersHtml}</div>
+    this.container.innerHTML = `
+      <div class="view">
+        <button class="btn btn--ghost mb-lg" id="btn-back-history">→ ${t(tr.common.back)}</button>
+
+        <div class="win-screen" style="padding:var(--space-lg) 0;">
+          <div class="win-screen__icon">${g.winner === 'mafia' ? '🔴' : g.winner === 'citizen' ? '🔵' : '🟣'}</div>
+          <h1 class="win-screen__title win-screen__title--${winnerClass}">${winnerLabel}</h1>
+          <p class="win-screen__subtitle">${t(tr.summary.afterRounds).replace('%d', g.rounds || 0)}</p>
+          <p class="text-muted" style="font-size:var(--text-sm); margin-top:var(--space-xs);">${new Date(g.date).toLocaleString()}</p>
         </div>
 
-        <div>
-          <h3 style="margin-bottom:8px; font-size:1rem;">📜 ${t(tr.summary.timeline)}</h3>
-          <div>${eventsHtml || `<div class="text-secondary" style="font-size:0.95rem; margin-bottom:8px;">${t(tr.summary.noEvents)}</div>`}</div>
-          <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
-            <button class="btn btn--ghost btn--sm" id="btn-show-raw">📁 ${t(tr.summary.viewRaw)}</button>
-            <button class="btn btn--ghost btn--sm" id="btn-open-snapshot">📂 ${t(tr.home.openSnapshot)}</button>
+        <div class="section mt-lg">
+          <h2 class="section__title">${t(tr.summary.finalPlayerStatus)}</h2>
+          <div class="player-list">
+            ${playersHtml}
           </div>
-          <pre id="history-raw" style="display:none; margin-top:8px; background:var(--panel); padding:12px; border-radius:8px; overflow:auto; white-space:pre-wrap;">${escapeHtml(JSON.stringify(g, null, 2))}</pre>
+        </div>
+
+        <div class="section mt-lg">
+          <h2 class="section__title">${t(tr.summary.timeline)}</h2>
+          ${timelineHtml}
+        </div>
+
+        <div class="mt-lg">
+          <button class="btn btn--ghost btn--block" id="btn-back-history-bottom">→ ${t(tr.common.back)}</button>
         </div>
       </div>
     `;
 
-    this.app.showModal(title, body, null, t(tr.common.close));
-
-    // Bind toggle handlers for role description expand/collapse inside modal
-    const overlay = document.querySelector('.modal-overlay');
-    if (overlay) {
-      overlay.querySelectorAll('.btn-toggle-role').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const idx = btn.dataset.playerIdx;
-          const desc = overlay.querySelector(`.role-desc[data-player-idx="${idx}"]`);
-          if (!desc) return;
-          const isHidden = desc.style.display === 'none' || !desc.style.display;
-          desc.style.display = isHidden ? 'block' : 'none';
-          btn.textContent = isHidden ? t(tr.summary.hideRole) : t(tr.summary.viewRole);
-        });
-      });
-    }
-
-    // Bind raw JSON toggle
-    const rawBtn = document.querySelector('.modal-overlay #btn-show-raw');
-    if (rawBtn) {
-        rawBtn.addEventListener('click', () => {
-        const pre = document.querySelector('.modal-overlay #history-raw');
-        if (!pre) return;
-        pre.style.display = pre.style.display === 'none' || !pre.style.display ? 'block' : 'none';
-        rawBtn.textContent = pre.style.display === 'block' ? `📁 ${t(tr.summary.hideRaw)}` : `📁 ${t(tr.summary.viewRaw)}`;
-      });
-    }
-
-    // Bind open snapshot button (renders full summary view from saved snapshot)
-    const openBtn = document.querySelector('.modal-overlay #btn-open-snapshot');
-    if (openBtn) {
-      openBtn.addEventListener('click', () => {
-        this.confirm(t(tr.home.openSnapshot), t(tr.home.openSnapshotConfirm), () => {
-          // Set app preview and navigate to summary; SummaryView will render preview if present
-          this.app._historyPreview = g;
-          this.app.navigate('summary');
-        }, t(tr.common.confirm), t(tr.common.cancel));
-      });
-    }
+    this.listen('#btn-back-history', 'click', () => this._showHistory());
+    this.listen('#btn-back-history-bottom', 'click', () => this._showHistory());
   }
 
   _showSettings() {
