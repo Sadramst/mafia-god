@@ -1447,6 +1447,15 @@ export class Game {
    */
   drawLastActionFor(victimId) {
     if (!this.lastActionManager?.hasRemaining()) return null;
+
+    // Beautiful Mind requires an alive independent — auto-discard if none exist
+    const hasAliveIndependent = this.players.some(p => p.isAlive && Roles.get(p.roleId)?.team === 'independent');
+    if (!hasAliveIndependent) {
+      const bm = this.lastActionManager.cards.find(c => c.id === CARD.BEAUTIFUL_MIND && !c.used);
+      if (bm) bm.used = true;
+      if (!this.lastActionManager.hasRemaining()) return null;
+    }
+
     const card = this.lastActionManager.drawRandom();
     if (!card) return null;
 
