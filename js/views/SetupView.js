@@ -952,8 +952,23 @@ export class SetupView extends BaseView {
 
         <!-- Selected roles summary -->
         <div class="card mb-lg">
-          <div class="font-bold mb-sm">${t(tr.setup.selectedRoles)}:</div>
-          <div class="flex" style="flex-wrap: wrap; gap: 6px;">
+          <div class="flex" style="flex-wrap: wrap; gap: 6px; align-items: center;">
+            ${(() => {
+              const rec = game.computeRecommendedCounts();
+              const mafiaCount = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'mafia').reduce((s, [, c]) => s + c, 0);
+              const citizenCount = Object.entries(game.selectedRoles).filter(([id]) => Roles.get(id)?.team === 'citizen').reduce((s, [, c]) => s + c, 0);
+              return `
+                <span style="font-size: var(--text-sm); white-space: nowrap;">🔴 ${t(tr.setup.mafia)}: <strong id="desired-mafia">${mafiaCount}</strong></span>
+                <span style="font-size: var(--text-sm); opacity: 0.4;">|</span>
+                <span style="font-size: var(--text-sm); white-space: nowrap;">🔵 ${t(tr.setup.citizen)}: <strong id="desired-citizen">${citizenCount}</strong></span>
+                ${rec.independents > 0 ? `
+                  <span style="font-size: var(--text-sm); opacity: 0.4;">|</span>
+                  <span style="font-size: var(--text-sm); white-space: nowrap;">🧡 ${t(tr.setup.independent)}: <strong>${rec.independents}</strong></span>
+                ` : ''}
+              `;
+            })()}
+          </div>
+          <div class="flex" style="flex-wrap: wrap; gap: 6px; margin-top: 8px;">
             ${Object.entries(game.selectedRoles).map(([roleId, count]) => {
               const role = Roles.get(roleId);
               if (!role) return '';
@@ -962,28 +977,6 @@ export class SetupView extends BaseView {
             ${Object.keys(game.selectedRoles).length === 0 ? `<span class="text-muted">${t(tr.setup.noRoleSelected)}</span>` : ''}
           </div>
         </div>
-
-        <!-- Recommended / Desired team counts -->
-        ${(() => {
-          const rec = game.computeRecommendedCounts();
-          return `
-          <div class="card mb-lg">
-            <div class="font-bold mb-sm">${t(tr.setup.warning)}: ${t(tr.setup.shouldBe).replace('%d', game.players.length)}</div>
-            <div class="flex gap-sm items-center">
-              <div style="min-width: 180px;">
-                ${t(tr.setup.mafia)}: <strong id="desired-mafia">${game.desiredMafia}</strong>
-                <div style="font-size: var(--text-xs); color: var(--muted)">(${t(tr.setup.person)})</div>
-              </div>
-              <!-- removed +/- here to avoid blinking; adjust desired counts in Roles tab -->
-              <div style="margin-left: 12px;">
-                ${t(tr.setup.citizen)}: <strong id="desired-citizen">${game.desiredCitizen}</strong>
-              </div>
-              <div style="margin-left: auto; font-size: var(--text-sm); color: var(--muted);">${t(tr.setup.person)}: ${game.players.length} · ${t(tr.setup.independent)}: ${rec.independents}</div>
-            </div>
-            <div style="font-size: var(--text-xs); color: var(--muted); margin-top: 6px;">${t(tr.setup.shouldBe).replace('%d', game.players.length)}</div>
-          </div>
-          `;
-        })()}
 
         <!-- Zodiac frequency setting (only if zodiac is selected) -->
         ${game.selectedRoles['zodiac'] ? `
