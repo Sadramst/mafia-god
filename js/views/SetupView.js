@@ -61,6 +61,19 @@ export class SetupView extends BaseView {
     if (remEl) remEl.textContent = rem > 0 ? t(tr.setup.remainingRoles).replace('%d', rem) : '';
     const statsPlayerVal = this.container.querySelector('.stat-card .stat-card__value');
     if (statsPlayerVal && statsPlayerVal.textContent) statsPlayerVal.textContent = game.players.length;
+
+    // Auto-enable/disable Roles tab based on player count
+    const rolesTab = this.container.querySelector('.tabs [data-tab="roles"]');
+    if (rolesTab) {
+      if (game.players.length >= 8) rolesTab.classList.remove('disabled');
+      else rolesTab.classList.add('disabled');
+    }
+    // Auto-enable/disable Assign tab based on role count matching player count
+    const assignTab = this.container.querySelector('.tabs [data-tab="assign"]');
+    if (assignTab) {
+      if (game.players.length >= 8 && game.getTotalRoleCount() === game.players.length) assignTab.classList.remove('disabled');
+      else assignTab.classList.add('disabled');
+    }
   }
 
   /** Update a numeric value near a clicked button inside role-card without re-rendering whole view */
