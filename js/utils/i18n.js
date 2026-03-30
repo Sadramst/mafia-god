@@ -218,6 +218,8 @@ export const translations = {
     jackCurseDescription: { fa: '🔪 جک طلسم خود را روی یک نفر می‌گذارد. اگر آن فرد کشته شود یا رأی بگیرد، جک هم حذف می‌شود.', en: '🔪 Jack places his curse on someone. If that person is killed or voted,Jack is also eliminated.' },
     confirmCurse: { fa: '✓ تأیید طلسم', en: '✓ Confirm Curse' },
     skipAction: { fa: 'رد شدن', en: 'Skip' },
+    jadoogarBlocked: { fa: '✊ رد شدن — امشب نمی‌توانید اقدام کنید.', en: '✊ Blocked — you cannot act tonight.' },
+    jadoogarBlockedBtn: { fa: 'رد شدن', en: 'Blocked' },
     godfatherShoot: { fa: '🔫 شلیک', en: '🔫 Shoot' },
     godfatherSalakhi: { fa: '🗡️ سلاخی', en: '🗡️ Salakhi' },
     godfatherNegotiate: { fa: '🤝 مذاکره', en: '🤝 Negotiate' },

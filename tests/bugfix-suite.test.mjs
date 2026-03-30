@@ -1,5 +1,5 @@
 /**
- * bugfix-suite.test.mjs — Regression tests for 8 bug fixes
+ * bugfix-suite.test.mjs — Regression tests for 10 bug fixes
  *
  * B1: Gunner bullet returns to pool when holder dies before using it
  * B2: Morning shot immunity only shown when jack/zodiac selected (UI only)
@@ -9,6 +9,8 @@
  * B6: Runoff voting — clear winner eliminated, tie goes to coin toss
  * B7: Final Shoot — shielded/immune/healed results return correct reason
  * B8: Missing runoffMultiTie i18n key (UI only — verified via import)
+ * B9: Gunner bullet not double-returned when recipient dies same night
+ * B10: Constantine auto-skipped when no revivable players exist
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Game } from '../js/models/Game.js';
@@ -454,5 +456,167 @@ describe('B7 — Final Shoot protections return correct reason', () => {
     const res = game.applyLastActionCard(CARD.FINAL_SHOOT, p.SimpleMafia.id, p.SimpleCitizen1.id);
     expect(res.success).toBe(false);
     expect(res.reason).toBe('invalid_target');
+  });
+});
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   B9 — Gunner bullet NOT double-returned when target dies same night
+   ═══════════════════════════════════════════════════════════════════ */
+describe('B9 — Gunner bullet count stays correct when recipient dies same night', () => {
+  let game, p;
+
+  beforeEach(() => {
+    ({ game, p } = setup({
+      P1: 'godfather',
+      P2: 'simpleMafia',
+      P3: 'drWatson',
+      P4: 'detective',
+      P5: 'gunner',
+      P6: 'simpleCitizen',
+      P7: 'simpleCitizen',
+      P8: 'simpleCitizen',
+    }));
+    game.bulletManager.init(2, 2);
+    game.round = 1;
+  });
+
+  it('does NOT create extra bullet when gunner gives live to someone who dies same night', () => {
+    // Initial state: 2 live, 2 blank
+    expect(game.bulletManager.liveRemaining).toBe(2);
+    expect(game.bulletManager.blankRemaining).toBe(2);
+
+    // Night: gunner gives live to P6, mafia kills P6
+    const results = nightRound(game, {
+      godfather: { actorIds: [p.P1.id], targetId: p.P6.id, actionType: 'shoot', mode: 'shoot' },
+      gunner: { bulletAssignments: [{ holderId: p.P6.id, type: 'live' }] },
+    });
+
+    expect(dead(p.P6)).toBe(true);
+    // Bullet was given (2 → 1), then returned when P6 died (1 → 2)
+    // Must be exactly 2, not 3!
+    expect(game.bulletManager.liveRemaining).toBe(2);
+    expect(game.bulletManager.blankRemaining).toBe(2);
+    expect(game.bulletManager.getPlayerBullet(p.P6.id)).toBeNull();
+  });
+
+  it('does NOT create extra bullet when gunner gives blank to someone who dies same night', () => {
+    expect(game.bulletManager.blankRemaining).toBe(2);
+
+    const results = nightRound(game, {
+      godfather: { actorIds: [p.P1.id], targetId: p.P7.id, actionType: 'shoot', mode: 'shoot' },
+      gunner: { bulletAssignments: [{ holderId: p.P7.id, type: 'blank' }] },
+    });
+
+    expect(dead(p.P7)).toBe(true);
+    expect(game.bulletManager.blankRemaining).toBe(2);
+    expect(game.bulletManager.liveRemaining).toBe(2);
+  });
+
+  it('gunnerGiveBullet does not increment count for dead target', () => {
+    // Kill P6 first
+    p.P6.isAlive = false;
+    expect(game.bulletManager.liveRemaining).toBe(2);
+
+    const res = game.gunnerGiveBullet(p.P6.id, 'live');
+
+    expect(res.success).toBe(false);
+    expect(res.reason).toBe('dead');
+    // Must still be exactly 2, not 3
+    expect(game.bulletManager.liveRemaining).toBe(2);
+  });
+
+  it('bullet counts stay correct over multiple nights with deaths', () => {
+    // Night 1: give live to P6, P6 dies
+    const r1 = nightRound(game, {
+      godfather: { actorIds: [p.P1.id], targetId: p.P6.id, actionType: 'shoot', mode: 'shoot' },
+      gunner: { bulletAssignments: [{ holderId: p.P6.id, type: 'live' }] },
+    });
+    expect(dead(p.P6)).toBe(true);
+    expect(game.bulletManager.liveRemaining).toBe(2);
+
+    // Night 2: give live to P7, P7 survives
+    const r2 = nightRound(game, {
+      godfather: { actorIds: [p.P1.id], targetId: p.P8.id, actionType: 'shoot', mode: 'shoot' },
+      gunner: { bulletAssignments: [{ holderId: p.P7.id, type: 'live' }] },
+    });
+    expect(alive(p.P7)).toBe(true);
+    expect(game.bulletManager.liveRemaining).toBe(1);
+    expect(game.bulletManager.getPlayerBullet(p.P7.id)).toBeTruthy();
+  });
+});
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   B10 — Constantine auto-skipped when no revivable players
+   ═══════════════════════════════════════════════════════════════════ */
+describe('B10 — Constantine skipped when no one can be revived', () => {
+  let game, p;
+
+  beforeEach(() => {
+    ({ game, p } = setup({
+      P1: 'godfather',
+      P2: 'simpleMafia',
+      P3: 'constantine',
+      P4: 'detective',
+      P5: 'simpleCitizen',
+      P6: 'simpleCitizen',
+      P7: 'simpleCitizen',
+      P8: 'simpleCitizen',
+    }));
+    game.round = 1;
+  });
+
+  it('constantine step is included when there are revivable players', () => {
+    // Kill someone in round 1
+    nightRound(game, {
+      godfather: { actorIds: [p.P1.id], targetId: p.P5.id, actionType: 'shoot', mode: 'shoot' },
+    });
+    expect(dead(p.P5)).toBe(true);
+    // Advance to next day (round increments) then start next night
+    game.startDay();
+    game.startNight();
+    const hasConstantine = game.nightSteps.some(s => s.roleId === 'constantine');
+    expect(hasConstantine).toBe(true);
+  });
+
+  it('constantine step is skipped when no one has died', () => {
+    // No one died — start night
+    game.startNight();
+    const hasConstantine = game.nightSteps.some(s => s.roleId === 'constantine');
+    expect(hasConstantine).toBe(false);
+  });
+
+  it('constantine step is skipped when deaths are non-revivable', () => {
+    // Kill someone as non-revivable (salakhi)
+    nightRound(game, {
+      godfather: { actorIds: [p.P1.id], targetId: p.P5.id, actionType: 'shoot', mode: 'salakhi', guessedRoleId: 'simpleCitizen' },
+    });
+    expect(dead(p.P5)).toBe(true);
+    expect(p.P5.isRevivable).toBe(false);
+    // Round 2: constantine should be skipped
+    game.startNight();
+    const hasConstantine = game.nightSteps.some(s => s.roleId === 'constantine');
+    expect(hasConstantine).toBe(false);
+  });
+
+  it('constantine step is skipped after already used', () => {
+    // Night 1: Kill P5
+    nightRound(game, {
+      godfather: { actorIds: [p.P1.id], targetId: p.P5.id, actionType: 'shoot', mode: 'shoot' },
+    });
+    // Day 1 → Night 2: revive P5, kill P6
+    game.startDay();
+    nightRound(game, {
+      godfather: { actorIds: [p.P1.id], targetId: p.P6.id, actionType: 'shoot', mode: 'shoot' },
+      constantine: { targetId: p.P5.id, actorIds: [p.P3.id] },
+    });
+    expect(game.constantineUsed).toBe(true);
+    expect(alive(p.P5)).toBe(true);
+    // Day 2 → Night 3: constantine should be skipped (used)
+    game.startDay();
+    game.startNight();
+    const hasConstantine = game.nightSteps.some(s => s.roleId === 'constantine');
+    expect(hasConstantine).toBe(false);
   });
 });

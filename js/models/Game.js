@@ -379,8 +379,8 @@ export class Game {
       }
       if (actors.length === 0) continue;
 
-      // Special: skip constantine if already used
-      if (role.id === 'constantine' && this.constantineUsed) continue;
+      // Special: skip constantine if already used or no one to revive
+      if (role.id === 'constantine' && (this.constantineUsed || this.getRevivablePlayers().length === 0)) continue;
 
       // Special: skip bomber if bomb already used
       if (role.id === 'bomber' && this.bomb.isUsed) continue;
@@ -977,8 +977,7 @@ export class Game {
   gunnerGiveBullet(holderId, type) {
     const holder = this.getPlayer(holderId);
     if (!holder || !holder.isAlive) {
-      // Target is dead — return bullet
-      this.bulletManager.returnBullet(type);
+      // Target is dead — bullet was never taken from pool, don't return
       return { success: false, reason: 'dead' };
     }
     const ok = this.bulletManager.giveBullet(holderId, type, this.round);

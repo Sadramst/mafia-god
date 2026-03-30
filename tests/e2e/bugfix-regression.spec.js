@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Bugfix E2E — Visual tests for 6 bug fixes:
+ * Bugfix E2E — Visual tests for 10 bug fixes:
  * B1: Bullet return on holder death
  * B3: Detective + negotiation same night
  * B4: Voting reset each day
  * B5: Negotiation one-time use
  * B6: Runoff voting — clear winner vs tie
+ * B9: Gunner bullet not double-returned when recipient dies same night
+ * B10: Constantine skip when no revivable players
  *
  * Uses page.evaluate() for direct game engine manipulation + visual verification.
  */
@@ -268,5 +270,129 @@ test.describe('Bugfix E2E — Regression Tests', () => {
     expect(votingResults.maxVotes).toBe(3);
 
     await page.screenshot({ path: 'test-results/artifacts/bugfix-b4-b6.png', fullPage: true });
+  });
+
+  test('B9: Gunner bullet count correct when recipient dies same night', async ({ page }) => {
+    test.setTimeout(120000);
+
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+
+    await expect(page.locator('#btn-new-game')).toBeVisible();
+    await page.locator('#btn-new-game').click();
+    await expect(page.locator('#player-name-input')).toBeVisible();
+
+    const names = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel'];
+    for (const n of names) {
+      await page.fill('#player-name-input', n);
+      await page.locator('#btn-add-player').click();
+    }
+
+    const bulletResult = await page.evaluate(() => {
+      const { Game } = window.__modules?.Game || {};
+      const { Roles } = window.__modules?.Roles || {};
+      const game = window.__app?.game || new (window.__modules?.Game?.Game || Game)();
+
+      // Direct engine setup
+      const g = new (window.__modules?.Game?.Game || game.constructor)();
+      const roles = ['godfather', 'simpleMafia', 'drWatson', 'detective', 'gunner', 'simpleCitizen', 'simpleCitizen', 'simpleCitizen'];
+      const players = [];
+      for (let i = 0; i < 8; i++) {
+        const p = g.addPlayer(names[i] || `P${i}`);
+        p.roleId = roles[i];
+        const RolesModule = window.__modules?.Roles;
+        if (RolesModule) {
+          const roleDef = RolesModule.Roles.get(roles[i]);
+          if (roleDef) p.initShield(roleDef);
+        }
+        players.push(p);
+      }
+      g.bulletManager.init(2, 2);
+      g.round = 1;
+
+      const liveBefore = g.bulletManager.liveRemaining;
+      const blankBefore = g.bulletManager.blankRemaining;
+
+      // Night: gunner gives live to P5 (simpleCitizen), mafia kills P5
+      g.startNight();
+      Object.assign(g.nightActions, {
+        godfather: { actorIds: [players[0].id], targetId: players[5].id, actionType: 'shoot', mode: 'shoot' },
+        gunner: { bulletAssignments: [{ holderId: players[5].id, type: 'live' }] },
+      });
+      g.resolveNight();
+
+      const liveAfter = g.bulletManager.liveRemaining;
+      const blankAfter = g.bulletManager.blankRemaining;
+      const p5Dead = !players[5].isAlive;
+      const p5Bullet = g.bulletManager.getPlayerBullet(players[5].id);
+
+      return { liveBefore, blankBefore, liveAfter, blankAfter, p5Dead, hasBullet: !!p5Bullet };
+    });
+
+    // B9: live bullets must be 2 (not 3), blank must be 2
+    expect(bulletResult.liveBefore).toBe(2);
+    expect(bulletResult.liveAfter).toBe(2);
+    expect(bulletResult.blankAfter).toBe(2);
+    expect(bulletResult.p5Dead).toBe(true);
+    expect(bulletResult.hasBullet).toBe(false);
+
+    await page.screenshot({ path: 'test-results/artifacts/bugfix-b9.png', fullPage: true });
+  });
+
+  test('B10: Constantine step skipped when no revivable players', async ({ page }) => {
+    test.setTimeout(120000);
+
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+
+    await expect(page.locator('#btn-new-game')).toBeVisible();
+    await page.locator('#btn-new-game').click();
+    await expect(page.locator('#player-name-input')).toBeVisible();
+
+    const names = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel'];
+    for (const n of names) {
+      await page.fill('#player-name-input', n);
+      await page.locator('#btn-add-player').click();
+    }
+
+    const constResult = await page.evaluate(() => {
+      const g = new (window.__modules?.Game?.Game)();
+      const roles = ['godfather', 'simpleMafia', 'constantine', 'detective', 'simpleCitizen', 'simpleCitizen', 'simpleCitizen', 'simpleCitizen'];
+      const players = [];
+      for (let i = 0; i < 8; i++) {
+        const p = g.addPlayer(`P${i}`);
+        p.roleId = roles[i];
+        players.push(p);
+      }
+      g.round = 1;
+
+      // Night 1 with no prior deaths: constantine should NOT appear
+      g.startNight();
+      const night1HasConst = g.nightSteps.some(s => s.roleId === 'constantine');
+
+      // Kill someone normally, then advance
+      Object.assign(g.nightActions, {
+        godfather: { actorIds: [players[0].id], targetId: players[4].id, actionType: 'shoot', mode: 'shoot' },
+      });
+      g.resolveNight();
+      g.startDay(); // round → 2
+
+      // Night 2 with a revivable death from round 1: constantine should appear
+      g.startNight();
+      const night2HasConst = g.nightSteps.some(s => s.roleId === 'constantine');
+
+      return { night1HasConst, night2HasConst };
+    });
+
+    expect(constResult.night1HasConst).toBe(false);
+    expect(constResult.night2HasConst).toBe(true);
+
+    await page.screenshot({ path: 'test-results/artifacts/bugfix-b10.png', fullPage: true });
   });
 });

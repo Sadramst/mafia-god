@@ -212,11 +212,11 @@ export class NightView extends BaseView {
       if (jadoAction && jadoAction.targetId === actorId && step.roleId !== 'jadoogar') {
         const actor = game.getPlayer(actorId);
         return `
-          <div class="card mb-sm" style="background: rgba(99,102,241,0.06); border-color: rgba(99,102,241,0.3);">
-            <div class="font-bold mb-sm">${t(tr.blockAction)}</div>
-            <div>${t(tr.blockedBySorcerer)}</div>
+          <div class="card mb-sm" style="background: rgba(99,102,241,0.06); border-color: rgba(99,102,241,0.3); text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">✊</div>
+            <div class="font-bold mb-sm">${t(tr.night.jadoogarBlocked)}</div>
             <div class="mt-md">
-              <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">${t(tr.night.skipAction)}</button>
+              <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">${t(tr.night.jadoogarBlockedBtn)}</button>
             </div>
           </div>
         `;

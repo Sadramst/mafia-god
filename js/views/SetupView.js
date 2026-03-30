@@ -348,7 +348,7 @@ export class SetupView extends BaseView {
         { en: 'Pooriya', fa: 'پوریا' },
         { en: 'Matin', fa: 'متین' },
         { en: 'Matineh', fa: 'متینه' },
-        { en: 'Ariyan', fa: 'آریان' },
+        { en: 'Ariyan', fa: 'آرین' },
         { en: 'Arvin', fa: 'آروین' },
         { en: 'Ehsan', fa: 'احسان' },
         { en: 'Zahra', fa: 'زهرا' },
