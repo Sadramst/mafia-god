@@ -32,10 +32,17 @@ test.describe('Full Game Scenario - E2E Visual Test', () => {
           };
 
           if (click('#btn-resolve-night')) return 'resolve';
-          if (click('[data-gf-mode="shoot"]')) return 'gf-mode';
-          if (click('.step.active .target-btn')) return 'target';
-          if (click('.step.active .role-guess-btn')) return 'role-guess';
+          if (click('[data-gf-mode="shoot"].btn--ghost')) return 'gf-mode';
           if (click('.step.active [data-action="confirm-step"]:not([disabled])')) return 'confirm';
+          if (click('.step.active [data-bomb-pass].btn--ghost')) return 'bomb-pass';
+          if (click('.step.active [data-gunner-assign]')) return 'gunner-assign';
+          if (!document.querySelector('.step.active [data-gunner-assign]')) {
+            if (click('.step.active [data-gunner-type].btn--ghost:not([disabled])')) return 'gunner-type';
+          }
+          if (click('.step.active .role-guess-btn:not(.selected)')) return 'role-guess';
+          if (!document.querySelector('.step.active .target-btn.selected')) {
+            if (click('.step.active .target-btn[data-target]')) return 'target';
+          }
           if (click('.step.active [data-action="skip-step"]')) return 'skip';
           return null;
         });

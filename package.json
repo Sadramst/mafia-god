@@ -8,6 +8,7 @@
     "build": "node build.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "serve": "npx http-server www -p 5173 -c-1",
     "cap:sync": "npm run build; npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios",
