@@ -886,7 +886,9 @@ export class DayView extends BaseView {
         if (card.id === CARD.FINAL_SHOOT) {
           if (res.reason === 'immune') this.app.showToast(t(tr.history.lastActionFinalShootImmune).replace('%s', targetName), 'error');
           else if (res.reason === 'healed') this.app.showToast(t(tr.history.lastActionFinalShootHealed).replace('%s', targetName), 'error');
-          else this.app.showToast(t(tr.history.lastActionFinalShootKill).replace('%s', targetName), 'info');
+          else if (res.reason === 'shielded') this.app.showToast(t(tr.history.lastActionFinalShootShielded).replace('%s', targetName), 'error');
+          else if (res.died) this.app.showToast(t(tr.history.lastActionFinalShootKill).replace('%s', targetName), 'info');
+          else this.app.showToast(t(tr.history.lastActionFinalShootShielded).replace('%s', targetName), 'error');
         } else if (card.id === CARD.BEAUTIFUL_MIND) {
           if (res.success) this.app.showToast(t(tr.history.lastActionGuessSuccess).replace('%s', targetName), 'info');
           else this.app.showToast(t(tr.history.lastActionGuessFail).replace('%s', targetName), 'error');

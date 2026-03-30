@@ -1503,11 +1503,14 @@ export class Game {
     }
 
     const died = target.tryKill(this.round, 'lastaction_shoot');
-    if (died) this._addHistory('death', t(tr.history.lastActionFinalShootKill).replace('%s', target.name));
-    else this._addHistory('shield', t(tr.history.shielded).replace('%s', target.name));
+    if (died) {
+      this._addHistory('death', t(tr.history.lastActionFinalShootKill).replace('%s', target.name));
+    } else {
+      this._addHistory('shield', t(tr.history.lastActionFinalShootShielded || tr.history.shielded).replace('%s', target.name));
+    }
 
     this.lastActionBlockMafiaShoot = true;
-    return { success: true, died };
+    return { success: true, died, reason: died ? undefined : 'shielded' };
   }
 
   /* ── Card 4: Beautiful Mind ──────────────────────────────── */

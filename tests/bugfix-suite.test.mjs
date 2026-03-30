@@ -1,5 +1,5 @@
 /**
- * bugfix-suite.test.mjs — Regression tests for 6 bug fixes
+ * bugfix-suite.test.mjs — Regression tests for 8 bug fixes
  *
  * B1: Gunner bullet returns to pool when holder dies before using it
  * B2: Morning shot immunity only shown when jack/zodiac selected (UI only)
@@ -7,10 +7,13 @@
  * B4: Voting state resets each day (tested via DayView destroy logic)
  * B5: Negotiator can only negotiate once (success or fail)
  * B6: Runoff voting — clear winner eliminated, tie goes to coin toss
+ * B7: Final Shoot — shielded/immune/healed results return correct reason
+ * B8: Missing runoffMultiTie i18n key (UI only — verified via import)
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Game } from '../js/models/Game.js';
 import { Roles } from '../js/models/Roles.js';
+import { CARD } from '../js/models/LastActionManager.js';
 
 /* ───────────── helpers ───────────── */
 
@@ -376,5 +379,80 @@ describe('B6 — Runoff voting logic (Game model)', () => {
     game.castVote(p.P3.id, p.P1.id);
     game.startNight();
     expect(game.votes).toEqual({});
+  });
+});
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   B7 — Final Shoot: correct reason for immune / healed / shielded
+   ═══════════════════════════════════════════════════════════════════ */
+describe('B7 — Final Shoot protections return correct reason', () => {
+  let game, p;
+
+  beforeEach(() => {
+    ({ game, p } = setup({
+      Godfather: 'godfather',
+      SimpleMafia: 'simpleMafia',
+      DrWatson: 'drWatson',
+      SimpleCitizen1: 'simpleCitizen',
+      SimpleCitizen2: 'simpleCitizen',
+      Jack: 'jack',
+      Sniper: 'sniper',
+      SimpleCitizen3: 'simpleCitizen',
+    }));
+    game.round = 1;
+    game.phase = 'day';
+    // Ensure last action manager is initialized
+    game.lastActionManager = game.lastActionManager || (function() {
+      const { LastActionManager } = require('../js/models/LastActionManager.js');
+      return new LastActionManager();
+    })();
+  });
+
+  it('kills a normal citizen target', () => {
+    const res = game.applyLastActionCard(CARD.FINAL_SHOOT, p.SimpleMafia.id, p.SimpleCitizen1.id);
+    expect(res.success).toBe(true);
+    expect(res.died).toBe(true);
+    expect(res.reason).toBeUndefined();
+    expect(p.SimpleCitizen1.isAlive).toBe(false);
+  });
+
+  it('returns reason "immune" for shootImmune role (Jack)', () => {
+    const res = game.applyLastActionCard(CARD.FINAL_SHOOT, p.SimpleMafia.id, p.Jack.id);
+    expect(res.success).toBe(false);
+    expect(res.reason).toBe('immune');
+    expect(p.Jack.isAlive).toBe(true);
+  });
+
+  it('returns reason "healed" when target was healed', () => {
+    p.SimpleCitizen2.healed = true;
+    const res = game.applyLastActionCard(CARD.FINAL_SHOOT, p.SimpleMafia.id, p.SimpleCitizen2.id);
+    expect(res.success).toBe(false);
+    expect(res.reason).toBe('healed');
+    expect(p.SimpleCitizen2.isAlive).toBe(true);
+  });
+
+  it('returns reason "shielded" when shield absorbs the shot', () => {
+    // Sniper has a shield by default (initShield was called in setup)
+    expect(p.Sniper.shield.isActive).toBe(true);
+    const res = game.applyLastActionCard(CARD.FINAL_SHOOT, p.SimpleMafia.id, p.Sniper.id);
+    expect(res.success).toBe(true);
+    expect(res.died).toBe(false);
+    expect(res.reason).toBe('shielded');
+    expect(p.Sniper.isAlive).toBe(true);
+    expect(p.Sniper.shield.isActive).toBe(false); // shield consumed
+  });
+
+  it('sets lastActionBlockMafiaShoot regardless of outcome', () => {
+    expect(game.lastActionBlockMafiaShoot).toBeFalsy();
+    game.applyLastActionCard(CARD.FINAL_SHOOT, p.SimpleMafia.id, p.SimpleCitizen1.id);
+    expect(game.lastActionBlockMafiaShoot).toBe(true);
+  });
+
+  it('returns invalid_target for dead players', () => {
+    p.SimpleCitizen1.isAlive = false;
+    const res = game.applyLastActionCard(CARD.FINAL_SHOOT, p.SimpleMafia.id, p.SimpleCitizen1.id);
+    expect(res.success).toBe(false);
+    expect(res.reason).toBe('invalid_target');
   });
 });
