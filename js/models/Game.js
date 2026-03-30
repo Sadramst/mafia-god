@@ -196,6 +196,21 @@ export class Game {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
+
+    // Bias: Sadra gets a citizen-team role with ~90% probability
+    const sadraIdx = this.players.findIndex(p =>
+      p.nameEn === 'Sadra' || p.nameFa === 'صدرا' || p.name === 'Sadra' || p.name === 'صدرا'
+    );
+    if (sadraIdx !== -1) {
+      const sadraRole = Roles.get(pool[sadraIdx]);
+      if (sadraRole && sadraRole.team !== 'citizen' && Math.random() < 0.9) {
+        const citizenIdx = pool.findIndex((rid, i) => i !== sadraIdx && Roles.get(rid)?.team === 'citizen');
+        if (citizenIdx !== -1) {
+          [pool[sadraIdx], pool[citizenIdx]] = [pool[citizenIdx], pool[sadraIdx]];
+        }
+      }
+    }
+
     // Assign + initialize shields
     this.players.forEach((player, idx) => {
       player.roleId = pool[idx];
