@@ -890,3 +890,177 @@ describe('S13 — Jack Curse Multi-Trigger', () => {
     expect(alive(p.P2)).toBe(true);
   });
 });
+
+/* ═══════════════════════════════════════════════════════════════════
+   Jadoogar — Night-Only Block
+   ═══════════════════════════════════════════════════════════════════ */
+describe('Jadoogar — Night-Only Block', () => {
+  it('Jadoogar block does NOT affect morning shot — bullet stays live', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'jadoogar',
+      P4: 'drWatson', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+
+    // Give P5 a live bullet
+    game.bulletManager.init(2, 2);
+    game.bulletManager.giveBullet(p.P5.id, 'live', 1);
+
+    // Night: jadoogar blocks P5
+    nightRound(game, {
+      jadoogar: { actorIds: [p.P3.id], targetId: p.P5.id },
+    });
+
+    // Morning: P5 shoots P6 — should be live (NOT blanked by jadoogar)
+    game.startDay();
+    const result = game.resolveMorningShot(p.P5.id, p.P6.id);
+    expect(result.killed).toBe(true);
+    expect(dead(p.P6)).toBe(true);
+  });
+
+  it('Jadoogar blocks Watson night heal', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'jadoogar',
+      P4: 'drWatson', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+
+    // Jadoogar blocks Watson, mafia shoots P5, Watson tries to heal P5
+    const results = nightRound(game, {
+      jadoogar: { actorIds: [p.P3.id], targetId: p.P4.id },
+      godfather: { actorIds: [p.P1.id], targetId: p.P5.id, actionType: 'shoot' },
+      drWatson: { actorIds: [p.P4.id], targetId: p.P5.id },
+    });
+
+    // Watson was blocked → heal didn't work → P5 dies
+    expect(results.blocked).toBe(p.P4.id);
+    expect(dead(p.P5)).toBe(true);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   Cowboy — Day Action Tests
+   ═══════════════════════════════════════════════════════════════════ */
+describe('Cowboy — Day Action', () => {
+  it('Cowboy eliminates mafia and God says "mafia"', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'cowboy', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    expect(game.canCowboyAct()).toBe(true);
+    const result = game.resolveCowboyAction(p.P1.id);
+    expect(result.success).toBe(true);
+    expect(result.side).toBe('mafia');
+    expect(result.killed).toBe(true);
+    expect(dead(p.P1)).toBe(true);
+  });
+
+  it('Cowboy targets Jack — Jack survives but curse is locked', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'cowboy', P5: 'simpleCitizen', P6: 'jack',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+    p.P6.curse.place(p.P5.id); // Jack has curse on P5
+
+    const result = game.resolveCowboyAction(p.P6.id);
+    expect(result.success).toBe(true);
+    expect(result.side).toBe('jack');
+    expect(result.killed).toBe(false);
+    expect(result.jackCurseLocked).toBe(true);
+    expect(alive(p.P6)).toBe(true);
+    expect(p.P6.curse.isLocked).toBe(true);
+  });
+
+  it('Cowboy eliminates Zodiac and God says "zodiac"', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'cowboy', P5: 'zodiac', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    const result = game.resolveCowboyAction(p.P5.id);
+    expect(result.success).toBe(true);
+    expect(result.side).toBe('zodiac');
+    expect(result.killed).toBe(true);
+    expect(dead(p.P5)).toBe(true);
+  });
+
+  it('Cowboy eliminates citizen — revivable, God says "citizen"', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'cowboy', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    const result = game.resolveCowboyAction(p.P5.id);
+    expect(result.success).toBe(true);
+    expect(result.side).toBe('citizen');
+    expect(result.killed).toBe(true);
+    expect(dead(p.P5)).toBe(true);
+    expect(p.P5.isRevivable).toBe(true);
+  });
+
+  it('Cowboy is one-time only — cannot use twice', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'cowboy', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    game.resolveCowboyAction(p.P2.id);
+    expect(game.canCowboyAct()).toBe(false);
+
+    const result2 = game.resolveCowboyAction(p.P1.id);
+    expect(result2.success).toBe(false);
+  });
+
+  it('Cowboy triggers Jack curse chain when killing curse target', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'cowboy', P5: 'simpleCitizen', P6: 'jack',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+    p.P6.curse.place(p.P5.id); // Jack cursed P5
+
+    // Cowboy kills P5 (curse target) → Jack dies too
+    const result = game.resolveCowboyAction(p.P5.id);
+    expect(result.success).toBe(true);
+    expect(result.killed).toBe(true);
+    expect(result.jackCurseTriggered).toBe(true);
+    expect(dead(p.P5)).toBe(true);
+    expect(dead(p.P6)).toBe(true); // Jack dies from curse chain
+  });
+
+  it('Cowboy cannot be blocked by Jadoogar (day action)', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'jadoogar',
+      P4: 'cowboy', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+
+    // Night: jadoogar blocks cowboy
+    nightRound(game, {
+      jadoogar: { actorIds: [p.P3.id], targetId: p.P4.id },
+    });
+
+    // Day: cowboy still works
+    game.startDay();
+    expect(game.canCowboyAct()).toBe(true);
+    const result = game.resolveCowboyAction(p.P1.id);
+    expect(result.success).toBe(true);
+    expect(result.killed).toBe(true);
+    expect(dead(p.P1)).toBe(true);
+  });
+});

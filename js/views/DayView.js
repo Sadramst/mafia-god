@@ -31,6 +31,10 @@ export class DayView extends BaseView {
     this.morningShooterId = null;      // Which bullet holder is shooting?
     this.morningShootTargetId = null;  // Selected target
     this.morningShootResult = null;    // Result of the shot
+    // Cowboy state
+    this.cowboyActive = false;         // Is the cowboy target panel open?
+    this.cowboyTargetId = null;        // Selected target
+    this.cowboyResult = null;          // Result of the cowboy action
     // delegated click handler bound to container to avoid missing listeners after render
     this._onContainerClick = (e) => {
       const btn = e.target.closest && e.target.closest('#btn-toggle-godtools');
@@ -552,6 +556,27 @@ export class DayView extends BaseView {
 
         ${this.morningShootResult ? this._renderMorningShootResult() : ''}
 
+        <!-- Cowboy Day Action -->
+        ${(() => {
+          if (!game.canCowboyAct()) return '';
+          if (this.cowboyResult) return '';
+          return `
+            <div class="card mt-md" style="border-color: rgb(234,179,8);">
+              <div class="font-bold mb-sm">🤠 ${t(tr.day.cowboyTitle)}</div>
+              <p class="text-secondary mb-sm" style="font-size: var(--text-xs);">
+                ${t(tr.day.cowboyDesc)}
+              </p>
+              <button class="btn btn--warning btn--block" id="btn-cowboy-declare">
+                ${t(tr.day.cowboyDeclare)}
+              </button>
+            </div>
+          `;
+        })()}
+
+        ${this.cowboyActive ? this._renderCowboyPanel() : ''}
+
+        ${this.cowboyResult ? this._renderCowboyResult() : ''}
+
         <button class="btn btn--primary btn--block mt-lg" id="btn-go-voting">
           ${t(tr.day.startVoting)}
         </button>
@@ -560,6 +585,7 @@ export class DayView extends BaseView {
 
     this._setupTimer(container);
     this._setupMorningShooting(container);
+    this._setupCowboy(container);
 
     container.querySelector('#btn-go-voting')?.addEventListener('click', () => {
       this.timer?.stop();
@@ -1169,6 +1195,104 @@ export class DayView extends BaseView {
       this.morningShootResult = null;
       this.render();
     });
+  }
+
+  _setupCowboy(container) {
+    // Declare cowboy
+    container.querySelector('#btn-cowboy-declare')?.addEventListener('click', () => {
+      this.cowboyActive = true;
+      this.cowboyTargetId = null;
+      this.render();
+    });
+
+    // Target selection
+    container.querySelectorAll('[data-cowboy-target]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.cowboyTargetId = Number(btn.dataset.cowboyTarget);
+        this.render();
+      });
+    });
+
+    // Cancel
+    container.querySelector('#btn-cowboy-cancel')?.addEventListener('click', () => {
+      this.cowboyActive = false;
+      this.cowboyTargetId = null;
+      this.render();
+    });
+
+    // Confirm
+    container.querySelector('#btn-cowboy-confirm')?.addEventListener('click', () => {
+      if (!this.cowboyTargetId) return;
+      const result = this.game.resolveCowboyAction(this.cowboyTargetId);
+      this.app.saveGame();
+      this.cowboyResult = result;
+      this.cowboyActive = false;
+      const winner = this.game.checkWinCondition();
+      if (winner) {
+        this.navigate('summary');
+        return;
+      }
+      this.render();
+    });
+
+    // Dismiss result
+    container.querySelector('#btn-cowboy-result-dismiss')?.addEventListener('click', () => {
+      this.cowboyResult = null;
+      this.render();
+    });
+  }
+
+  _renderCowboyPanel() {
+    const game = this.game;
+    const cowboy = game.players.find(p => p.isAlive && p.roleId === 'cowboy');
+    if (!cowboy) return '';
+
+    const targets = game.getAlivePlayers().filter(p => p.id !== cowboy.id);
+
+    return `
+      <div class="card mt-md" style="border-color: rgb(234,179,8); background: rgba(234,179,8,0.06);">
+        <div class="font-bold mb-sm">🤠 ${t(tr.day.cowboyChoose)}</div>
+        <div class="target-grid">
+          ${targets.map(p => `
+            <button class="target-btn ${this.cowboyTargetId === p.id ? 'target-btn--selected' : ''}"
+                    data-cowboy-target="${p.id}">
+              ${p.name}
+            </button>
+          `).join('')}
+        </div>
+        <div class="mt-md" style="display: flex; gap: 8px;">
+          <button class="btn btn--ghost btn--sm" id="btn-cowboy-cancel">${t(tr.day.cancel)}</button>
+          ${this.cowboyTargetId ? `
+            <button class="btn btn--warning btn--sm" id="btn-cowboy-confirm">
+              ${t(tr.day.cowboyConfirm)}
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  _renderCowboyResult() {
+    if (!this.cowboyResult?.success) return '';
+    const sideLabels = {
+      mafia: '🔴 ' + t(tr.day.cowboySideMafia),
+      jack: '🟣 ' + t(tr.day.cowboySideJack),
+      zodiac: '🟣 ' + t(tr.day.cowboySideZodiac),
+      citizen: '🔵 ' + t(tr.day.cowboySideCitizen),
+    };
+    const sideText = sideLabels[this.cowboyResult.side] || this.cowboyResult.side;
+    return `
+      <div class="card mt-md" style="border-color: rgb(234,179,8); background: rgba(234,179,8,0.08);">
+        <div class="font-bold mb-sm">🤠 ${t(tr.day.cowboyResultTitle)}</div>
+        <div style="font-size: var(--text-lg); font-weight: 700; margin-bottom: 8px;">
+          ${this.cowboyResult.targetName}: ${sideText}
+        </div>
+        ${this.cowboyResult.jackCurseLocked ? `<div class="text-muted" style="font-size: var(--text-sm);">${t(tr.day.cowboyJackSurvived)}</div>` : ''}
+        ${this.cowboyResult.killed ? `<div class="text-secondary" style="font-size: var(--text-sm);">${this.cowboyResult.targetName} ${t(tr.day.cowboyEliminated)}</div>` : ''}
+        ${this.cowboyResult.jackCurseTriggered ? `<div style="color: rgb(139,92,246); font-weight: 600;">${t(tr.day.jackCurseTriggered)}</div>` : ''}
+        <button class="btn btn--ghost btn--sm mt-md" id="btn-cowboy-result-dismiss">${t(tr.day.dismiss)}</button>
+      </div>
+    `;
   }
 
   /** Render the shooting panel (target selection + confirm) */

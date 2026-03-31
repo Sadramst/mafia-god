@@ -436,7 +436,7 @@ describe('V9 — Reporter night order after mafia', () => {
 
   it('reporter nightOrder < citizen roles', () => {
     const reporter = Roles.get('reporter');
-    const citizenRoles = ['drWatson', 'detective', 'kane', 'sniper', 'freemason', 'constantine', 'gunner'];
+    const citizenRoles = ['drWatson', 'detective', 'kane', 'sniper', 'freemason', 'constantine', 'gunner', 'cowboy'];
 
     for (const roleId of citizenRoles) {
       const role = Roles.get(roleId);

@@ -96,7 +96,7 @@ export class Player {
       return false;
     }
     // Zodiac: immune to generic night kills but can die from vote, bomb, morning shot, lastaction_guess, etc.
-    if (this.roleId === 'zodiac' && !['salakhi', 'curse', 'kane_sacrifice', 'zodiac_bodyguard', 'morning_shot', 'live_explosion', 'bomb', 'vote', 'lastaction_guess'].includes(cause)) {
+    if (this.roleId === 'zodiac' && !['salakhi', 'curse', 'kane_sacrifice', 'zodiac_bodyguard', 'morning_shot', 'live_explosion', 'bomb', 'vote', 'lastaction_guess', 'cowboy'].includes(cause)) {
       return false;
     }
 

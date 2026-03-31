@@ -55,6 +55,7 @@ export class Game {
     this._kaneTargetId = null;         // Kane's current target (set during night, resolved in morning)
     this._kanePendingDeath = false;    // Kane should die next night after successful reveal
     this._jadoogarLastBlockedId = null; // Jadoogar can't block same person two nights in a row
+    this._cowboyUsed = false;            // Cowboy has used his one-time day ability
     this.drWatsonSelfHealMax = 2;   // Max times Dr Watson can heal self
     this.drLecterSelfHealMax = 2;   // Max times Dr Lecter can heal self
     this._drWatsonSelfHealCount = 0; // Times Dr Watson has healed self
@@ -873,6 +874,84 @@ export class Game {
   }
 
   // ──────────────────────────────────
+  //  COWBOY (کابوی)
+  // ──────────────────────────────────
+
+  /** Check if cowboy can use his day ability */
+  canCowboyAct() {
+    if (this._cowboyUsed) return false;
+    const cowboy = this.players.find(p => p.isAlive && p.roleId === 'cowboy');
+    return !!cowboy;
+  }
+
+  /**
+   * Resolve the cowboy's day action — declare and eliminate a target.
+   * @param {number} targetId — The player chosen by cowboy
+   * @returns {{ success: boolean, targetId: number, targetName: string, side: string, killed: boolean, jackCurseLocked: boolean }}
+   */
+  resolveCowboyAction(targetId) {
+    const cowboy = this.players.find(p => p.isAlive && p.roleId === 'cowboy');
+    if (!cowboy || this._cowboyUsed) return { success: false };
+
+    this._cowboyUsed = true;
+    const target = this.getPlayer(targetId);
+    if (!target || !target.isAlive) return { success: false };
+
+    const targetRole = Roles.get(target.roleId);
+    const targetTeam = targetRole?.team;
+    let side = '';
+    let killed = false;
+    let jackCurseLocked = false;
+
+    if (target.roleId === 'jack') {
+      // Jack survives but curse is permanently locked
+      target.curse.lock();
+      jackCurseLocked = true;
+      side = 'jack';
+      this._addHistory('cowboy', t(tr.history.cowboy_jack).replace('%s', cowboy.name).replace('%s', target.name));
+    } else if (target.roleId === 'zodiac') {
+      // Zodiac is eliminated
+      target.kill(this.round, 'cowboy');
+      killed = true;
+      side = 'zodiac';
+      this._addHistory('death', t(tr.history.cowboy_kill).replace('%s', cowboy.name).replace('%s', target.name));
+    } else if (targetTeam === 'mafia') {
+      // Mafia is eliminated
+      target.kill(this.round, 'cowboy');
+      killed = true;
+      side = 'mafia';
+      this._addHistory('death', t(tr.history.cowboy_kill).replace('%s', cowboy.name).replace('%s', target.name));
+    } else {
+      // Citizen is eliminated but revivable
+      target.kill(this.round, 'cowboy', true);
+      killed = true;
+      side = 'citizen';
+      this._addHistory('death', t(tr.history.cowboy_kill).replace('%s', cowboy.name).replace('%s', target.name));
+    }
+
+    // Check Jack curse chain — if target died and was Jack's curse target
+    let jackCurseTriggered = false;
+    if (killed) {
+      const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
+      if (jackPlayer && jackPlayer.curse.isTriggeredBy(targetId)) {
+        jackPlayer.kill(this.round, 'curse');
+        jackCurseTriggered = true;
+        this._addHistory('death', t(tr.history.jack_curse_activated));
+      }
+    }
+
+    return {
+      success: true,
+      targetId,
+      targetName: target.name,
+      side,
+      killed,
+      jackCurseLocked,
+      jackCurseTriggered,
+    };
+  }
+
+  // ──────────────────────────────────
   //  FRAMASON (فراماسون)
   // ──────────────────────────────────
 
@@ -1063,14 +1142,6 @@ export class Game {
 
     // Jangi bullet — check protections
     const shooter = this.getPlayer(shooterId);
-
-    // Check if shooter was blocked by jadoogar last night — bullet becomes blank
-    const jadoogarAction = this.nightActions?.jadoogar;
-    if (jadoogarAction?.targetId === shooterId) {
-      result.type = 'blank';
-      this._addHistory('morning_shot', t(tr.history.morning_shot_wizard).replace('%s', target.name));
-      return result;
-    }
 
     // Check if target was healed (heal stays until morning)
     if (target.healed) {
@@ -1646,6 +1717,7 @@ export class Game {
       _kaneTargetId: this._kaneTargetId,
       _kanePendingDeath: this._kanePendingDeath,
       _jadoogarLastBlockedId: this._jadoogarLastBlockedId,
+      _cowboyUsed: this._cowboyUsed,
       dayTimerDuration: this.dayTimerDuration,
       defenseTimerDuration: this.defenseTimerDuration,
       blindDayDuration: this.blindDayDuration,
@@ -1686,6 +1758,7 @@ export class Game {
     this._kaneTargetId = data._kaneTargetId ?? null;
     this._kanePendingDeath = data._kanePendingDeath ?? false;
     this._jadoogarLastBlockedId = data._jadoogarLastBlockedId ?? null;
+    this._cowboyUsed = data._cowboyUsed ?? false;
     this.dayTimerDuration = data.dayTimerDuration || 60;
     this.defenseTimerDuration = data.defenseTimerDuration || 60;
     this.blindDayDuration = data.blindDayDuration || 60;
