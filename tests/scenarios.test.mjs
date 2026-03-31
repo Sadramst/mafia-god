@@ -1617,6 +1617,56 @@ describe('S28 — Last Action Card 5: Face Off', () => {
     // Shield reinited from godfather definition
     expect(p.P5.shield).toBeDefined();
   });
+
+  it('Face Off transfers Jack curse state to chosen player', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'jack', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    // Jack curses P6
+    p.P4.curse.place(p.P6.id);
+    expect(p.P4.curse.targetId).toBe(p.P6.id);
+
+    // Kill Jack via salakhi (one of the few ways Jack can die)
+    p.P4.kill(1, 'salakhi');
+    expect(dead(p.P4)).toBe(true);
+
+    // Force Face Off card
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FACE_OFF) c.used = true; });
+    game.drawLastActionFor(p.P4.id);
+
+    // Face Off: transfer jack role to P5
+    const res = game.applyLastActionCard(CARD.FACE_OFF, p.P4.id, p.P5.id);
+    expect(res.success).toBe(true);
+    expect(p.P5.roleId).toBe('jack');
+
+    // Curse state should transfer: P5 now has curse on P6
+    expect(p.P5.curse.targetId).toBe(p.P6.id);
+    expect(p.P5.curse.isActive).toBe(true);
+  });
+
+  it('Face Off does NOT transfer curse for non-Jack roles', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'detective', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    game.eliminateByVote(p.P4.id);
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FACE_OFF) c.used = true; });
+    game.drawLastActionFor(p.P4.id);
+
+    const res = game.applyLastActionCard(CARD.FACE_OFF, p.P4.id, p.P5.id);
+    expect(res.success).toBe(true);
+    expect(p.P5.roleId).toBe('detective');
+    // Curse should remain empty on P5
+    expect(p.P5.curse.isActive).toBe(false);
+    expect(p.P5.curse.targetId).toBeNull();
+  });
 });
 
 /* ═══════════════════════════════════════════════════════════════════

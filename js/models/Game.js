@@ -6,6 +6,7 @@
 import { Player } from './Player.js';
 import { Roles } from './Roles.js';
 import { Bomb } from './Bomb.js';
+import { Curse } from './Curse.js';
 import { Framason } from './Framason.js';
 import { BulletManager } from './BulletManager.js';
 import { LastActionManager, CARD } from './LastActionManager.js';
@@ -1599,6 +1600,12 @@ export class Game {
     const victimRole = victim.roleId;
     chosen.roleId = victimRole;
     chosen.initShield(Roles.get(victimRole));
+
+    // Transfer Jack's curse state (target, history, lock) to new player
+    if (victimRole === 'jack') {
+      chosen.curse = Curse.fromJSON(victim.curse.toJSON());
+    }
+
     victim.isRevivable = false;
 
     this._addHistory('last_action',
