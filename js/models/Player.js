@@ -70,12 +70,12 @@ export class Player {
    */
   tryKill(round, cause, revivable = true) {
     // Immunity rules:
-    // - Jack: immune to everything — only dies through curse chain.
+    // - Jack: immune to everything EXCEPT curse chain and salakhi.
     // - Zodiac: immune to mafia/sniper night shots but can die from Godfather salakhi,
     //   from shooting the bodyguard (cause 'zodiac_bodyguard'), from daytime/morning shots
     //   (gunner `morning_shot`) and explosions/bombs.
     if (this.roleId === 'jack') {
-      if (cause !== 'curse') return false;
+      if (cause !== 'curse' && cause !== 'salakhi') return false;
     }
     if (this.roleId === 'zodiac') {
       if (!['salakhi', 'curse', 'kane_sacrifice', 'zodiac_bodyguard', 'morning_shot', 'live_explosion', 'bomb'].includes(cause)) {
@@ -91,8 +91,8 @@ export class Player {
 
   /** Kill this player */
   kill(round, cause, revivable = true) {
-    // Jack: immune to everything — only dies through curse chain
-    if (this.roleId === 'jack' && cause !== 'curse') {
+    // Jack: immune to everything EXCEPT curse chain and salakhi
+    if (this.roleId === 'jack' && cause !== 'curse' && cause !== 'salakhi') {
       return false;
     }
     // Zodiac: immune to generic night kills but can die from vote, bomb, morning shot, lastaction_guess, etc.

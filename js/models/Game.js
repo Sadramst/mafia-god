@@ -676,15 +676,10 @@ export class Game {
             }
           }
         } else {
-          // Citizen → citizen dies immediately
-          const died = target.tryKill(this.round, 'sniper');
-          if (died) {
-            results.killed.push(targetId);
-            this._addHistory('death', t(tr.history.sniper_citizen_kill).replace('%s', target.name));
-          } else {
-            results.shielded.push(targetId);
-            this._addHistory('shield', t(tr.history.shielded).replace('%s', target.name));
-          }
+          // Citizen → sniper dies as penalty for targeting own team
+          sniperPlayer.kill(this.round, 'sniper_penalty');
+          results.killed.push(sniperId);
+          this._addHistory('death', t(tr.history.sniper_citizen_kill).replace('%s', sniperPlayer.name));
         }
       }
     }

@@ -44,7 +44,7 @@ const dead  = (player) => !player.isAlive;
    ═══════════════════════════════════════════════════════════════════ */
 describe('R1 — Jack only dies from curse chain', () => {
 
-  it('R1.1 — Jack immune to salakhi (correct guess)', () => {
+  it('R1.1 — Jack killed by salakhi (correct guess)', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
       Jack: 'jack', SC1: 'simpleCitizen',
@@ -54,9 +54,10 @@ describe('R1 — Jack only dies from curse chain', () => {
     const results = nightRound(game, {
       godfather: { targetId: p.Jack.id, mode: 'salakhi', guessedRoleId: 'jack' },
     });
-    expect(alive(p.Jack)).toBe(true);
+    expect(dead(p.Jack)).toBe(true);
+    expect(p.Jack.deathCause).toBe('salakhi');
     expect(results.salakhied.correct).toBe(true);
-    expect(results.killed).not.toContain(p.Jack.id);
+    expect(results.killed).toContain(p.Jack.id);
   });
 
   it('R1.2 — Jack immune to mafia night shoot', () => {
@@ -130,15 +131,20 @@ describe('R1 — Jack only dies from curse chain', () => {
     expect(dead(p.Jack)).toBe(true);
   });
 
-  it('R1.7 — Jack.kill() returns false for non-curse causes', () => {
+  it('R1.7 — Jack.kill() returns false for non-curse/non-salakhi causes', () => {
     const { p } = setup({ Jack: 'jack', SC1: 'simpleCitizen' });
-    expect(p.Jack.kill(1, 'salakhi')).toBe(false);
     expect(p.Jack.kill(1, 'mafia')).toBe(false);
     expect(p.Jack.kill(1, 'morning_shot')).toBe(false);
     expect(p.Jack.kill(1, 'vote')).toBe(false);
     expect(p.Jack.kill(1, 'lastaction_guess')).toBe(false);
     expect(p.Jack.kill(1, 'kane_sacrifice')).toBe(false);
     expect(alive(p.Jack)).toBe(true);
+  });
+
+  it('R1.7b — Jack.kill() returns true for salakhi', () => {
+    const { p } = setup({ Jack: 'jack', SC1: 'simpleCitizen' });
+    expect(p.Jack.kill(1, 'salakhi')).not.toBe(false);
+    expect(dead(p.Jack)).toBe(true);
   });
 
   it('R1.8 — Jack.kill() returns true for curse cause', () => {
@@ -148,12 +154,17 @@ describe('R1 — Jack only dies from curse chain', () => {
     expect(dead(p.Jack)).toBe(true);
   });
 
-  it('R1.9 — Jack.tryKill() returns false for non-curse causes', () => {
+  it('R1.9 — Jack.tryKill() returns false for non-curse/non-salakhi causes', () => {
     const { p } = setup({ Jack: 'jack', SC1: 'simpleCitizen' });
-    expect(p.Jack.tryKill(1, 'salakhi')).toBe(false);
     expect(p.Jack.tryKill(1, 'mafia')).toBe(false);
     expect(p.Jack.tryKill(1, 'sniper')).toBe(false);
     expect(alive(p.Jack)).toBe(true);
+  });
+
+  it('R1.9b — Jack.tryKill() returns true for salakhi', () => {
+    const { p } = setup({ Jack: 'jack', SC1: 'simpleCitizen' });
+    expect(p.Jack.tryKill(1, 'salakhi')).toBe(true);
+    expect(dead(p.Jack)).toBe(true);
   });
 });
 
@@ -376,11 +387,11 @@ describe('R3 — Day shoot / vote locks Jack curse', () => {
 
 
 /* ═══════════════════════════════════════════════════════════════════
-   R4 — Sniper: citizen target dies (not sniper)
-   ═══════════════════════════════════════════════════════════════════ */
-describe('R4 — Sniper citizen target dies', () => {
+   R4 — Sniper: sniper dies when shooting citizen
+   ═════════════════════════════════════════════════════════════════ */
+describe('R4 — Sniper citizen target → sniper dies', () => {
 
-  it('R4.1 — Sniper shoots citizen → citizen dies, sniper survives', () => {
+  it('R4.1 — Sniper shoots citizen → sniper dies, citizen survives', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
       Sniper: 'sniper', SC1: 'simpleCitizen',
@@ -390,9 +401,9 @@ describe('R4 — Sniper citizen target dies', () => {
     const results = nightRound(game, {
       sniper: { actorIds: [p.Sniper.id], targetId: p.SC1.id, actionType: 'shoot' },
     });
-    expect(alive(p.Sniper)).toBe(true);
-    expect(dead(p.SC1)).toBe(true);
-    expect(p.SC1.deathCause).toBe('sniper');
+    expect(dead(p.Sniper)).toBe(true);
+    expect(p.Sniper.deathCause).toBe('sniper_penalty');
+    expect(alive(p.SC1)).toBe(true);
   });
 
   it('R4.2 — Sniper shoots independent → nothing happens', () => {
@@ -423,28 +434,28 @@ describe('R4 — Sniper citizen target dies', () => {
     expect(alive(p.Zodiac)).toBe(true);
   });
 
-  it('R4.4 — Sniper-killed citizen can be revived by Constantine', () => {
+  it('R4.4 — Sniper killed by citizen-penalty can be revived by Constantine', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
       Sniper: 'sniper', Constantine: 'constantine',
       SC1: 'simpleCitizen', SC2: 'simpleCitizen',
       SC3: 'simpleCitizen', SC4: 'simpleCitizen',
     });
-    // Night 1: Sniper kills citizen
+    // Night 1: Sniper shoots citizen → sniper dies
     nightRound(game, {
       sniper: { actorIds: [p.Sniper.id], targetId: p.SC1.id, actionType: 'shoot' },
     });
-    expect(dead(p.SC1)).toBe(true);
-    expect(p.SC1.isRevivable).toBe(true);
+    expect(dead(p.Sniper)).toBe(true);
+    expect(p.Sniper.isRevivable).toBe(true);
 
     // Advance round so deathRound < round
     game.startDay();
 
-    // Night 2: Constantine revives
+    // Night 2: Constantine revives sniper
     const results = nightRound(game, {
-      constantine: { actorIds: [p.Constantine.id], targetId: p.SC1.id, actionType: 'revive' },
+      constantine: { actorIds: [p.Constantine.id], targetId: p.Sniper.id, actionType: 'revive' },
     });
-    expect(alive(p.SC1)).toBe(true);
+    expect(alive(p.Sniper)).toBe(true);
   });
 
   it('R4.5 — Sniper shot count still consumed on citizen kill', () => {

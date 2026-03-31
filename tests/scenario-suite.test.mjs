@@ -318,19 +318,19 @@ describe('S3 — Independent Victory Edge', () => {
     expect(winner).toBe('independent');
   });
 
-  it('Sniper kills citizen → citizen dies; then Jack wins after mafia eliminated', () => {
+  it('Sniper kills citizen → sniper dies; then Jack wins after mafia eliminated', () => {
     const { game, p } = setup({
       P1: 'sniper', P2: 'simpleCitizen', P3: 'zodiac', P4: 'godfather',
       P5: 'simpleMafia', P6: 'jack', P7: 'simpleCitizen', P8: 'bodyguard',
     });
 
-    // Sniper shoots citizen → citizen dies immediately
+    // Sniper shoots citizen → sniper dies as penalty
     const results = nightRound(game, {
       sniper: { actorIds: [p.P1.id], targetId: p.P2.id, actionType: 'shoot' },
     });
-    expect(alive(p.P1)).toBe(true);
-    expect(dead(p.P2)).toBe(true);
-    expect(p.P2.deathCause).toBe('sniper');
+    expect(dead(p.P1)).toBe(true);
+    expect(p.P1.deathCause).toBe('sniper_penalty');
+    expect(alive(p.P2)).toBe(true);
 
     // Kill all mafia
     p.P4.kill(2, 'vote'); p.P5.kill(3, 'vote');
@@ -366,17 +366,17 @@ describe('S4 — Sniper Misfire Cascade', () => {
     }));
   });
 
-  it('Night 1 — Sniper shoots citizen → citizen dies, sniper survives', () => {
+  it('Night 1 — Sniper shoots citizen → sniper dies, citizen survives', () => {
     const results = nightRound(game, {
       sniper: { actorIds: [p.P1.id], targetId: p.P2.id, actionType: 'shoot' },
     });
-    expect(alive(p.P1)).toBe(true);
-    expect(dead(p.P2)).toBe(true);
-    expect(p.P2.deathCause).toBe('sniper');
+    expect(dead(p.P1)).toBe(true);
+    expect(p.P1.deathCause).toBe('sniper_penalty');
+    expect(alive(p.P2)).toBe(true);
   });
 
   it('Night 2 — Mafia kills Watson', () => {
-    p.P2.kill(1, 'sniper'); game.round = 1;
+    p.P1.kill(1, 'sniper_penalty'); game.round = 1;
     const results = nightRound(game, {
       godfather: { actorIds: [p.P4.id], targetId: p.P3.id, actionType: 'shoot', mode: 'shoot' },
     });
@@ -384,7 +384,7 @@ describe('S4 — Sniper Misfire Cascade', () => {
   });
 
   it('Day 2 — Vote eliminates all mafia → Citizens Win', () => {
-    p.P2.kill(1, 'sniper'); p.P3.kill(2, 'mafia');
+    p.P1.kill(1, 'sniper_penalty'); p.P3.kill(2, 'mafia');
     game.round = 1; game.startDay();
     game.eliminateByVote(p.P4.id);
     game.eliminateByVote(p.P5.id);

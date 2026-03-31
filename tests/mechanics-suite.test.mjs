@@ -246,7 +246,7 @@ describe('M2 â€” Jack vote immunity', () => {
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 describe('M3 â€” Salakhi kills independents', () => {
 
-  it('M3.1 — Salakhi correctly guesses Jack → Jack is immune (only dies from curse)', () => {
+  it('M3.1 — Salakhi correctly guesses Jack → Jack dies (no one immune from salakhi)', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
       Jack: 'jack', Doc: 'doctor',
@@ -257,10 +257,11 @@ describe('M3 â€” Salakhi kills independents', () => {
       godfather: { targetId: p.Jack.id, mode: 'salakhi', guessedRoleId: 'jack' },
     });
 
-    expect(alive(p.Jack)).toBe(true);
+    expect(dead(p.Jack)).toBe(true);
+    expect(p.Jack.deathCause).toBe('salakhi');
     expect(results.salakhied.playerId).toBe(p.Jack.id);
     expect(results.salakhied.correct).toBe(true);
-    expect(results.killed).not.toContain(p.Jack.id);
+    expect(results.killed).toContain(p.Jack.id);
   });
 
   it('M3.2 â€” Salakhi wrong guess on Jack â†’ Jack survives', () => {
@@ -310,7 +311,7 @@ describe('M3 â€” Salakhi kills independents', () => {
     expect(results.salakhied.correct).toBe(false);
   });
 
-  it('M3.5 — Salakhi does not kill Jack (Jack immune — only dies from curse)', () => {
+  it('M3.5 — Salakhi kills Jack (no one immune from salakhi)', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
       Jack: 'jack', Doc: 'doctor',
@@ -321,10 +322,11 @@ describe('M3 â€” Salakhi kills independents', () => {
       godfather: { targetId: p.Jack.id, mode: 'salakhi', guessedRoleId: 'jack' },
     });
 
-    expect(alive(p.Jack)).toBe(true);
+    expect(dead(p.Jack)).toBe(true);
+    expect(p.Jack.deathCause).toBe('salakhi');
   });
 
-  it('M3.6 — Salakhi cannot kill Jack even with doctor heal', () => {
+  it('M3.6 — Salakhi kills Jack even with doctor heal (salakhi bypasses all)', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
       Jack: 'jack', Doc: 'doctor',
@@ -336,8 +338,9 @@ describe('M3 â€” Salakhi kills independents', () => {
       doctor: { targetId: p.Jack.id },
     });
 
-    // Jack immune to salakhi (only dies from curse chain)
-    expect(alive(p.Jack)).toBe(true);
+    // Salakhi bypasses all protection including doctor — Jack dies
+    expect(dead(p.Jack)).toBe(true);
+    expect(p.Jack.deathCause).toBe('salakhi');
   });
 
   it('M3.7 â€” Regular mafia shoot does not affect Jack (shoot immune)', () => {

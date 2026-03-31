@@ -511,19 +511,19 @@ describe('S4 — Sniper Misfire Cascade', () => {
     }));
   });
 
-  it('Night 1 — Sniper shoots citizen → citizen dies', () => {
+  it('Night 1 — Sniper shoots citizen → sniper dies', () => {
     const results = nightRound(game, {
       sniper: { actorIds: [p.P1.id], targetId: p.P2.id, actionType: 'shoot' },
     });
 
-    // Sniper shoots citizen → citizen dies immediately, sniper survives
-    expect(alive(p.P1)).toBe(true);
-    expect(dead(p.P2)).toBe(true);
-    expect(p.P2.deathCause).toBe('sniper');
+    // Sniper shoots citizen → sniper dies as penalty, citizen survives
+    expect(dead(p.P1)).toBe(true);
+    expect(p.P1.deathCause).toBe('sniper_penalty');
+    expect(alive(p.P2)).toBe(true);
   });
 
   it('Night 2 — Mafia kills Watson', () => {
-    p.P2.kill(1, 'sniper');
+    p.P1.kill(1, 'sniper_penalty');
     game.round = 1;
 
     const results = nightRound(game, {
@@ -534,7 +534,7 @@ describe('S4 — Sniper Misfire Cascade', () => {
   });
 
   it('Day 2 — Vote eliminates mafia → citizens win', () => {
-    p.P2.kill(1, 'sniper'); p.P3.kill(2, 'mafia');
+    p.P1.kill(1, 'sniper_penalty'); p.P3.kill(2, 'mafia');
     game.round = 1;
     game.startDay();
 
@@ -1185,25 +1185,26 @@ describe('S18 — Zodiac Long Game → Handshake', () => {
 /* ═══════════════════════════════════════════════════════════════════
    S19 — Salakhi Kills Jack → Mafia Domination
    ═══════════════════════════════════════════════════════════════════ */
-describe('S19 — Salakhi vs Jack → Jack Immune', () => {
-  it('Godfather salakhis Jack N1 — Jack is immune. All mafia killed → Jack wins.', () => {
+describe('S19 — Salakhi vs Jack → Jack Dies', () => {
+  it('Godfather salakhis Jack N1 — Jack dies. Then citizens must win without Jack.', () => {
     const { game, p } = setup({
       P1: 'jack', P2: 'godfather', P3: 'simpleMafia', P4: 'drWatson',
       P5: 'simpleCitizen', P6: 'simpleCitizen', P7: 'simpleCitizen', P8: 'simpleCitizen',
     });
 
-    // Night 1: Salakhi Jack (correct guess but Jack is immune)
+    // Night 1: Salakhi Jack (correct guess — Jack dies, no one immune from salakhi)
     const results = nightRound(game, {
       godfather: { actorIds: [p.P2.id], targetId: p.P1.id, actionType: 'shoot', mode: 'salakhi', guessedRoleId: 'jack' },
     });
     expect(results.salakhied.correct).toBe(true);
-    expect(alive(p.P1)).toBe(true); // Jack immune to salakhi
+    expect(dead(p.P1)).toBe(true); // Jack killed by salakhi
+    expect(p.P1.deathCause).toBe('salakhi');
 
     // Kill mafia by vote
     p.P2.kill(2, 'vote'); p.P3.kill(3, 'vote');
-    // All mafia dead, Jack alive → independent wins
+    // All mafia dead, Jack dead → citizen wins (not independent)
     const winner = game.checkWinCondition();
-    expect(winner).toBe('independent');
+    expect(winner).toBe('citizen');
   });
 });
 
