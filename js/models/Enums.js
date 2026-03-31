@@ -24,6 +24,7 @@ export const NightAction = Object.freeze({
   FRAMASON_RECRUIT: 'framasonRecruit',   // Framason recruits a player
   CHECK_NEGOTIATION: 'checkNegotiation', // Reporter checks for negotiation
   SNIPE: 'snipe',                        // Sniper shoots with limited bullets
+  JOKER_REVERSE: 'jokerReverse',         // Joker reverses detective investigation result
 });
 
 /**

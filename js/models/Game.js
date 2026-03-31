@@ -55,6 +55,7 @@ export class Game {
     this._kaneTargetId = null;         // Kane's current target (set during night, resolved in morning)
     this._kanePendingDeath = false;    // Kane should die next night after successful reveal
     this._jadoogarLastBlockedId = null; // Jadoogar can't block same person two nights in a row
+    this._jokerLastTargetId = null;      // Joker can't target same person two nights in a row
     this._cowboyUsed = false;            // Cowboy has used his one-time day ability
     this.drWatsonSelfHealMax = 2;   // Max times Dr Watson can heal self
     this.drLecterSelfHealMax = 2;   // Max times Dr Lecter can heal self
@@ -470,7 +471,7 @@ export class Game {
       blocked: null,
       bombed: null,
       revived: null,
-
+      jokerTarget: null,  // Player targeted by Joker (detective result reversed)
       salakhied: null,    // { playerId, correct: boolean }
     };
 
@@ -686,7 +687,15 @@ export class Game {
       }
     }
 
-    // 9. Detective investigates
+    // 9. Joker reverses detective investigation
+    if (actions.joker?.targetId) {
+      results.jokerTarget = actions.joker.targetId;
+      this._jokerLastTargetId = actions.joker.targetId;
+    } else {
+      this._jokerLastTargetId = null;
+    }
+
+    // 10. Detective investigates
     if (actions.detective?.targetId) {
       const targetId = actions.detective.targetId;
       const target = this.getPlayer(targetId);
@@ -716,6 +725,13 @@ export class Game {
           } else {
             thumbsUp = false; // Citizen or independent → 👎
           }
+
+          // Joker reversal: if joker targeted the same player, flip the result
+          const jokerTargetId = actions.joker?.targetId;
+          if (jokerTargetId === targetId) {
+            thumbsUp = !thumbsUp;
+          }
+
           results.investigated = { playerId: targetId, result: thumbsUp ? 'positive' : 'negative' };
           this._addHistory('investigate', t(tr.history.investigate_result).replace('%s', target.name).replace('%s', thumbsUp ? '👍' : '👎'));
         }
@@ -1717,6 +1733,7 @@ export class Game {
       _kaneTargetId: this._kaneTargetId,
       _kanePendingDeath: this._kanePendingDeath,
       _jadoogarLastBlockedId: this._jadoogarLastBlockedId,
+      _jokerLastTargetId: this._jokerLastTargetId,
       _cowboyUsed: this._cowboyUsed,
       dayTimerDuration: this.dayTimerDuration,
       defenseTimerDuration: this.defenseTimerDuration,
@@ -1758,6 +1775,7 @@ export class Game {
     this._kaneTargetId = data._kaneTargetId ?? null;
     this._kanePendingDeath = data._kanePendingDeath ?? false;
     this._jadoogarLastBlockedId = data._jadoogarLastBlockedId ?? null;
+    this._jokerLastTargetId = data._jokerLastTargetId ?? null;
     this._cowboyUsed = data._cowboyUsed ?? false;
     this.dayTimerDuration = data.dayTimerDuration || 60;
     this.defenseTimerDuration = data.defenseTimerDuration || 60;

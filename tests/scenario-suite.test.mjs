@@ -1064,3 +1064,142 @@ describe('Cowboy — Day Action', () => {
     expect(dead(p.P1)).toBe(true);
   });
 });
+
+/* ═══════════════════════════════════════════════════════════════════
+   JOKER — Detective investigation reversal tests
+   ═══════════════════════════════════════════════════════════════════ */
+describe('Joker — Detective investigation reversal', () => {
+  it('Joker on citizen → detective gets positive (reversed from negative)', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'joker', P3: 'detective',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+    const results = nightRound(game, {
+      joker:     { actorIds: [p.P2.id], targetId: p.P4.id },
+      detective: { actorIds: [p.P3.id], targetId: p.P4.id, actionType: 'investigate' },
+    });
+    // Citizen normally → 👎 (negative), Joker reverses → 👍 (positive)
+    expect(results.investigated.result).toBe('positive');
+    expect(results.jokerTarget).toBe(p.P4.id);
+  });
+
+  it('Joker on mafia member → detective gets negative (reversed from positive)', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'joker', P3: 'detective',
+      P4: 'simpleMafia', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+    const results = nightRound(game, {
+      joker:     { actorIds: [p.P2.id], targetId: p.P4.id },
+      detective: { actorIds: [p.P3.id], targetId: p.P4.id, actionType: 'investigate' },
+    });
+    // Simple mafia normally → 👍 (positive), Joker reverses → 👎 (negative)
+    expect(results.investigated.result).toBe('negative');
+  });
+
+  it('Joker on godfather → detective gets positive (reversed from negative)', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'joker', P3: 'detective',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+    const results = nightRound(game, {
+      joker:     { actorIds: [p.P2.id], targetId: p.P1.id },
+      detective: { actorIds: [p.P3.id], targetId: p.P1.id, actionType: 'investigate' },
+    });
+    // Godfather normally → 👎 (negative), Joker reverses → 👍 (positive)
+    expect(results.investigated.result).toBe('positive');
+  });
+
+  it('Joker on suspect → detective gets negative (reversed from positive)', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'joker', P3: 'detective',
+      P4: 'suspect', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+    const results = nightRound(game, {
+      joker:     { actorIds: [p.P2.id], targetId: p.P4.id },
+      detective: { actorIds: [p.P3.id], targetId: p.P4.id, actionType: 'investigate' },
+    });
+    // Suspect normally → 👍 (positive), Joker reverses → 👎 (negative)
+    expect(results.investigated.result).toBe('negative');
+  });
+
+  it('Joker on independent → detective gets positive (reversed from negative)', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'joker', P3: 'detective',
+      P4: 'jack', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+    p.P4.curse.place(p.P5.id); // Jack needs a curse on someone
+    const results = nightRound(game, {
+      joker:     { actorIds: [p.P2.id], targetId: p.P4.id },
+      detective: { actorIds: [p.P3.id], targetId: p.P4.id, actionType: 'investigate' },
+    });
+    // Independent (Jack) normally → 👎 (negative), Joker reverses → 👍 (positive)
+    expect(results.investigated.result).toBe('positive');
+  });
+
+  it('Joker targets different player than detective → no reversal', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'joker', P3: 'detective',
+      P4: 'simpleCitizen', P5: 'simpleMafia', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+    const results = nightRound(game, {
+      joker:     { actorIds: [p.P2.id], targetId: p.P4.id },
+      detective: { actorIds: [p.P3.id], targetId: p.P5.id, actionType: 'investigate' },
+    });
+    // Joker on P4, detective on P5 → no reversal, simple mafia → positive
+    expect(results.investigated.result).toBe('positive');
+    expect(results.jokerTarget).toBe(p.P4.id);
+  });
+
+  it('Joker consecutive restriction — cannot target same person two nights in row', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'joker', P3: 'detective',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+    // Night 1: Joker targets P4
+    nightRound(game, {
+      joker: { actorIds: [p.P2.id], targetId: p.P4.id },
+    });
+    expect(game._jokerLastTargetId).toBe(p.P4.id);
+
+    // Night 2: Build steps, P4 should NOT be valid target
+    game.round = 2;
+    game.startNight();
+    const jokerStep = game.nightSteps.find(s => s.roleId === 'joker');
+    expect(jokerStep).toBeDefined();
+    // The UI filters based on _jokerLastTargetId — verify state is correct
+    expect(game._jokerLastTargetId).toBe(p.P4.id);
+  });
+
+  it('Joker resets last target when no action taken', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'joker', P3: 'detective',
+      P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1;
+    // Night 1: Joker targets P4
+    nightRound(game, {
+      joker: { actorIds: [p.P2.id], targetId: p.P4.id },
+    });
+    expect(game._jokerLastTargetId).toBe(p.P4.id);
+
+    // Night 2: Joker doesn't act (no entry in actions)
+    game.round = 2;
+    nightRound(game, {});
+    expect(game._jokerLastTargetId).toBeNull();
+  });
+});

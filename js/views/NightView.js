@@ -153,6 +153,11 @@ export class NightView extends BaseView {
           return (role?.team === 'citizen' || role?.team === 'independent')
             && p.id !== game._jadoogarLastBlockedId;
         });
+      } else if (step.roleId === 'joker') {
+        // Joker can target any alive player except self, not same person as last night
+        targets = targets.filter(p =>
+          !step.actors.includes(p.id) && p.id !== game._jokerLastTargetId
+        );
       } else if (step.roleId === 'godfather') {
         // Godfather: allow selecting any alive player as target for shoot (including mafia and self),
         // except roles immune to night shots when in 'shoot' mode. For 'salakhi', restrict guesses

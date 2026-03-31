@@ -101,6 +101,20 @@ export class Roles {
       unique: true,
     }),
 
+    joker: new Role({
+      id: 'joker',
+      nameEn: 'Joker',
+      nameFa: 'جوکر',
+      team: Team.MAFIA,
+      icon: '🃏',
+      descriptionEn: 'Each night targets a player. If detective investigates the same player that night, the investigation result is reversed. ⚠️ Cannot target the same person two nights in a row.',
+      descriptionFa: 'هر شب یک نفر را هدف می‌گیرد. اگر کارآگاه همان شب همان فرد را استعلام بزند، نتیجه استعلام برعکس می‌شود. ⚠️ نمی‌تواند دو شب متوالی یک نفر را هدف بگیرد.',
+      nightAction: NightAction.JOKER_REVERSE,
+      nightOrder: 7,
+      maxCount: 1,
+      unique: true,
+    }),
+
     negotiator: new Role({
       id: 'negotiator',
       nameEn: 'Negotiator',

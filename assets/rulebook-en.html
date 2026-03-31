@@ -129,19 +129,20 @@
     <tr><td>3</td><td>💣 Bomber</td><td>Plant bomb (one-time)</td></tr>
     <tr><td>4</td><td>🤐 Silencer</td><td>Silence a player</td></tr>
     <tr><td>5</td><td>🧙 Sorcerer</td><td>Block a citizen/independent</td></tr>
+    <tr><td>6</td><td>🃏 Joker</td><td>Reverse detective result</td></tr>
     <tr><td colspan="3" style="background:#ddf;text-align:center"><strong>🔵 Citizen & Independent</strong></td></tr>
-    <tr><td>6</td><td>📰 Reporter</td><td>Check negotiation result</td></tr>
-    <tr><td>7</td><td>⚕️ Dr. Watson</td><td>Heal any player</td></tr>
-    <tr><td>8</td><td>🔍 Detective</td><td>Investigate a player</td></tr>
-    <tr><td>9</td><td>🎖️ Citizen Kane</td><td>Reveal a player (one-time)</td></tr>
-    <tr><td>10</td><td>🎯 Sniper</td><td>Shoot a player</td></tr>
-    <tr><td>11</td><td>🔺 Freemason</td><td>Recruit to alliance</td></tr>
-    <tr><td>12</td><td>✝️ Constantine</td><td>Revive a dead player (one-time)</td></tr>
-    <tr><td>13</td><td>🔫 Gunner</td><td>Give bullets to players</td></tr>
-    <tr><td>14</td><td>🔪 Jack</td><td>Place curse</td></tr>
-    <tr><td>15</td><td>♈ Zodiac</td><td>Shoot (based on frequency)</td></tr>
+    <tr><td>7</td><td>📰 Reporter</td><td>Check negotiation result</td></tr>
+    <tr><td>8</td><td>⚕️ Dr. Watson</td><td>Heal any player</td></tr>
+    <tr><td>9</td><td>🔍 Detective</td><td>Investigate a player</td></tr>
+    <tr><td>10</td><td>🎖️ Citizen Kane</td><td>Reveal a player (one-time)</td></tr>
+    <tr><td>11</td><td>🎯 Sniper</td><td>Shoot a player</td></tr>
+    <tr><td>12</td><td>🔺 Freemason</td><td>Recruit to alliance</td></tr>
+    <tr><td>13</td><td>✝️ Constantine</td><td>Revive a dead player (one-time)</td></tr>
+    <tr><td>14</td><td>🔫 Gunner</td><td>Give bullets to players</td></tr>
+    <tr><td>15</td><td>🔪 Jack</td><td>Place curse</td></tr>
+    <tr><td>16</td><td>♈ Zodiac</td><td>Shoot (based on frequency)</td></tr>
   </table>
-  <p><strong>Resolution Order:</strong> Sorcerer block → Watson heal → Lecter heal → Godfather action → Jack curse → Zodiac kill → Sniper shoot → Detective investigate → Silencer silence → Bomb plant → Constantine revive → Freemason recruit → Gunner bullets → Kane reveal → Jack curse chain</p>
+  <p><strong>Resolution Order:</strong> Sorcerer block → Watson heal → Lecter heal → Godfather action → Jack curse → Zodiac kill → Sniper shoot → Joker target → Detective investigate → Silencer silence → Bomb plant → Constantine revive → Freemason recruit → Gunner bullets → Kane reveal → Jack curse chain</p>
 </section>
 
 <!-- 5. DAY RULES -->
@@ -224,6 +225,11 @@
   </div>
 
   <div class="role-block">
+    <h3>🃏 Joker <span class="badge badge--mafia">Unique</span></h3>
+    <p>Each night targets one player. If the Detective investigates the same player that night, the investigation result is reversed (👍 becomes 👎 and vice versa). Cannot target the same person two nights in a row.</p>
+  </div>
+
+  <div class="role-block">
     <h3>🤝 Negotiator <span class="badge badge--mafia">Unique</span></h3>
     <p>No night action. Enables Godfather's negotiate option when alive mafia ≤ threshold (default 2).</p>
   </div>
@@ -250,6 +256,7 @@
       <li>Mafia (not Godfather) or Suspect → 👍 (positive)</li>
       <li>Godfather, independent, or citizen (not Suspect) → 👎 (negative)</li>
       <li>Blocked by Sorcerer → ✊ (blocked)</li>
+      <li>If Joker targeted the same player → result is reversed (👍↔👎)</li>
     </ul>
   </div>
 

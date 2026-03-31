@@ -319,6 +319,7 @@ export const translations = {
     blocked: { fa: '✊ بلاک شده', en: '✊ Blocked' },
     bombPlanted: { fa: '💣 بمب روی:', en: '💣 Bomb on:' },
     blockAction: { fa: '🧙 اقدام خنثی‌شده:', en: '🧙 Action blocked:' },
+    jokerAction: { fa: 'جوکر روی:', en: 'Joker on:' },
     jackCurseOn: { fa: '🔪 طلسم جک روی:', en: '🔪 Jack\'s curse on:' },
     framasonTeamLabel: { fa: '🔺 تیم فراماسون:', en: '🔺 Freemason team:' },
     contaminated: { fa: '⚠️ آلوده!', en: '⚠️ Contaminated!' },

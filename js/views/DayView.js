@@ -394,6 +394,12 @@ export class DayView extends BaseView {
             </div>
           ` : ''}
 
+          ${results?.jokerTarget ? `
+            <div class="card mb-sm" style="background: var(--bg-glass); font-size: var(--text-sm);">
+              🃏 ${t(tr.night.jokerAction)} <strong>${game.getPlayer(results.jokerTarget)?.name}</strong>
+            </div>
+          ` : ''}
+
           ${(() => {
             const jackP = game.players.find(p => p.isAlive && p.roleId === 'jack');
             if (jackP && jackP.curse.isActive) {
