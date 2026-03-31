@@ -71,37 +71,37 @@ describe('M1 â€” Beautiful Mind card availability', () => {
     expect(result).toBeNull();
   });
 
-  it('M1.3 â€” Beautiful Mind is available when an independent is alive', () => {
+  it('M1.3 — Beautiful Mind is available when a vulnerable independent is alive', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
-      Jack: 'jack', Doc: 'doctor',
+      Zodiac: 'zodiac', Doc: 'doctor',
       SC1: 'simpleCitizen', SC2: 'simpleCitizen',
       SC3: 'simpleCitizen', SC4: 'simpleCitizen',
     });
         // Force only Beautiful Mind remaining
     game.lastActionManager.cards.forEach(c => { c.used = (c.id !== CARD.BEAUTIFUL_MIND); });
 
-    // Jack is alive â†’ Beautiful Mind should be drawable
+    // Zodiac is alive → Beautiful Mind should be drawable
     const result = game.drawLastActionFor(p.SC1.id);
     expect(result).not.toBeNull();
     expect(result.card.id).toBe(CARD.BEAUTIFUL_MIND);
   });
 
-  it('M1.4 â€” Beautiful Mind correct guess kills independent and revives victim', () => {
+  it('M1.4 — Beautiful Mind correct guess kills vulnerable independent and revives victim', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
-      Jack: 'jack', Doc: 'doctor',
+      Zodiac: 'zodiac', Doc: 'doctor',
       SC1: 'simpleCitizen', SC2: 'simpleCitizen',
       SC3: 'simpleCitizen', SC4: 'simpleCitizen',
     });
         // Simulate SC1 voted out
     p.SC1.kill(1, 'vote');
 
-    const result = game.applyLastActionCard(CARD.BEAUTIFUL_MIND, p.SC1.id, p.Jack.id);
+    const result = game.applyLastActionCard(CARD.BEAUTIFUL_MIND, p.SC1.id, p.Zodiac.id);
     expect(result.success).toBe(true);
-    expect(result.eliminated).toBe(p.Jack.id);
+    expect(result.eliminated).toBe(p.Zodiac.id);
     expect(result.revived).toBe(p.SC1.id);
-    expect(dead(p.Jack)).toBe(true);
+    expect(dead(p.Zodiac)).toBe(true);
     expect(alive(p.SC1)).toBe(true);
   });
 
@@ -246,7 +246,7 @@ describe('M2 â€” Jack vote immunity', () => {
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 describe('M3 â€” Salakhi kills independents', () => {
 
-  it('M3.1 â€” Salakhi correctly guesses Jack â†’ Jack dies', () => {
+  it('M3.1 — Salakhi correctly guesses Jack → Jack is immune (only dies from curse)', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
       Jack: 'jack', Doc: 'doctor',
@@ -257,11 +257,10 @@ describe('M3 â€” Salakhi kills independents', () => {
       godfather: { targetId: p.Jack.id, mode: 'salakhi', guessedRoleId: 'jack' },
     });
 
-    expect(dead(p.Jack)).toBe(true);
-    expect(p.Jack.deathCause).toBe('salakhi');
-    expect(p.Jack.isRevivable).toBe(false);
+    expect(alive(p.Jack)).toBe(true);
     expect(results.salakhied.playerId).toBe(p.Jack.id);
     expect(results.salakhied.correct).toBe(true);
+    expect(results.killed).not.toContain(p.Jack.id);
   });
 
   it('M3.2 â€” Salakhi wrong guess on Jack â†’ Jack survives', () => {
@@ -311,7 +310,7 @@ describe('M3 â€” Salakhi kills independents', () => {
     expect(results.salakhied.correct).toBe(false);
   });
 
-  it('M3.5 â€” Salakhi death is not revivable (Jack)', () => {
+  it('M3.5 — Salakhi does not kill Jack (Jack immune — only dies from curse)', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
       Jack: 'jack', Doc: 'doctor',
@@ -322,11 +321,10 @@ describe('M3 â€” Salakhi kills independents', () => {
       godfather: { targetId: p.Jack.id, mode: 'salakhi', guessedRoleId: 'jack' },
     });
 
-    expect(dead(p.Jack)).toBe(true);
-    expect(p.Jack.isRevivable).toBe(false);
+    expect(alive(p.Jack)).toBe(true);
   });
 
-  it('M3.6 â€” Salakhi bypasses doctor heal on Jack', () => {
+  it('M3.6 — Salakhi cannot kill Jack even with doctor heal', () => {
     const { game, p } = setup({
       GF: 'godfather', SM: 'simpleMafia',
       Jack: 'jack', Doc: 'doctor',
@@ -338,9 +336,8 @@ describe('M3 â€” Salakhi kills independents', () => {
       doctor: { targetId: p.Jack.id },
     });
 
-    // Salakhi bypasses all protection
-    expect(dead(p.Jack)).toBe(true);
-    expect(p.Jack.deathCause).toBe('salakhi');
+    // Jack immune to salakhi (only dies from curse chain)
+    expect(alive(p.Jack)).toBe(true);
   });
 
   it('M3.7 â€” Regular mafia shoot does not affect Jack (shoot immune)', () => {

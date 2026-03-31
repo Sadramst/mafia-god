@@ -140,9 +140,9 @@ describe('V2 — Mafia blocked by alive independent', () => {
       SC3: 'simpleCitizen', SC4: 'simpleCitizen', SC5: 'simpleCitizen',
     });
 
-    // Kill citizens + Jack (Jack must die via salakhi, not vote)
+    // Kill citizens + Jack (Jack must die via curse chain)
     killAll(p, ['SC3', 'SC4', 'SC5']);
-    p.Jack.kill(1, 'salakhi', false);
+    p.Jack.kill(1, 'curse', false);
 
     // 2M == 2C, no independent → mafia wins
     const winner = game.checkWinCondition();
@@ -203,7 +203,7 @@ describe('V4 — Citizen victory', () => {
     });
 
     killAll(p, ['GF', 'SM']);
-    p.Jack.kill(1, 'salakhi', false);
+    p.Jack.kill(1, 'curse', false);
 
     const winner = game.checkWinCondition();
     expect(winner).toBe('citizen');

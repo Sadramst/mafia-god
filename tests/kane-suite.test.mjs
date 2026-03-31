@@ -445,7 +445,7 @@ describe('K7 — Kane not revivable after sacrifice', () => {
     ({ game, p } = setup(roster));
   });
 
-  it('Kane cannot be revived by Constantine after sacrifice', () => {
+  it('Kane CAN be revived by Constantine after sacrifice', () => {
     // Night 1: Kane reveals Mafia1
     nightRound(game, {
       godfather: { actorIds: [p.Godfather.id], targetId: p.Citizen1.id, actionType: 'shoot', mode: 'shoot' },
@@ -458,11 +458,12 @@ describe('K7 — Kane not revivable after sacrifice', () => {
     });
 
     expect(dead(p.Kane)).toBe(true);
-    expect(p.Kane.isRevivable).toBe(false);
+    expect(p.Kane.isRevivable).toBe(true);
 
-    // Kane should not be in revivable players list
+    // Kane is revivable but only in a subsequent round (deathRound < round)
+    game.round = game.round + 1;
     const revivable = game.getRevivablePlayers();
-    expect(revivable.find(pl => pl.id === p.Kane.id)).toBeUndefined();
+    expect(revivable.find(pl => pl.id === p.Kane.id)).toBeDefined();
   });
 });
 

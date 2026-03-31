@@ -511,19 +511,19 @@ describe('S4 — Sniper Misfire Cascade', () => {
     }));
   });
 
-  it('Night 1 — Sniper shoots citizen → sniper dies', () => {
+  it('Night 1 — Sniper shoots citizen → citizen dies', () => {
     const results = nightRound(game, {
       sniper: { actorIds: [p.P1.id], targetId: p.P2.id, actionType: 'shoot' },
     });
 
-    // Sniper targets citizen → sniper dies, citizen survives
-    expect(dead(p.P1)).toBe(true);
-    expect(p.P1.deathCause).toBe('sniper_miss');
-    expect(alive(p.P2)).toBe(true);
+    // Sniper shoots citizen → citizen dies immediately, sniper survives
+    expect(alive(p.P1)).toBe(true);
+    expect(dead(p.P2)).toBe(true);
+    expect(p.P2.deathCause).toBe('sniper');
   });
 
   it('Night 2 — Mafia kills Watson', () => {
-    p.P1.kill(1, 'sniper_miss');
+    p.P2.kill(1, 'sniper');
     game.round = 1;
 
     const results = nightRound(game, {
@@ -534,7 +534,7 @@ describe('S4 — Sniper Misfire Cascade', () => {
   });
 
   it('Day 2 — Vote eliminates mafia → citizens win', () => {
-    p.P1.kill(1, 'sniper_miss'); p.P3.kill(2, 'mafia');
+    p.P2.kill(1, 'sniper'); p.P3.kill(2, 'mafia');
     game.round = 1;
     game.startDay();
 
@@ -971,10 +971,7 @@ describe('S13 — Jack Curse Multi-Trigger', () => {
       P8: 'simpleMafia',
     });
 
-    // Jack curses P2 in blind night
-    p.P3.curse.place(p.P2.id);
-
-    // Night: mafia kills P2 (cursed)
+    // Night: mafia kills P2 (cursed by Jack this night)
     const results = nightRound(game, {
       godfather: { actorIds: [p.P1.id], targetId: p.P2.id, actionType: 'shoot', mode: 'shoot' },
       jack:      { actorIds: [p.P3.id], targetId: p.P2.id, actionType: 'curse' },
@@ -1188,31 +1185,25 @@ describe('S18 — Zodiac Long Game → Handshake', () => {
 /* ═══════════════════════════════════════════════════════════════════
    S19 — Salakhi Kills Jack → Mafia Domination
    ═══════════════════════════════════════════════════════════════════ */
-describe('S19 — Salakhi Kills Jack → Mafia Dominates', () => {
-  it('Godfather salakhis Jack N1. No instant win for Jack. Mafia wins by numbers.', () => {
+describe('S19 — Salakhi vs Jack → Jack Immune', () => {
+  it('Godfather salakhis Jack N1 — Jack is immune. All mafia killed → Jack wins.', () => {
     const { game, p } = setup({
       P1: 'jack', P2: 'godfather', P3: 'simpleMafia', P4: 'drWatson',
       P5: 'simpleCitizen', P6: 'simpleCitizen', P7: 'simpleCitizen', P8: 'simpleCitizen',
     });
 
-    // Night 1: Salakhi Jack (correct)
+    // Night 1: Salakhi Jack (correct guess but Jack is immune)
     const results = nightRound(game, {
       godfather: { actorIds: [p.P2.id], targetId: p.P1.id, actionType: 'shoot', mode: 'salakhi', guessedRoleId: 'jack' },
     });
     expect(results.salakhied.correct).toBe(true);
-    expect(dead(p.P1)).toBe(true);
-    expect(p.P1.isRevivable).toBe(false);
+    expect(alive(p.P1)).toBe(true); // Jack immune to salakhi
 
-    // Night 2: Godfather shoots P4
-    p.P4.kill(2, 'mafia');
-    // Day 2: Citizens mislynch P5
-    p.P5.kill(2, 'vote');
-
-    // Night 3: Godfather shoots P6
-    p.P6.kill(3, 'mafia');
-    // Alive: P2(GF), P3(mafia), P7(citizen), P8(citizen) → 2 mafia >= 2 citizen → mafia wins
+    // Kill mafia by vote
+    p.P2.kill(2, 'vote'); p.P3.kill(3, 'vote');
+    // All mafia dead, Jack alive → independent wins
     const winner = game.checkWinCondition();
-    expect(winner).toBe('mafia');
+    expect(winner).toBe('independent');
   });
 });
 
@@ -1498,7 +1489,7 @@ describe('S26 — Last Action Card 3: Reveal Identity', () => {
 describe('S27 — Last Action Card 4: Beautiful Mind', () => {
   it('Correct guess eliminates independent and revives victim', () => {
     const { game, p } = setup({
-      P1: 'godfather', P2: 'simpleMafia', P3: 'jack',
+      P1: 'godfather', P2: 'simpleMafia', P3: 'zodiac',
       P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
       P7: 'simpleCitizen', P8: 'simpleCitizen',
     });
@@ -1511,10 +1502,10 @@ describe('S27 — Last Action Card 4: Beautiful Mind', () => {
     game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.BEAUTIFUL_MIND) c.used = true; });
     game.drawLastActionFor(p.P4.id);
 
-    // P4 guesses P3 is independent (Jack) — correct!
+    // P4 guesses P3 is independent (Zodiac) — correct!
     const res = game.applyLastActionCard(CARD.BEAUTIFUL_MIND, p.P4.id, p.P3.id);
     expect(res.success).toBe(true);
-    expect(dead(p.P3)).toBe(true);     // Jack eliminated
+    expect(dead(p.P3)).toBe(true);     // Zodiac eliminated
     expect(alive(p.P4)).toBe(true);    // Victim revived!
     expect(res.eliminated).toBe(p.P3.id);
     expect(res.revived).toBe(p.P4.id);

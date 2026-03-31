@@ -277,9 +277,9 @@ export class Game {
       });
     }
 
-    // Jack places curse even on blind night
+    // Jack places curse even on blind night (skip if locked)
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
-    if (jackPlayer) {
+    if (jackPlayer && !jackPlayer.curse.isLocked) {
       steps.push({
         roleId: 'jack',
         roleName: (typeof Roles.get === 'function' ? Roles.get('jack')?.getLocalizedName?.() : 'Jack'),
@@ -397,6 +397,12 @@ export class Game {
       // Special: skip kane if already used his one-time ability
       if (role.id === 'kane' && this._kaneUsed) continue;
 
+      // Special: skip jack if curse is locked (can't change curse anymore)
+      if (role.id === 'jack') {
+        const jp = this.players.find(p => p.isAlive && p.roleId === 'jack');
+        if (jp?.curse?.isLocked) continue;
+      }
+
       // Special: skip freemason if can't recruit (dead, max reached, or contaminated)
       if (role.id === 'freemason' && !this.framason.canRecruit) continue;
 
@@ -472,7 +478,7 @@ export class Game {
     if (this._kanePendingDeath) {
       const kanePlayer = this.players.find(p => p.isAlive && p.roleId === 'kane');
       if (kanePlayer) {
-        kanePlayer.kill(this.round, 'kane_sacrifice', false); // Not revivable
+        kanePlayer.kill(this.round, 'kane_sacrifice', true); // Revivable by Constantine
         results.killed.push(kanePlayer.id);
         this._addHistory('death', t(tr.history.kaneSacrifice));
       }
@@ -542,9 +548,14 @@ export class Game {
 
         if (isCorrect) {
           // Salakhi bypasses doctor, shield, bodyguard — instant kill (not revivable)
-          target.kill(this.round, 'salakhi', false);
-          results.killed.push(targetId);
-          this._addHistory('death', t(tr.history.salakhiDeath).replace('%s', target.name).replace('%s', Roles.get(target.roleId)?.getLocalizedName?.() || Roles.get(target.roleId)?.name || '—'));
+          const died = target.kill(this.round, 'salakhi', false);
+          if (died) {
+            results.killed.push(targetId);
+            this._addHistory('death', t(tr.history.salakhiDeath).replace('%s', target.name).replace('%s', Roles.get(target.roleId)?.getLocalizedName?.() || Roles.get(target.roleId)?.name || '—'));
+          } else {
+            // Target is immune (e.g., Jack — only dies from curse chain)
+            this._addHistory('immune', t(tr.history.immune).replace('%s', target.name));
+          }
         } else {
           this._addHistory('salakhi_fail', t(tr.history.salakhiFail).replace('%s', target.name));
         }
@@ -587,9 +598,15 @@ export class Game {
     if (actions.jack?.targetId) {
       const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
       if (jackPlayer) {
-        jackPlayer.curse.place(actions.jack.targetId);
-        const curseTarget = this.getPlayer(actions.jack.targetId);
-        this._addHistory('curse', t(tr.history.cursePlaced).replace('%s', curseTarget?.name || '—'));
+        const targetId = actions.jack.targetId;
+        // Check if force-allow repeat (all alive non-Jack players have been cursed before)
+        const aliveNonJack = this.players.filter(p => p.isAlive && p.id !== jackPlayer.id);
+        const allPrevious = aliveNonJack.every(p => jackPlayer.curse.wasPreviousTarget(p.id));
+        const placed = jackPlayer.curse.place(targetId, allPrevious);
+        if (placed) {
+          const curseTarget = this.getPlayer(targetId);
+          this._addHistory('curse', t(tr.history.cursePlaced).replace('%s', curseTarget?.name || '—'));
+        }
       }
     }
 
@@ -659,11 +676,14 @@ export class Game {
             }
           }
         } else {
-          // Citizen → sniper dies (check sniper's own shield)
-          const died = sniperPlayer.tryKill(this.round, 'sniper_miss');
+          // Citizen → citizen dies immediately
+          const died = target.tryKill(this.round, 'sniper');
           if (died) {
-            results.killed.push(sniperId);
-            this._addHistory('death', t(tr.history.sniper_miss));
+            results.killed.push(targetId);
+            this._addHistory('death', t(tr.history.sniper_citizen_kill).replace('%s', target.name));
+          } else {
+            results.shielded.push(targetId);
+            this._addHistory('shield', t(tr.history.shielded).replace('%s', target.name));
           }
         }
       }
@@ -924,9 +944,16 @@ export class Game {
     const player = this.getPlayer(playerId);
     if (!player) return {};
 
-    // Jack is immune to vote
+    // Jack is immune to vote — but curse becomes locked and Beautiful Mind is discarded
     if (this.isVoteImmune(playerId)) {
       this._addHistory('vote_immune', t(tr.history.vote_immune).replace('%s', player.name));
+      if (player.roleId === 'jack') {
+        player.curse.lock();
+        this._addHistory('info', t(tr.history.jack_vote_curse_locked).replace('%s', player.name));
+      }
+      // Auto-discard Beautiful Mind when Jack/mafia is targeted by vote
+      const bm = this.lastActionManager?.cards?.find(c => c.id === CARD.BEAUTIFUL_MIND && !c.used);
+      if (bm) bm.used = true;
       return { voteImmune: true };
     }
 
@@ -1054,12 +1081,11 @@ export class Game {
     }
 
     // Check Jack/Zodiac morning shot immunity settings
-    if (target.roleId === 'jack' && this.jackMorningShotImmune) {
-      this._addHistory('morning_shot', t(tr.history.morning_shot_jack_immune).replace('%s', target.name));
-      return result;
-    }
-    if (target.roleId === 'zodiac' && this.zodiacMorningShotImmune) {
-      this._addHistory('morning_shot', t(tr.history.morning_shot_zodiac_immune).replace('%s', target.name));
+    if (target.roleId === 'jack') {
+      // Jack always immune to day shoot, but curse becomes permanently locked
+      const jackPlayer = target;
+      jackPlayer.curse.lock();
+      this._addHistory('morning_shot', t(tr.history.morning_shot_jack_curse_locked).replace('%s', target.name));
       return result;
     }
 
@@ -1451,9 +1477,19 @@ export class Game {
   drawLastActionFor(victimId) {
     if (!this.lastActionManager?.hasRemaining()) return null;
 
-    // Beautiful Mind requires an alive independent — auto-discard if none exist
-    const hasAliveIndependent = this.players.some(p => p.isAlive && Roles.get(p.roleId)?.team === 'independent');
-    if (!hasAliveIndependent) {
+    // Beautiful Mind requires an alive independent vulnerable to lastaction_guess
+    // Jack is immune (only dies from curse), so only count non-Jack independents
+    const hasVulnerableIndependent = this.players.some(p => p.isAlive && Roles.get(p.roleId)?.team === 'independent' && p.roleId !== 'jack');
+    if (!hasVulnerableIndependent) {
+      const bm = this.lastActionManager.cards.find(c => c.id === CARD.BEAUTIFUL_MIND && !c.used);
+      if (bm) bm.used = true;
+      if (!this.lastActionManager.hasRemaining()) return null;
+    }
+
+    // Auto-discard Beautiful Mind when mafia is voted out
+    const victimPlayer = this.getPlayer(victimId);
+    const victimRole = victimPlayer ? Roles.get(victimPlayer.roleId) : null;
+    if (victimRole?.team === 'mafia') {
       const bm = this.lastActionManager.cards.find(c => c.id === CARD.BEAUTIFUL_MIND && !c.used);
       if (bm) bm.used = true;
       if (!this.lastActionManager.hasRemaining()) return null;
@@ -1532,11 +1568,16 @@ export class Game {
 
     const role = Roles.get(guessed.roleId);
     if (role?.team === 'independent') {
-      guessed.kill(this.round, 'lastaction_guess');
-      this._addHistory('death', t(tr.history.lastActionGuessSuccess).replace('%s', guessed.name));
-      victim.revive();
-      this._addHistory('last_action', t(tr.history.lastActionVictimSaved).replace('%s', victim.name));
-      return { success: true, eliminated: guessedId, revived: victimId };
+      const died = guessed.kill(this.round, 'lastaction_guess');
+      if (died) {
+        this._addHistory('death', t(tr.history.lastActionGuessSuccess).replace('%s', guessed.name));
+        victim.revive();
+        this._addHistory('last_action', t(tr.history.lastActionVictimSaved).replace('%s', victim.name));
+        return { success: true, eliminated: guessedId, revived: victimId };
+      }
+      // Target is immune (e.g., Jack — only dies from curse chain)
+      this._addHistory('last_action', t(tr.history.lastActionGuessImmune).replace('%s', guessed.name));
+      return { success: false, reason: 'immune' };
     }
 
     this._addHistory('last_action', t(tr.history.lastActionGuessFail).replace('%s', guessed.name));
