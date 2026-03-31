@@ -661,6 +661,128 @@ describe('S10 — Negotiation Success Swing', () => {
 });
 
 /* ═══════════════════════════════════════════════════════════════════
+   S-Framason — Freemason Specific Rules
+   ═══════════════════════════════════════════════════════════════════ */
+describe('Framason — Specific Rules', () => {
+
+  it('Spy (jasoos) joins Framason team safely', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'spy', P3: 'simpleMafia',
+      P4: 'freemason', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.framason.init(p.P4.id, 2);
+    game.round = 1;
+
+    const results = nightRound(game, {
+      freemason: { actorIds: [p.P4.id], targetId: p.P2.id, actionType: 'recruit' },
+    });
+
+    expect(results.framasonRecruit.safe).toBe(true);
+    expect(results.framasonRecruit.contaminated).toBe(false);
+    expect(game.framason.members).toContain(p.P2.id);
+    expect(game.hasFramasonContamination()).toBe(false);
+  });
+
+  it('Mafia (non-spy) recruit triggers contamination — all members die except infiltrator', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'freemason', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.framason.init(p.P4.id, 3);
+    // Recruit P5 (citizen) safely first
+    game.framason.recruit(p.P5.id, 'simpleCitizen', 'citizen');
+    game.round = 2;
+
+    // Now recruit P1 (godfather) — contamination
+    const results = nightRound(game, {
+      freemason: { actorIds: [p.P4.id], targetId: p.P1.id, actionType: 'recruit' },
+    });
+
+    expect(results.framasonRecruit.contaminated).toBe(true);
+    expect(game.hasFramasonContamination()).toBe(true);
+
+    // Resolve: leader (P4) + safe member (P5) die, infiltrator (P1) survives
+    game.startDay();
+    const { deadIds } = game.resolveFramasonContamination();
+    expect(deadIds).toContain(p.P4.id);  // leader dies
+    expect(deadIds).toContain(p.P5.id);  // safe member dies
+    expect(deadIds).not.toContain(p.P1.id); // infiltrator survives
+    expect(dead(p.P4)).toBe(true);
+    expect(dead(p.P5)).toBe(true);
+    expect(alive(p.P1)).toBe(true);
+  });
+
+  it('Independent recruit triggers contamination — all members die except infiltrator', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'freemason', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'jack', P8: 'simpleCitizen',
+    });
+    game.framason.init(p.P4.id, 2);
+    game.round = 1;
+
+    // Recruit Jack (independent) — contamination
+    const results = nightRound(game, {
+      freemason: { actorIds: [p.P4.id], targetId: p.P7.id, actionType: 'recruit' },
+    });
+
+    expect(results.framasonRecruit.contaminated).toBe(true);
+
+    // Resolve: leader dies, Jack survives
+    game.startDay();
+    const { deadIds } = game.resolveFramasonContamination();
+    expect(deadIds).toContain(p.P4.id);
+    expect(deadIds).not.toContain(p.P7.id);
+    expect(dead(p.P4)).toBe(true);
+    expect(alive(p.P7)).toBe(true);
+  });
+
+  it('Framason team can still recruit even if leader is shot that same night', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'freemason', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.framason.init(p.P4.id, 2);
+    game.round = 1;
+
+    // Mafia shoots freemason AND freemason recruits same night
+    const results = nightRound(game, {
+      godfather: { actorIds: [p.P1.id], targetId: p.P4.id, actionType: 'shoot' },
+      freemason: { actorIds: [p.P4.id], targetId: p.P5.id, actionType: 'recruit' },
+    });
+
+    // Recruit still went through (communication happened before resolution)
+    expect(results.framasonRecruit.safe).toBe(true);
+    expect(game.framason.members).toContain(p.P5.id);
+
+    // Leader died from mafia shot
+    expect(dead(p.P4)).toBe(true);
+
+    // Alliance is now inactive for future nights
+    expect(game.framason.isActive).toBe(false);
+  });
+
+  it('Leader death deactivates alliance — no more recruiting', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'freemason', P5: 'simpleCitizen', P6: 'simpleCitizen',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.framason.init(p.P4.id, 2);
+
+    // Kill leader by vote
+    game.round = 1; game.phase = 'day';
+    game.eliminateByVote(p.P4.id);
+    expect(dead(p.P4)).toBe(true);
+    expect(game.framason.isActive).toBe(false);
+    expect(game.framason.canRecruit).toBe(false);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════
    S11 — Sorcerer Total Disruption
    ═══════════════════════════════════════════════════════════════════ */
 describe('S11 — Sorcerer (Jadoogar) Total Disruption', () => {

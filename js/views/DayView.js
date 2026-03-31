@@ -445,7 +445,7 @@ export class DayView extends BaseView {
       this.app.saveGame();
       if (deadIds.length > 0) {
         const names = deadIds.map(id => game.getPlayer(id)?.name).filter(Boolean).join('، ');
-        this.app.showToast(`🔺 تیم فراماسون حذف شد: ${names}`, 'info');
+        this.app.showToast(t(tr.day.framasonEliminated).replace('%s', names), 'info');
       }
       const winner = game.checkWinCondition();
       if (winner) {
