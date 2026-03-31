@@ -12,7 +12,7 @@ export const NightAction = Object.freeze({
   KILL: 'kill',                           // Godfather's kill/salakhi
   MAFIA_HEAL: 'mafiaHeal',               // Dr. Lecter heals mafia members
   BOMB: 'bomb',                          // Bomber plants a bomb
-  SILENCE: 'silence',                    // Matador silences a player
+  SILENCE: 'silence',                    // Silencer silences a player
   BLOCK: 'block',                        // Jadoogar blocks a player's ability
   CURSE: 'curse',                        // Zodiac curses a player
   SOLO_KILL: 'soloKill',                 // Jack's independent kill

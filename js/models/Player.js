@@ -29,7 +29,7 @@ export class Player {
     this.deathRound = null;   // Round number when eliminated
     this.deathCause = null;   // 'mafia' | 'vote' | 'sniper' | 'jack' | 'salakhi' | etc.
     this.isRevivable = true;  // Can be revived by Constantine (false for salakhi, kane_sacrifice)
-    this.silenced = false;    // Silenced by matador
+    this.silenced = false;    // Silenced by silencer
     this.healed = false;      // Being healed by doctor
     this.lastHealedRound = null;
     this.notes = [];          // God's private notes

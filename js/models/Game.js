@@ -725,7 +725,7 @@ export class Game {
       }
     }
 
-    // 10. Matador silences
+    // 10. Silencer silences
     if (actions.matador?.targetId) {
       const target = this.getPlayer(actions.matador.targetId);
       if (target) {
@@ -929,6 +929,17 @@ export class Game {
       tally[targetId] = (tally[targetId] || 0) + 1;
     }
     return tally;
+  }
+
+  /**
+   * Get the vote threshold for the first stage.
+   * Formula: Math.floor((aliveCount - 1) / 2) + 1
+   * E.g., 16 players → (15)/2 + 1 = 8
+   * @returns {number}
+   */
+  getVoteThreshold() {
+    const aliveCount = this.players.filter(p => p.isAlive).length;
+    return Math.floor((aliveCount - 1) / 2) + 1;
   }
 
   /** Check if a player is immune to day voting */

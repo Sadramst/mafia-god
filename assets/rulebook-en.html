@@ -123,12 +123,14 @@
   <p><strong>Wake Order:</strong></p>
   <table>
     <tr><th>#</th><th>Role</th><th>Action</th></tr>
+    <tr><td colspan="3" style="background:#fdd;text-align:center"><strong>🔴 Mafia Team</strong></td></tr>
     <tr><td>1</td><td>🎩 Godfather</td><td>Shoot / Salakhi / Negotiate</td></tr>
-    <tr><td>2</td><td>📰 Reporter</td><td>Check negotiation result</td></tr>
-    <tr><td>3</td><td>💉 Dr. Lecter</td><td>Heal mafia member</td></tr>
-    <tr><td>4</td><td>💣 Bomber</td><td>Plant bomb (one-time)</td></tr>
-    <tr><td>5</td><td>🤐 Matador</td><td>Silence a player</td></tr>
-    <tr><td>6</td><td>🧙 Sorcerer</td><td>Block a citizen/independent</td></tr>
+    <tr><td>2</td><td>💉 Dr. Lecter</td><td>Heal mafia member</td></tr>
+    <tr><td>3</td><td>💣 Bomber</td><td>Plant bomb (one-time)</td></tr>
+    <tr><td>4</td><td>🤐 Silencer</td><td>Silence a player</td></tr>
+    <tr><td>5</td><td>🧙 Sorcerer</td><td>Block a citizen/independent</td></tr>
+    <tr><td colspan="3" style="background:#ddf;text-align:center"><strong>🔵 Citizen & Independent</strong></td></tr>
+    <tr><td>6</td><td>📰 Reporter</td><td>Check negotiation result</td></tr>
     <tr><td>7</td><td>⚕️ Dr. Watson</td><td>Heal any player</td></tr>
     <tr><td>8</td><td>🔍 Detective</td><td>Investigate a player</td></tr>
     <tr><td>9</td><td>🎖️ Citizen Kane</td><td>Reveal a player (one-time)</td></tr>
@@ -139,7 +141,7 @@
     <tr><td>14</td><td>🔪 Jack</td><td>Place curse</td></tr>
     <tr><td>15</td><td>♈ Zodiac</td><td>Shoot (based on frequency)</td></tr>
   </table>
-  <p><strong>Resolution Order:</strong> Sorcerer block → Watson heal → Lecter heal → Godfather action → Jack curse → Zodiac kill → Sniper shoot → Detective investigate → Matador silence → Bomb plant → Constantine revive → Freemason recruit → Gunner bullets → Kane reveal → Jack curse chain</p>
+  <p><strong>Resolution Order:</strong> Sorcerer block → Watson heal → Lecter heal → Godfather action → Jack curse → Zodiac kill → Sniper shoot → Detective investigate → Silencer silence → Bomb plant → Constantine revive → Freemason recruit → Gunner bullets → Kane reveal → Jack curse chain</p>
 </section>
 
 <!-- 5. DAY RULES -->
@@ -168,13 +170,16 @@
     <strong>Stage 2:</strong> If no bodyguard or skips, bombed player guesses (correct → defused, wrong → eliminated).</p>
   </div>
   <div class="role-block">
-    <h3>🗳️ Voting</h3>
+    <h3>🗳️ Voting (Two Stages)</h3>
+    <p><strong>Stage 1:</strong> Each alive player votes. Threshold = floor((alive − 1) / 2) + 1. Any player reaching the threshold advances to Stage 2.</p>
+    <p><strong>Stage 2 (Runoff):</strong></p>
     <ul>
-      <li>Each alive player votes for one player or abstains.</li>
-      <li><strong>Jack:</strong> Has vote immunity (cannot be executed).</li>
-      <li><strong>Tied votes:</strong> ALL tied players are eliminated.</li>
-      <li><strong>No votes:</strong> If no one gets enough votes, no one is eliminated.</li>
+      <li>If only 1 player advanced → needs the same threshold votes to be executed</li>
+      <li>If 2+ players → the one with the most votes is executed</li>
+      <li>If votes are tied → coin flip (شیر یا خط) decides</li>
     </ul>
+    <p><strong>🃏 Last Action Card:</strong> The condemned player draws and uses a Last Action card before being eliminated.</p>
+    <p><strong>⚠️ Exception — Jack:</strong> If the chosen player is Jack → God announces he is Jack. Jack stays alive but his curse is permanently locked.</p>
   </div>
 </section>
 
@@ -209,7 +214,7 @@
   </div>
 
   <div class="role-block">
-    <h3>🤐 Matador <span class="badge badge--mafia">Unique</span></h3>
+    <h3>🤐 Silencer <span class="badge badge--mafia">Unique</span></h3>
     <p>Each night silences one player (mafia/citizen/independent). That player cannot speak next day.</p>
   </div>
 
