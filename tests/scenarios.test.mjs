@@ -374,18 +374,15 @@ describe('S2 — Freemason Contamination & Negotiation', () => {
     expect(dead(p.P6)).toBe(true);
   });
 
-  it('Mafia wins when mafia count ≥ citizens + independents', () => {
+  it('Mafia cannot win while independents alive (new rule)', () => {
     // Simulate: enough citizens dead that mafia holds the balance
-    // Alive: P4 (zodiac), P7 (jack), P8 (bomber), P12 (lecter), P14 (godfather), P15 (negotiator)
-    // and maybe 1-2 citizens
-    // Kill off most citizens
     for (const key of ['P1', 'P2', 'P3', 'P5', 'P6', 'P9', 'P10', 'P11', 'P13', 'P16']) {
       p[key].kill(3, 'mafia');
     }
     // Alive: P4(indie), P7(indie), P8(mafia), P12(mafia), P14(mafia), P15(mafia)
-    // Mafia=4, Citizen=0, Independent=2 → 4 >= 0+2 → Mafia wins
+    // Mafia=4, Citizen=0, Independent=2 → independents alive → mafia CANNOT win
     const winner = game.checkWinCondition();
-    expect(winner).toBe('mafia');
+    expect(winner).toBeNull(); // game continues — mafia blocked by alive independents
   });
 });
 

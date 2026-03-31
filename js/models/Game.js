@@ -1240,34 +1240,37 @@ export class Game {
       return 'independent';
     }
 
-    // 3. Mafia win: mafia >= citizens + independents (but not if exactly 3 alive with an independent)
-    if (mafiaAlive.length >= citizenAlive.length + independentAlive.length) {
-      // If exactly 3 alive with an independent → handshake instead
-      if (alive.length === 3 && independentAlive.length > 0) {
-        return this._triggerHandshake(alive);
-      }
+    // 3. Mafia win: no independents alive AND mafia >= citizens
+    if (independentAlive.length === 0 && mafiaAlive.length >= citizenAlive.length) {
       this.winner = 'mafia';
       this.phase = 'ended';
       this._addHistory('win', t(tr.history.win_mafia));
       return 'mafia';
     }
 
-    // 4. Handshake endgame: exactly 3 alive with at least 1 independent
-    if (alive.length === 3 && independentAlive.length > 0) {
+    // 4. Chaos: exactly 3 alive and no team has won
+    if (alive.length === 3) {
+      // Jack in chaos → Jack wins immediately
+      if (jackAlive) {
+        this.winner = 'independent';
+        this.phase = 'ended';
+        this._addHistory('win', t(tr.history.win_jack_chaos));
+        return 'independent';
+      }
       return this._triggerHandshake(alive);
     }
 
     return null;
   }
 
-  /** Trigger the 3-player handshake endgame */
+  /** Trigger the 3-player Chaos endgame */
   _triggerHandshake(alivePlayers) {
     this.handshakeState = {
       players: alivePlayers.map(p => p.id),
       timer: 120, // 2 minutes of free talk
     };
     this.phase = 'handshake';
-    this._addHistory('handshake', t(tr.history.handshake_triggered));
+    this._addHistory('handshake', t(tr.history.chaos_triggered));
     return 'handshake';
   }
 

@@ -277,14 +277,14 @@ describe('S2 — Freemason Contamination & Negotiation', () => {
     expect(dead(p.P6)).toBe(true);                        // Zodiac killed P6
   });
 
-  it('Mafia wins when mafia count ≥ citizens + independents', () => {
+  it('Mafia cannot win while independents alive (new rule)', () => {
     for (const key of ['P1', 'P2', 'P3', 'P5', 'P6', 'P9', 'P10', 'P11', 'P13', 'P16']) {
       p[key].kill(3, 'mafia');
     }
     // Alive: P4(indie), P7(indie), P8(mafia), P12(mafia), P14(mafia), P15(mafia)
-    // Mafia=4 >= Citizen=0 + Independent=2 → Mafia wins
+    // Mafia=4, Citizen=0, Independent=2 → independents alive → mafia CANNOT win
     const winner = game.checkWinCondition();
-    expect(winner).toBe('mafia');
+    expect(winner).toBeNull();
   });
 });
 

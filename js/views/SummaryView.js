@@ -99,9 +99,9 @@ export class SummaryView extends BaseView {
     this.container.innerHTML = `
       <div class="view">
         <div class="win-screen">
-          <div class="win-screen__icon">🤝</div>
-          <h1 class="win-screen__title">${t({ fa: 'دست‌دادن سه‌نفره', en: '3-Player Handshake' })}</h1>
-          <p class="win-screen__subtitle">${t({ fa: '۳ نفر باقی مانده‌اند. ۲ دقیقه صحبت آزاد، سپس هر نفر متحد خود را انتخاب کند.', en: '3 players remain. 2 minutes of free talk, then each picks an ally.' })}</p>
+          <div class="win-screen__icon">🌀</div>
+          <h1 class="win-screen__title">${t({ fa: 'آشوب', en: 'Chaos' })}</h1>
+          <p class="win-screen__subtitle">${t({ fa: '۳ نفر باقی مانده‌اند. ۲ دقیقه صحبت آزاد، سپس دو نفر دست می‌دهند و نفر سوم حذف می‌شود.', en: '3 players remain. 2 minutes of free talk, then two shake hands and the third is eliminated.' })}</p>
         </div>
 
         <div class="section mt-lg">
