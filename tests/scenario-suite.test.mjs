@@ -268,7 +268,7 @@ describe('S2 — Freemason Contamination & Negotiation', () => {
     game.round = 2;
 
     const results = nightRound(game, {
-      godfather: { actorIds: [p.P14.id], targetId: p.P16.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P16.id },
       zodiac:    { actorIds: [p.P4.id],  targetId: p.P6.id, actionType: 'shoot' },
       sniper:    { actorIds: [p.P1.id],  targetId: p.P4.id, actionType: 'shoot' },
     });
@@ -621,7 +621,7 @@ describe('S10 — Negotiation Success Swing', () => {
     });
 
     const results = nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P3.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P3.id },
     });
     expect(results.negotiated.success).toBe(true);
     expect(p.P3.roleId).toBe('simpleMafia');
@@ -634,7 +634,7 @@ describe('S10 — Negotiation Success Swing', () => {
     });
 
     const results = nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P3.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P3.id },
     });
     expect(results.negotiated.success).toBe(false);
     expect(p.P3.roleId).toBe('detective');
@@ -649,7 +649,7 @@ describe('S10 — Negotiation Success Swing', () => {
 
     // Convert P3 to mafia
     nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P3.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P3.id },
     });
     // Kill citizens down
     p.P4.kill(2, 'mafia'); p.P5.kill(2, 'mafia'); p.P6.kill(3, 'mafia');

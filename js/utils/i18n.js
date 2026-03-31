@@ -185,8 +185,8 @@ export const translations = {
     startGame: { fa: '🎮 شروع بازی', en: '🎮 Start Game' },
     onlyPlayerShouldSee: { fa: 'فقط %s باید صفحه را ببیند', en: 'Only %s should see the screen' },
     allRevealed: { fa: 'همه نقش‌ها مشخص شد', en: 'All roles revealed' },
-    readyForBlindDay: { fa: 'آماده‌اید برای روز کور؟', en: 'Ready for the blind day?' },
-    startBlindDay: { fa: '☀️ شروع روز کور', en: '☀️ Start Blind Day' },
+    readyForBlindDay: { fa: 'آماده‌اید برای روز آشنایی؟', en: 'Ready for the acquaintance day?' },
+    startBlindDay: { fa: '☀️ شروع روز آشنایی', en: '☀️ Start Acquaintance Day' },
     playerName: { fa: 'فقط %s باید صفحه را ببیند', en: 'Only %s should see the screen' },
     next: { fa: 'نفر بعدی', en: 'Next' },
     startNight: { fa: 'شب اول شروع شود', en: 'Start Night 1' },
@@ -197,13 +197,13 @@ export const translations = {
   // Night Phase
   night: {
     title: { fa: 'شب %d', en: 'Night %d' },
-    blindNight: { fa: 'شب کور', en: 'Blind Night' },
-    blindNightTitle: { fa: '🌙 شب کور', en: '🌙 Blind Night' },
+    blindNight: { fa: 'شب آشنایی', en: 'Acquaintance Night' },
+    blindNightTitle: { fa: '🌙 شب آشنایی', en: '🌙 Acquaintance Night' },
     nightActionsTitle: { fa: '🎬 اقدامات شبانه', en: '🎬 Night Actions' },
     roundNumber: { fa: 'دور %d', en: 'Round %d' },
     hideDashboard: { fa: '🙈 مخفی کردن داشبورد', en: '🙈 Hide Dashboard' },
     showDashboard: { fa: '👁️ نمایش داشبورد خدا', en: '👁️ Show God Dashboard' },
-    endBlindNight: { fa: '☀️ پایان شب کور → روز', en: '☀️ End Blind Night → Day' },
+    endBlindNight: { fa: '☀️ پایان شب آشنایی → روز', en: '☀️ End Acquaintance Night → Day' },
     resolveNightGoToDay: { fa: '☀️ حل شب و رفتن به روز', en: '☀️ Resolve Night & Go to Day' },
     completeSteps: { fa: 'مراحل شبانه را کامل کنید', en: 'Complete night steps' },
     godDashboardTitle: { fa: '👁️ داشبورد خدا — فقط شما می‌بینید', en: '👁️ God Dashboard — Only you see this' },
@@ -276,20 +276,20 @@ export const translations = {
   // Day Phase
   day: {
     title: { fa: 'روز %d', en: 'Day %d' },
-    blindDay: { fa: 'روز کور', en: 'Blind Day' },
+    blindDay: { fa: 'روز آشنایی', en: 'Acquaintance Day' },
     round1: { fa: 'دور ۱', en: 'Round 1' },
     roundNumber: { fa: 'دور %d', en: 'Round %d' },
     resultsTab: { fa: 'نتایج شب', en: 'Night Results' },
     discussionTab: { fa: 'بحث', en: 'Discussion' },
     siestaTab: { fa: '💣 خواب نیم‌روزی', en: '💣 Noon Nap' },
     votingTab: { fa: 'رأی‌گیری', en: 'Voting' },
-    blindDayTitle: { fa: '☀️ روز کور — بدون چالش', en: '☀️ Blind Day — No Challenge' },
+    blindDayTitle: { fa: '☀️ روز آشنایی — بدون چالش', en: '☀️ Acquaintance Day — No Challenge' },
     blindDayDescription: { fa: 'بازیکنان ۱ دقیقه فرصت صحبت آزاد دارند. هیچ رأی‌گیری یا چالشی انجام نمی‌شود.', en: 'Players have 1 minute for free talk. No voting or challenge happens.' },
     timerStart: { fa: '▶️ شروع', en: '▶️ Start' },
     timerPause: { fa: '⏸️ توقف', en: '⏸️ Pause' },
     timerReset: { fa: '🔄 ریست', en: '🔄 Reset' },
-    endBlindDay: { fa: '🌙 پایان روز کور → شب کور', en: '🌙 End Blind Day → Blind Night' },
-    blindDayTimeUp: { fa: '⏰ وقت روز کور تمام شد!', en: '⏰ Blind day time is up!' },
+    endBlindDay: { fa: '🌙 پایان روز آشنایی', en: '🌙 End Acquaintance Day' },
+    blindDayTimeUp: { fa: '⏰ وقت روز آشنایی تمام شد!', en: '⏰ Acquaintance day time is up!' },
     announceResults: { fa: '📢 اعلام نتایج شب', en: '📢 Announce Night Results' },
     salakhiLabel: { fa: '🗡️ سلاخی:', en: '🗡️ Salakhi:' },
     salakhied: { fa: 'سلاخی شد!', en: 'Salakhi\'d!' },
@@ -501,14 +501,14 @@ export const translations = {
     roleReveal: { fa: 'نمایش نقش‌ها', en: 'Role Reveal' },
     nightRound: { fa: 'شب %d', en: 'Night %d' },
     dayRound: { fa: 'روز %d', en: 'Day %d' },
-    blindNight: { fa: 'شب کور', en: 'Blind Night' },
-    blindDay: { fa: 'روز کور', en: 'Blind Day' },
+    blindNight: { fa: 'شب آشنایی', en: 'Acquaintance Night' },
+    blindDay: { fa: 'روز آشنایی', en: 'Acquaintance Day' },
     summary: { fa: 'خلاصه بازی', en: 'Game Summary' },
   },
 
   // History / Timeline entries
   history: {
-    blindDayStart: { fa: '☀️ روز کور آغاز شد — ۱ دقیقه بدون چالش.', en: '☀️ Blind day started — 1 minute no challenge.' },
+    blindDayStart: { fa: '☀️ روز آشنایی آغاز شد — ۱ دقیقه بدون چالش.', en: '☀️ Acquaintance day started — 1 minute no challenge.' },
     blindNightStart: { fa: '🌙 شب کور — فقط تیم مافیا بیدار می‌شوند.', en: '🌙 Blind night — only the Mafia wakes.' },
     nightStart: { fa: '🌙 شب %d آغاز شد.', en: '🌙 Night %d began.' },
     kaneSacrifice: { fa: '🎖️ همشهری کین به دستور خدا حذف شد (بهای افشاگری).', en: '🎖️ Citizen Kane was eliminated by God (cost of reveal).' },
@@ -608,15 +608,15 @@ export const translations = {
     phases: {
       title: { fa: '🔄 فازهای بازی', en: '🔄 Game Phases' },
       body: {
-        fa: '1️⃣ راه‌اندازی: بازیکنان اضافه، نقش‌ها انتخاب و تخصیص داده می‌شوند (حداقل ۸ بازیکن).\n\n2️⃣ نمایش نقش‌ها: هر بازیکن به ترتیب نقش خود را می‌بیند.\n\n3️⃣ روز کور (۱ دقیقه): بحث آزاد بدون رأی‌گیری یا چالش.\n\n4️⃣ شب کور: فقط مافیا بیدار می‌شوند و همدیگر را می‌شناسند. جک هم طلسم می‌گذارد.\n\n5️⃣ شب (دورهای بعد): تمام نقش‌های دارای اقدام شبانه بیدار می‌شوند و عمل می‌کنند.\n\n6️⃣ روز: نتایج شب اعلام، بحث، خواب نیم‌روزی (اگر بمب باشد)، تیر صبحگاهی (اگر کسی تیر داشته باشد)، و سپس رأی‌گیری.\n\n7️⃣ پایان بازی: وقتی شرایط پیروزی یکی از تیم‌ها برقرار شود.',
-        en: '1️⃣ Setup: Players are added, roles are selected and assigned (minimum 8 players).\n\n2️⃣ Role Reveal: Each player sees their role in order.\n\n3️⃣ Blind Day (1 minute): Free discussion, no voting or challenges.\n\n4️⃣ Blind Night: Only mafia wakes up and sees each other. Jack also places his curse.\n\n5️⃣ Night (subsequent rounds): All roles with night actions wake up and act.\n\n6️⃣ Day: Night results announced, discussion, noon nap (if bomb), morning shots (if bullets exist), then voting.\n\n7️⃣ Game End: When any team\'s victory condition is met.'
+        fa: '1️⃣ راه‌اندازی: بازیکنان اضافه، نقش‌ها انتخاب و تخصیص داده می‌شوند (حداقل ۸ بازیکن).\n\n2️⃣ نمایش نقش‌ها: هر بازیکن به ترتیب نقش خود را می‌بیند.\n\n3️⃣ روز آشنایی (۱ دقیقه): بحث آزاد بدون رأی‌گیری یا چالش.\n\n4️⃣ شب آشنایی: فقط مافیا بیدار می‌شوند و همدیگر را می‌شناسند. جک هم طلسم می‌گذارد.\n\n5️⃣ شب (دورهای بعد): تمام نقش‌های دارای اقدام شبانه بیدار می‌شوند و عمل می‌کنند.\n\n6️⃣ روز: نتایج شب اعلام، بحث، خواب نیم‌روزی (اگر بمب باشد)، تیر صبحگاهی (اگر کسی تیر داشته باشد)، و سپس رأی‌گیری.\n\n7️⃣ پایان بازی: وقتی شرایط پیروزی یکی از تیم‌ها برقرار شود.',
+        en: '1️⃣ Setup: Players are added, roles are selected and assigned (minimum 8 players).\n\n2️⃣ Role Reveal: Each player sees their role in order.\n\n3️⃣ Acquaintance Day (1 minute): Free discussion, no voting or challenges.\n\n4️⃣ Acquaintance Night: Only mafia wakes up and sees each other. Jack also places his curse.\n\n5️⃣ Night (subsequent rounds): All roles with night actions wake up and act.\n\n6️⃣ Day: Night results announced, discussion, noon nap (if bomb), morning shots (if bullets exist), then voting.\n\n7️⃣ Game End: When any team\'s victory condition is met.'
       }
     },
     nightOrder: {
       title: { fa: '🌙 ترتیب اقدامات شبانه', en: '🌙 Night Action Order' },
       body: {
-        fa: 'نقش‌ها به ترتیب زیر بیدار و عمل می‌کنند:\n\n🔴 تیم مافیا:\n1. پدرخوانده (شلیک / سلاخی / مذاکره)\n2. دکتر لکتر (هیل مافیا)\n3. بمب‌گذار (کارگذاری بمب)\n4. سایلنسر (سکوت)\n5. جادوگر (بلاک)\n6. جوکر (برعکس کردن استعلام)\n\n🔵 تیم شهروند و مستقل:\n7. خبرنگار (بررسی مذاکره)\n8. دکتر واتسون (هیل)\n9. کارآگاه (استعلام)\n10. همشهری کین (افشا)\n11. اسنایپر (شلیک)\n12. فراماسون (عضوگیری)\n13. کنستانتین (احیا)\n14. تفنگدار (دادن تیر)\n15. جک (طلسم)\n16. زودیاک (شلیک)\n\nترتیب حل اقدامات (ریزالو):\nبلاک جادوگر → هیل واتسون → هیل لکتر → اقدام پدرخوانده → طلسم جک → شلیک زودیاک → شلیک اسنایپر → هدف جوکر → استعلام کارآگاه → سکوت سایلنسر → بمب‌گذاری → احیای کنستانتین → عضوگیری فراماسون → تیر تفنگدار → افشای کین → زنجیره طلسم جک',
-        en: 'Roles wake and act in this order:\n\n🔴 Mafia Team:\n1. Godfather (shoot / salakhi / negotiate)\n2. Dr. Lecter (heal mafia)\n3. Bomber (plant bomb)\n4. Silencer (silence)\n5. Sorcerer (block)\n6. Joker (reverse investigation)\n\n🔵 Citizen & Independent:\n7. Reporter (check negotiation)\n8. Dr. Watson (heal)\n9. Detective (investigate)\n10. Citizen Kane (reveal)\n11. Sniper (shoot)\n12. Freemason (recruit)\n13. Constantine (revive)\n14. Gunner (give bullets)\n15. Jack (curse)\n16. Zodiac (shoot)\n\nResolution order:\nSorcerer block → Watson heal → Lecter heal → Godfather action → Jack curse → Zodiac kill → Sniper shoot → Joker target → Detective investigate → Silencer silence → Bomb plant → Constantine revive → Freemason recruit → Gunner bullets → Kane reveal → Jack curse chain'
+        fa: 'نقش‌ها به ترتیب زیر بیدار و عمل می‌کنند:\n\n🔴 تیم مافیا:\n1. پدرخوانده (شلیک / سلاخی)\n2. مذاکره‌کننده (مذاکره)\n3. دکتر لکتر (هیل مافیا)\n4. بمب‌گذار (کارگذاری بمب)\n5. سایلنسر (سکوت)\n6. جادوگر (بلاک)\n7. جوکر (برعکس کردن استعلام)\n\n🔵 تیم شهروند و مستقل:\n8. خبرنگار (بررسی مذاکره)\n9. دکتر واتسون (هیل)\n10. کارآگاه (استعلام)\n11. همشهری کین (افشا)\n12. اسنایپر (شلیک)\n13. فراماسون (عضوگیری)\n14. کنستانتین (احیا)\n15. تفنگدار (دادن تیر)\n16. زودیاک (شلیک)\n17. جک (طلسم)\n\nترتیب حل اقدامات (ریزالو):\nبلاک جادوگر → هیل واتسون → هیل لکتر → مذاکره → اقدام پدرخوانده → طلسم جک → شلیک زودیاک → شلیک اسنایپر → هدف جوکر → استعلام کارآگاه → سکوت سایلنسر → بمب‌گذاری → احیای کنستانتین → عضوگیری فراماسون → تیر تفنگدار → افشای کین → زنجیره طلسم جک',
+        en: 'Roles wake and act in this order:\n\n🔴 Mafia Team:\n1. Godfather (shoot / salakhi)\n2. Negotiator (negotiate)\n3. Dr. Lecter (heal mafia)\n4. Bomber (plant bomb)\n5. Silencer (silence)\n6. Sorcerer (block)\n7. Joker (reverse investigation)\n\n🔵 Citizen & Independent:\n8. Reporter (check negotiation)\n9. Dr. Watson (heal)\n10. Detective (investigate)\n11. Citizen Kane (reveal)\n12. Sniper (shoot)\n13. Freemason (recruit)\n14. Constantine (revive)\n15. Gunner (give bullets)\n16. Zodiac (shoot)\n17. Jack (curse)\n\nResolution order:\nSorcerer block → Watson heal → Lecter heal → Negotiator → Godfather action → Jack curse → Zodiac kill → Sniper shoot → Joker target → Detective investigate → Silencer silence → Bomb plant → Constantine revive → Freemason recruit → Gunner bullets → Kane reveal → Jack curse chain'
       }
     },
     dayRules: {
@@ -629,8 +629,8 @@ export const translations = {
     mafiaRoles: {
       title: { fa: '🔴 نقش‌های تیم مافیا', en: '🔴 Mafia Team Roles' },
       body: {
-        fa: '🎩 پدرخوانده:\nرهبر مافیا. هر شب یکی از دو کار: شلیک یا سلاخی.\n• شلیک: کشتن معمولی (روی جک و زودیاک بی‌تأثیر)\n• سلاخی: حدس نقش دقیق هدف. اگر درست باشد → حذف بدون هیچ محافظتی (دکتر/سپر/محافظ بی‌تأثیر). اگر غلط → هیچ اتفاقی نمی‌افتد. در شب سلاخی مافیا شلیک ندارد. مرگ سلاخی قابل احیا نیست.\nیک‌بار سپر دارد. در استعلام کارآگاه شهروند نشان داده می‌شود.\n\n💉 دکتر لکتر:\nهر شب یک عضو مافیا (یا خودش) را هیل می‌کند. هیل دیگران نامحدود، هیل خود محدود (پیش‌فرض ۲). هیل تا صبح باقی می‌ماند.\n\n💣 بمب‌گذار:\nیک‌بار در بازی بمب با رمز ۱ تا ۴ روی کسی می‌گذارد. صبح خدا اعلام می‌کند. نتیجه در خواب نیم‌روزی مشخص می‌شود.\n\n🕵️ جاسوس:\nاقدام شبانه ندارد. اگر فراماسون بیدارش کند، بدون آلودگی وارد تیم فراماسون می‌شود و به نفع مافیا عمل می‌کند.\n\n🤐 سایلنسر:\nهر شب یک بازیکن (مافیا/شهروند/مستقل) را سکوت می‌کند. آن بازیکن فردا حق صحبت ندارد.\n\n🧙 جادوگر:\nهر شب اقدام شبانه یک شهروند یا مستقل را بلاک می‌کند. هدف آن شب و روز بعد نمی‌تواند اقدام کند. نمی‌تواند دو شب متوالی یک نفر را بلاک کند. اگر هدف تیر داشته باشد → می‌تواند شلیک کند ولی تیرش مشقی حساب می‌شود. طلسم بلاک‌شده جک قفل و ثابت می‌ماند.\n\n🃏 جوکر:\nهر شب یک نفر را هدف می‌گیرد. اگر کارآگاه همان شب همان فرد را استعلام بزند، نتیجه برعکس می‌شود (👍↔👎). نمی‌تواند دو شب متوالی یک نفر را هدف بگیرد.\n\n🤝 مذاکره‌کننده:\nوقتی زنده باشد و تعداد مافیای زنده ≤ آستانه، امکان مذاکره در شب فعال می‌شود. در شبی که مذاکره انجام شود، مافیا شلیک و سلاخی ندارد.\n• هدف شهروند ساده یا مظنون → به مافیا اضافه می‌شود\n• هدف غیر این‌ها → مذاکره شکست و شلیک مافیا از دست می‌رود\nفقط یک‌بار در بازی قابل استفاده.\n\n🔫 مافیای ساده:\nعضو عادی بدون توانایی خاص (حداکثر ۱۰ نفر).',
-        en: '🎩 Godfather:\nMafia leader. Each night chooses one of two: shoot or salakhi.\n• Shoot: Regular kill (no effect on Jack or Zodiac)\n• Salakhi: Guess exact role of target. If correct → eliminated, bypasses ALL protections (doctor/shield/bodyguard). If wrong → nothing happens. On salakhi night, mafia has no regular shot. Salakhi death is NOT revivable.\nHas one-time shield. Appears as citizen in detective investigation.\n\n💉 Dr. Lecter:\nEach night heals one mafia member (or self). Unlimited heals on others, limited self-heal (default 2). Heal persists until morning.\n\n💣 Bomber:\nOnce per game, plants bomb on someone with code 1-4. God announces in morning. Result determined during noon nap.\n\n🕵️ Spy:\nNo night action. If recruited by Freemason, joins without contamination and works for mafia.\n\n🤐 Silencer:\nEach night silences one player (mafia/citizen/independent). That player cannot speak next day.\n\n🧙 Sorcerer:\nEach night blocks one citizen or independent\'s night action. Target cannot act that night AND the following day. Cannot block same person two nights in a row. If target has a morning bullet → can still shoot but bullet counts as blank. Blocked Jack\'s curse is locked and preserved.\n\n🃏 Joker:\nEach night targets one player. If detective investigates the same player that night, the result is reversed (👍↔👎). Cannot target the same person two nights in a row.\n\n🤝 Negotiator:\nWhen alive and alive mafia ≤ threshold, enables negotiation at night. On a negotiate night, mafia has no shoot or salakhi.\n• Target simple citizen or suspect → joins mafia\n• Others → negotiation fails, mafia loses shot\nOne-time use only.\n\n🔫 Simple Mafia:\nRegular member with no special abilities (up to 10).'
+        fa: '🎩 پدرخوانده:\nرهبر مافیا. هر شب یکی از دو کار: شلیک یا سلاخی.\n• شلیک: کشتن معمولی (روی جک و زودیاک بی‌تأثیر)\n• سلاخی: حدس نقش دقیق هدف. اگر درست باشد → حذف بدون هیچ محافظتی (دکتر/سپر/محافظ بی‌تأثیر). اگر غلط → هیچ اتفاقی نمی‌افتد. در شب سلاخی مافیا شلیک ندارد. مرگ سلاخی قابل احیا نیست.\nیک‌بار سپر دارد. در استعلام کارآگاه شهروند نشان داده می‌شود.\n\n💉 دکتر لکتر:\nهر شب یک عضو مافیا (یا خودش) را هیل می‌کند. هیل دیگران نامحدود، هیل خود محدود (پیش‌فرض ۲). هیل تا صبح باقی می‌ماند.\n\n💣 بمب‌گذار:\nیک‌بار در بازی بمب با رمز ۱ تا ۴ روی کسی می‌گذارد. صبح خدا اعلام می‌کند. نتیجه در خواب نیم‌روزی مشخص می‌شود.\n\n🕵️ جاسوس:\nاقدام شبانه ندارد. اگر فراماسون بیدارش کند، بدون آلودگی وارد تیم فراماسون می‌شود و به نفع مافیا عمل می‌کند.\n\n🤐 سایلنسر:\nهر شب یک بازیکن (مافیا/شهروند/مستقل) را سکوت می‌کند. آن بازیکن فردا حق صحبت ندارد.\n\n🧙 جادوگر:\nهر شب اقدام شبانه یک شهروند یا مستقل را بلاک می‌کند. هدف آن شب و روز بعد نمی‌تواند اقدام کند. نمی‌تواند دو شب متوالی یک نفر را بلاک کند. اگر هدف تیر داشته باشد → می‌تواند شلیک کند ولی تیرش مشقی حساب می‌شود. طلسم بلاک‌شده جک قفل و ثابت می‌ماند.\n\n🃏 جوکر:\nهر شب یک نفر را هدف می‌گیرد. اگر کارآگاه همان شب همان فرد را استعلام بزند، نتیجه برعکس می‌شود (👍↔👎). نمی‌تواند دو شب متوالی یک نفر را هدف بگیرد.\n\n🤝 مذاکره‌کننده:\nوقتی زنده باشد و تعداد مافیای زنده ≤ آستانه، مذاکره‌کننده بیدار شده و هدف انتخاب می‌کند. در شبی که مذاکره انجام شود، مافیا شلیک و سلاخی ندارد.\n• هدف شهروند ساده یا مظنون → به مافیا اضافه می‌شود\n• هدف غیر این‌ها → مذاکره شکست و شلیک مافیا از دست می‌رود\nفقط یک‌بار در بازی قابل استفاده.\n\n🔫 مافیای ساده:\nعضو عادی بدون توانایی خاص (حداکثر ۱۰ نفر).',
+        en: '🎩 Godfather:\nMafia leader. Each night chooses one of two: shoot or salakhi.\n• Shoot: Regular kill (no effect on Jack or Zodiac)\n• Salakhi: Guess exact role of target. If correct → eliminated, bypasses ALL protections (doctor/shield/bodyguard). If wrong → nothing happens. On salakhi night, mafia has no regular shot. Salakhi death is NOT revivable.\nHas one-time shield. Appears as citizen in detective investigation.\n\n💉 Dr. Lecter:\nEach night heals one mafia member (or self). Unlimited heals on others, limited self-heal (default 2). Heal persists until morning.\n\n💣 Bomber:\nOnce per game, plants bomb on someone with code 1-4. God announces in morning. Result determined during noon nap.\n\n🕵️ Spy:\nNo night action. If recruited by Freemason, joins without contamination and works for mafia.\n\n🤐 Silencer:\nEach night silences one player (mafia/citizen/independent). That player cannot speak next day.\n\n🧙 Sorcerer:\nEach night blocks one citizen or independent\'s night action. Target cannot act that night AND the following day. Cannot block same person two nights in a row. If target has a morning bullet → can still shoot but bullet counts as blank. Blocked Jack\'s curse is locked and preserved.\n\n🃏 Joker:\nEach night targets one player. If detective investigates the same player that night, the result is reversed (👍↔👎). Cannot target the same person two nights in a row.\n\n🤝 Negotiator:\nWhen alive and alive mafia ≤ threshold, negotiator wakes up and selects a target. On a negotiate night, mafia has no shoot or salakhi.\n• Target simple citizen or suspect → joins mafia\n• Others → negotiation fails, mafia loses shot\nOne-time use only.\n\n🔫 Simple Mafia:\nRegular member with no special abilities (up to 10).'
       }
     },
     citizenRoles: {

@@ -110,8 +110,8 @@
   <h2>🔄 3. Game Phases</h2>
   <p><strong>1️⃣ Setup:</strong> Players are added, roles are selected and assigned (minimum 8 players).</p>
   <p><strong>2️⃣ Role Reveal:</strong> Each player sees their role in order.</p>
-  <p><strong>3️⃣ Blind Day (1 minute):</strong> Free discussion, no voting or challenges.</p>
-  <p><strong>4️⃣ Blind Night:</strong> Only mafia wakes up and sees each other. Jack also places his curse.</p>
+  <p><strong>3️⃣ Acquaintance Day (1 minute):</strong> Free discussion, no voting or challenges.</p>
+  <p><strong>4️⃣ Acquaintance Night:</strong> Only mafia wakes up and sees each other. Jack also places his curse.</p>
   <p><strong>5️⃣ Night (subsequent rounds):</strong> All roles with night actions wake up and act.</p>
   <p><strong>6️⃣ Day:</strong> Night results announced, discussion, noon nap (if bomb), morning shots (if bullets), then voting.</p>
   <p><strong>7️⃣ Game End:</strong> When any team's victory condition is met.</p>
@@ -124,25 +124,26 @@
   <table>
     <tr><th>#</th><th>Role</th><th>Action</th></tr>
     <tr><td colspan="3" style="background:#fdd;text-align:center"><strong>🔴 Mafia Team</strong></td></tr>
-    <tr><td>1</td><td>🎩 Godfather</td><td>Shoot / Salakhi / Negotiate</td></tr>
-    <tr><td>2</td><td>💉 Dr. Lecter</td><td>Heal mafia member</td></tr>
-    <tr><td>3</td><td>💣 Bomber</td><td>Plant bomb (one-time)</td></tr>
-    <tr><td>4</td><td>🤐 Silencer</td><td>Silence a player</td></tr>
-    <tr><td>5</td><td>🧙 Sorcerer</td><td>Block a citizen/independent</td></tr>
-    <tr><td>6</td><td>🃏 Joker</td><td>Reverse detective result</td></tr>
+    <tr><td>1</td><td>🎩 Godfather</td><td>Shoot / Salakhi</td></tr>
+    <tr><td>2</td><td>🤝 Negotiator</td><td>Negotiate (recruit)</td></tr>
+    <tr><td>3</td><td>💉 Dr. Lecter</td><td>Heal mafia member</td></tr>
+    <tr><td>4</td><td>💣 Bomber</td><td>Plant bomb (one-time)</td></tr>
+    <tr><td>5</td><td>🤐 Silencer</td><td>Silence a player</td></tr>
+    <tr><td>6</td><td>🧙 Sorcerer</td><td>Block a citizen/independent</td></tr>
+    <tr><td>7</td><td>🃏 Joker</td><td>Reverse detective result</td></tr>
     <tr><td colspan="3" style="background:#ddf;text-align:center"><strong>🔵 Citizen & Independent</strong></td></tr>
-    <tr><td>7</td><td>📰 Reporter</td><td>Check negotiation result</td></tr>
-    <tr><td>8</td><td>⚕️ Dr. Watson</td><td>Heal any player</td></tr>
-    <tr><td>9</td><td>🔍 Detective</td><td>Investigate a player</td></tr>
-    <tr><td>10</td><td>🎖️ Citizen Kane</td><td>Reveal a player (one-time)</td></tr>
-    <tr><td>11</td><td>🎯 Sniper</td><td>Shoot a player</td></tr>
-    <tr><td>12</td><td>🔺 Freemason</td><td>Recruit to alliance</td></tr>
-    <tr><td>13</td><td>✝️ Constantine</td><td>Revive a dead player (one-time)</td></tr>
-    <tr><td>14</td><td>🔫 Gunner</td><td>Give bullets to players</td></tr>
-    <tr><td>15</td><td>🔪 Jack</td><td>Place curse</td></tr>
+    <tr><td>8</td><td>📰 Reporter</td><td>Check negotiation result</td></tr>
+    <tr><td>9</td><td>⚕️ Dr. Watson</td><td>Heal any player</td></tr>
+    <tr><td>10</td><td>🔍 Detective</td><td>Investigate a player</td></tr>
+    <tr><td>11</td><td>🎖️ Citizen Kane</td><td>Reveal a player (one-time)</td></tr>
+    <tr><td>12</td><td>🎯 Sniper</td><td>Shoot a player</td></tr>
+    <tr><td>13</td><td>🔺 Freemason</td><td>Recruit to alliance</td></tr>
+    <tr><td>14</td><td>✝️ Constantine</td><td>Revive a dead player (one-time)</td></tr>
+    <tr><td>15</td><td>🔫 Gunner</td><td>Give bullets to players</td></tr>
     <tr><td>16</td><td>♈ Zodiac</td><td>Shoot (based on frequency)</td></tr>
+    <tr><td>17</td><td>🔪 Jack</td><td>Place curse</td></tr>
   </table>
-  <p><strong>Resolution Order:</strong> Sorcerer block → Watson heal → Lecter heal → Godfather action → Jack curse → Zodiac kill → Sniper shoot → Joker target → Detective investigate → Silencer silence → Bomb plant → Constantine revive → Freemason recruit → Gunner bullets → Kane reveal → Jack curse chain</p>
+  <p><strong>Resolution Order:</strong> Sorcerer block → Watson heal → Lecter heal → Negotiator → Godfather action → Jack curse → Zodiac kill → Sniper shoot → Joker target → Detective investigate → Silencer silence → Bomb plant → Constantine revive → Freemason recruit → Gunner bullets → Kane reveal → Jack curse chain</p>
 </section>
 
 <!-- 5. DAY RULES -->
@@ -190,11 +191,10 @@
 
   <div class="role-block">
     <h3>🎩 Godfather <span class="badge badge--mafia">Unique</span></h3>
-    <p>Mafia leader. Each night chooses one of three actions:</p>
+    <p>Mafia leader. Each night chooses one of two actions:</p>
     <ul>
       <li><strong>Shoot:</strong> Regular kill (no effect on Jack or Zodiac).</li>
       <li><strong>Salakhi:</strong> Guess exact role. Correct → eliminated, bypasses ALL protections (doctor/shield/bodyguard). Wrong → nothing. On salakhi night, mafia has no regular shot. Death NOT revivable.</li>
-      <li><strong>Negotiate:</strong> Only when Negotiator alive and alive mafia ≤ threshold. Target simple citizen or suspect → joins mafia. Others → fails and mafia loses shot.</li>
     </ul>
     <p>Has one-time shield. Appears as citizen in detective investigation.</p>
   </div>
@@ -231,7 +231,7 @@
 
   <div class="role-block">
     <h3>🤝 Negotiator <span class="badge badge--mafia">Unique</span></h3>
-    <p>No night action. Enables Godfather's negotiate option when alive mafia ≤ threshold (default 2).</p>
+    <p>Has own night step (order #2). When alive mafia ≤ threshold (default 2), wakes up and selects a target. Simple citizen or suspect → joins mafia. Any other role → fails and mafia loses their shot that night.</p>
   </div>
 
   <div class="role-block">
@@ -364,7 +364,7 @@
 
   <div class="role-block">
     <h3>🤝 Negotiation</h3>
-    <p>When alive mafia ≤ threshold and Negotiator alive. Only simple citizen or suspect can be recruited. Any other role → fails, mafia loses shot.</p>
+    <p>Negotiator's own night step (order #2). When alive mafia ≤ threshold and Negotiator alive, Negotiator wakes up and selects a target. Only simple citizen or suspect can be recruited. Any other role → fails, mafia loses shot.</p>
   </div>
 
   <div class="role-block">

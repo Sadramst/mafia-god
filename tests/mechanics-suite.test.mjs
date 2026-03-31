@@ -415,7 +415,7 @@ describe('M4 â€” Negotiate mechanics', () => {
       SC3: 'simpleCitizen', SC4: 'simpleCitizen', SC5: 'simpleCitizen',
     });
         const results = nightRound(game, {
-      godfather: { targetId: p.SC1.id, mode: 'negotiate' },
+      negotiator: { targetId: p.SC1.id },
     });
 
     expect(results.negotiated.success).toBe(true);
@@ -431,7 +431,7 @@ describe('M4 â€” Negotiate mechanics', () => {
       SC3: 'simpleCitizen', SC4: 'simpleCitizen',
     });
         const results = nightRound(game, {
-      godfather: { targetId: p.Sus.id, mode: 'negotiate' },
+      negotiator: { targetId: p.Sus.id },
     });
 
     expect(results.negotiated.success).toBe(true);
@@ -445,7 +445,7 @@ describe('M4 â€” Negotiate mechanics', () => {
       SC3: 'simpleCitizen', SC4: 'simpleCitizen', SC5: 'simpleCitizen',
     });
         const results = nightRound(game, {
-      godfather: { targetId: p.Doc.id, mode: 'negotiate' },
+      negotiator: { targetId: p.Doc.id },
     });
 
     expect(results.negotiated.success).toBe(false);
@@ -462,7 +462,7 @@ describe('M4 â€” Negotiate mechanics', () => {
 
     // Use negotiate
     nightRound(game, {
-      godfather: { targetId: p.SC1.id, mode: 'negotiate' },
+      negotiator: { targetId: p.SC1.id },
     });
 
     // Should be used now, even if conditions still met
@@ -477,7 +477,7 @@ describe('M4 â€” Negotiate mechanics', () => {
     });
         // Negotiate instead of shooting
     const results = nightRound(game, {
-      godfather: { targetId: p.SC1.id, mode: 'negotiate' },
+      negotiator: { targetId: p.SC1.id },
     });
 
     // Nobody should be killed by mafia this night
@@ -494,7 +494,7 @@ describe('M4 â€” Negotiate mechanics', () => {
     });
         // Negotiate with doctor (non-recruitable) â†’ fails
     const results = nightRound(game, {
-      godfather: { targetId: p.Doc.id, mode: 'negotiate' },
+      negotiator: { targetId: p.Doc.id },
     });
 
     expect(results.negotiated.success).toBe(false);
@@ -525,7 +525,7 @@ describe('M4 â€” Negotiate mechanics', () => {
       SC3: 'simpleCitizen', SC4: 'simpleCitizen',
     });
         const results = nightRound(game, {
-      godfather: { targetId: p.Jack.id, mode: 'negotiate' },
+      negotiator: { targetId: p.Jack.id },
     });
 
     // Jack is not simpleCitizen or suspect â†’ negotiation fails

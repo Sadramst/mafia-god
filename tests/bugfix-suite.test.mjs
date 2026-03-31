@@ -163,7 +163,7 @@ describe('B3 — Detective detects negotiated player as mafia same night', () =>
 
   it('detective gets thumbs-up for simpleCitizen recruited this night', () => {
     const results = nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P5.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P5.id },
       detective: { actorIds: [p.P4.id], targetId: p.P5.id, actionType: 'investigate' },
     });
 
@@ -176,7 +176,7 @@ describe('B3 — Detective detects negotiated player as mafia same night', () =>
 
   it('detective gets thumbs-up for suspect recruited this night', () => {
     const results = nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P8.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P8.id },
       detective: { actorIds: [p.P4.id], targetId: p.P8.id, actionType: 'investigate' },
     });
 
@@ -188,7 +188,7 @@ describe('B3 — Detective detects negotiated player as mafia same night', () =>
   it('detective gets thumbs-down for failed negotiation (non-recruitable)', () => {
     // Try to negotiate with detective (not recruitable)
     const results = nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P4.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P4.id },
       detective: { actorIds: [p.P4.id], targetId: p.P6.id, actionType: 'investigate' },
     });
 
@@ -282,7 +282,7 @@ describe('B5 — Negotiation is one-time only', () => {
     expect(game.canNegotiate()).toBe(true);
 
     nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P5.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P5.id },
     });
 
     // P5 recruited → simpleMafia
@@ -296,7 +296,7 @@ describe('B5 — Negotiation is one-time only', () => {
     expect(game.canNegotiate()).toBe(true);
 
     nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P4.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P4.id },
     });
 
     // P4 is detective → not recruitable
@@ -307,7 +307,7 @@ describe('B5 — Negotiation is one-time only', () => {
 
   it('negotiation flag persists through serialization', () => {
     nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P5.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P5.id },
     });
 
     expect(game._negotiationUsed).toBe(true);

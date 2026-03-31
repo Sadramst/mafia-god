@@ -361,7 +361,7 @@ describe('S2 — Freemason Contamination & Negotiation', () => {
     game.round = 2;
 
     const results = nightRound(game, {
-      godfather: { actorIds: [p.P14.id], targetId: p.P16.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P16.id },
       zodiac:    { actorIds: [p.P4.id],  targetId: p.P6.id, actionType: 'shoot' },
       sniper:    { actorIds: [p.P1.id],  targetId: p.P4.id, actionType: 'shoot' },
     });
@@ -840,7 +840,7 @@ describe('S10 — Negotiation Success Swing', () => {
     });
 
     const results = nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P3.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P3.id },
     });
 
     expect(results.negotiated).toBeTruthy();
@@ -862,7 +862,7 @@ describe('S10 — Negotiation Success Swing', () => {
     });
 
     const results = nightRound(game, {
-      godfather: { actorIds: [p.P1.id], targetId: p.P3.id, actionType: 'shoot', mode: 'negotiate' },
+      negotiator: { targetId: p.P3.id },
     });
 
     expect(results.negotiated.success).toBe(false);

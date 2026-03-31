@@ -121,7 +121,7 @@ test.describe('Bugfix E2E — Regression Tests', () => {
       // Run night: godfather negotiates P4 (simpleCitizen), detective checks P4, mafia kills P4 holder
       game.startNight();
       Object.assign(game.nightActions, {
-        godfather: { actorIds: [p[0].id], targetId: p[4].id, actionType: 'shoot', mode: 'negotiate' },
+        negotiator: { targetId: p[4].id },
         detective: { actorIds: [p[2].id], targetId: p[4].id, actionType: 'investigate' },
       });
       const results = game.resolveNight();

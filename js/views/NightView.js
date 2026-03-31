@@ -12,8 +12,7 @@ export class NightView extends BaseView {
     super(container, app);
     this.selectedTargets = {}; // stepIndex → playerId
     this.showDashboard = true;
-    this.godfatherMode = null;  // null | 'shoot' | 'salakhi'
-    this.salakhiGuessRoleId = null; // Guessed role ID for salakhi
+    this.godfatherMode = null;  // null | 'shoot' | 'salakhi'    this.salakhiGuessRoleId = null; // Guessed role ID for salakhi
     this.bombPassword = null;  // 1–4 password for bomber
     this.gunnerAssignments = []; // Array of { holderId, type } for multi-bullet
     this.gunnerCurrentType = null; // 'blank' | 'live' — type being assigned
@@ -22,12 +21,12 @@ export class NightView extends BaseView {
   render() {
     const game = this.game;
 
-    // Auto-skip reporter step if godfather didn't negotiate this night
+    // Auto-skip reporter step if negotiator didn't act this night
     while (true) {
       const cur = game.getCurrentNightStep();
       if (cur && cur.roleId === 'reporter' && !cur.completed) {
-        const gfAction = game.nightActions.godfather;
-        if (!gfAction || gfAction.mode !== 'negotiate') {
+        const negAction = game.nightActions.negotiator;
+        if (!negAction || !negAction.targetId) {
           game.recordNightAction(null);
           continue;
         }
@@ -158,6 +157,9 @@ export class NightView extends BaseView {
         targets = targets.filter(p =>
           !step.actors.includes(p.id) && p.id !== game._jokerLastTargetId
         );
+      } else if (step.roleId === 'negotiator') {
+        // Negotiator can only target non-mafia alive players
+        targets = targets.filter(p => Roles.get(p.roleId)?.team !== 'mafia');
       } else if (step.roleId === 'godfather') {
         // Godfather: allow selecting any alive player as target for shoot (including mafia and self),
         // except roles immune to night shots when in 'shoot' mode. For 'salakhi', restrict guesses
@@ -368,6 +370,11 @@ export class NightView extends BaseView {
       return this._renderGunnerStep(idx, targets, selectedTarget);
     }
 
+    // ── Negotiator special UI ──
+    if (step.roleId === 'negotiator') {
+      return this._renderNegotiatorStep(idx, targets, selectedTarget);
+    }
+
     // ── Reporter special UI (check negotiation result) ──
     if (step.roleId === 'reporter') {
       return this._renderReporterStep(idx);
@@ -402,7 +409,6 @@ export class NightView extends BaseView {
    */
   _renderGodfatherStep(idx, targets, selectedTarget) {
     const game = this.game;
-    const canNegotiate = game.canNegotiate();
 
     // Step 1: Mode selection
     const modeButtons = `
@@ -415,12 +421,6 @@ export class NightView extends BaseView {
                 data-gf-mode="salakhi">
           ${t(tr.night.godfatherSalakhi)}
         </button>
-        ${canNegotiate ? `
-          <button class="btn ${this.godfatherMode === 'negotiate' ? 'btn--warning' : 'btn--ghost'} btn--sm btn--block"
-                  data-gf-mode="negotiate">
-            ${t(tr.night.godfatherNegotiate)}
-          </button>
-        ` : ''}
       </div>
     `;
 
@@ -471,12 +471,6 @@ export class NightView extends BaseView {
       modeInfoCard = `
         <div class="card mb-sm" style="background: rgba(220,38,38,0.1); border-color: var(--danger); font-size: var(--text-xs); padding: 8px 12px;">
           ${t(tr.night.salakhiWarning)}
-        </div>
-      `;
-    } else if (this.godfatherMode === 'negotiate') {
-      modeInfoCard = `
-        <div class="card mb-sm" style="background: rgba(234,179,8,0.1); border-color: var(--warning); font-size: var(--text-xs); padding: 8px 12px;">
-          ${t(tr.night.negotiateInfo)}
         </div>
       `;
     }
@@ -691,16 +685,45 @@ export class NightView extends BaseView {
   }
 
   /**
+   * Render Negotiator's step: target selection + info card.
+   */
+  _renderNegotiatorStep(idx, targets, selectedTarget) {
+    return `
+      <div class="card mb-sm" style="background: rgba(234,179,8,0.1); border-color: var(--warning); font-size: var(--text-xs); padding: 8px 12px;">
+        ${t(tr.night.negotiateInfo)}
+      </div>
+      <div class="target-grid">
+        ${targets.map(t => `
+          <button class="target-btn ${selectedTarget === t.id ? 'selected' : ''}" 
+                  data-step="${idx}" data-target="${t.id}">
+            ${t.name}
+          </button>
+        `).join('')}
+      </div>
+      <div class="flex gap-sm mt-md">
+        <button class="btn btn--warning btn--block btn--sm" 
+                data-action="confirm-step" data-step="${idx}"
+                ${!selectedTarget ? 'disabled' : ''}>
+          ${t(tr.night.confirmButton)}
+        </button>
+        <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">
+          ${t(tr.night.skipAction)}
+        </button>
+      </div>
+    `;
+  }
+
+  /**
    * Render Reporter's informational step: show whether negotiation succeeded.
    * Reads the already-recorded godfather action to determine the result.
    */
   _renderReporterStep(idx) {
     const game = this.game;
-    const gfAction = game.nightActions.godfather;
+    const negAction = game.nightActions.negotiator;
 
     let negotiationSuccess = false;
-    if (gfAction?.mode === 'negotiate' && gfAction?.targetId) {
-      const target = game.getPlayer(gfAction.targetId);
+    if (negAction?.targetId) {
+      const target = game.getPlayer(negAction.targetId);
       negotiationSuccess = target && (target.roleId === 'simpleCitizen' || target.roleId === 'suspect');
     }
 
@@ -891,16 +914,15 @@ export class NightView extends BaseView {
             if (this.godfatherMode === 'salakhi') {
               extra.guessedRoleId = this.salakhiGuessRoleId;
             }
-            const wasNegotiate = this.godfatherMode === 'negotiate';
             game.recordNightAction(targetId, extra);
             // Reset godfather state
             this.godfatherMode = null;
             this.salakhiGuessRoleId = null;
+          } else if (step?.roleId === 'negotiator') {
+            game.recordNightAction(targetId);
             // Show loud announcement overlay when negotiating
-            if (wasNegotiate) {
-              this._showNegotiateAnnouncement();
-              return; // render will happen when overlay is dismissed
-            }
+            this._showNegotiateAnnouncement();
+            return; // render will happen when overlay is dismissed
           } else if (step?.roleId === 'bomber' && this.bombPassword) {
             game.recordNightAction(targetId, { bombPassword: this.bombPassword });
             this.bombPassword = null;

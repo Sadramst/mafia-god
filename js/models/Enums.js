@@ -25,6 +25,7 @@ export const NightAction = Object.freeze({
   CHECK_NEGOTIATION: 'checkNegotiation', // Reporter checks for negotiation
   SNIPE: 'snipe',                        // Sniper shoots with limited bullets
   JOKER_REVERSE: 'jokerReverse',         // Joker reverses detective investigation result
+  NEGOTIATE: 'negotiate',                // Negotiator recruits a player
 });
 
 /**

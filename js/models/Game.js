@@ -373,6 +373,9 @@ export class Game {
       // If last-action has blocked mafia shoot for this night, skip godfather night action
       if (role.id === 'godfather' && this.lastActionBlockMafiaShoot) continue;
 
+      // Skip negotiator if can't negotiate (not alive, used, or mafia count > threshold)
+      if (role.id === 'negotiator' && !this.canNegotiate()) continue;
+
       // If Godfather is dead but other mafia are alive, use mafia members as actors
       if (actors.length === 0 && role.id === 'godfather') {
         const mafiaPlayers = this.players.filter(p => p.isAlive && Roles.get(p.roleId)?.team === 'mafia');
@@ -537,11 +540,28 @@ export class Game {
       }
     }
 
-    // 5. Godfather action — Shoot, Salakhi, or Negotiate
-    if (actions.godfather?.targetId) {
+    // 5a. Negotiator action — recruit simpleCitizen or suspect (one-time only)
+    if (actions.negotiator?.targetId) {
+      const targetId = actions.negotiator.targetId;
+      const target = this.getPlayer(targetId);
+      if (target) {
+        this._negotiationUsed = true;
+        const isRecruitable = target.roleId === 'simpleCitizen' || target.roleId === 'suspect';
+        results.negotiated = { playerId: targetId, success: isRecruitable };
+        if (isRecruitable) {
+          target.roleId = 'simpleMafia';
+          this._addHistory('negotiate', t(tr.history.negotiateSuccess).replace('%s', target.name));
+        } else {
+          this._addHistory('negotiate_fail', t(tr.history.negotiateFail).replace('%s', target.name));
+        }
+      }
+    }
+
+    // 5b. Godfather action — Shoot or Salakhi (skip if negotiator acted this night)
+    if (actions.godfather?.targetId && !actions.negotiator?.targetId) {
       const targetId = actions.godfather.targetId;
       const target = this.getPlayer(targetId);
-      const mode = actions.godfather.mode; // 'shoot' | 'salakhi' | 'negotiate'
+      const mode = actions.godfather.mode; // 'shoot' | 'salakhi'
 
       if (target && mode === 'salakhi') {
         // ── Salakhi — guess exact role ──
@@ -561,17 +581,6 @@ export class Game {
           }
         } else {
           this._addHistory('salakhi_fail', t(tr.history.salakhiFail).replace('%s', target.name));
-        }
-      } else if (target && mode === 'negotiate') {
-        // ── Negotiate — recruit simpleCitizen or suspect (one-time only) ──
-        this._negotiationUsed = true;
-        const isRecruitable = target.roleId === 'simpleCitizen' || target.roleId === 'suspect';
-        results.negotiated = { playerId: targetId, success: isRecruitable };
-        if (isRecruitable) {
-          target.roleId = 'simpleMafia';
-          this._addHistory('negotiate', t(tr.history.negotiateSuccess).replace('%s', target.name));
-        } else {
-          this._addHistory('negotiate_fail', t(tr.history.negotiateFail).replace('%s', target.name));
         }
       } else if (target) {
         // ── Regular mafia shoot ──

@@ -237,7 +237,7 @@ export class DayView extends BaseView {
           if (bar) bar.style.width = `${(remaining / total) * 100}%`;
         },
         () => {
-          this.app.showToast('⏰ وقت روز کور تمام شد!', 'info');
+          this.app.showToast('⏰ وقت روز آشنایی تمام شد!', 'info');
         }
       );
     }
