@@ -595,7 +595,7 @@ export const translations = {
   godDashboard: {
     killPlayer: { fa: '❌ کشتن', en: '❌ Kill' },
     revivePlayer: { fa: '✅ احیا', en: '✅ Revive' },
-    confirmKill: { fa: 'آیا می‌خواهید %s را کشل کنید؟', en: 'Kill %s?' },
+    confirmKill: { fa: 'آیا می‌خواهید %s را حذف کنید؟', en: 'Kill %s?' },
     confirmRevive: { fa: 'آیا می‌خواهید %s را احیا کنید؟', en: 'Revive %s?' },
     longClickHint: { fa: '💡 برای تصحیح اشتباهات، روی کارت بازیکن فشار نگه دارید', en: '💡 Long-press on a player card to correct mistakes' },
   },

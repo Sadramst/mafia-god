@@ -116,7 +116,7 @@ export class NightView extends BaseView {
         if (action === 'kill') {
           this.confirm(
             t(tr.common?.confirm ?? { fa: 'تأیید', en: 'Confirm' }),
-            t(tr.godDashboard?.confirmKill ?? { fa: 'آیا می‌خواهید %s را کشل کنید؟', en: 'Kill %s?' }).replace('%s', player.name),
+            t(tr.godDashboard?.confirmKill ?? { fa: 'آیا می‌خواهید %s را حذف کنید؟', en: 'Kill %s?' }).replace('%s', player.name),
             () => {
               const result = game.godKill(playerId);
               if (result.success) {
