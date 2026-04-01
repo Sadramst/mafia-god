@@ -90,6 +90,18 @@ export class Curse {
     return this._targetId === killedPlayerId;
   }
 
+  /**
+   * Move curse linkage from one player ID to another.
+   * Used by Face Off when the cursed player identity shifts.
+   * @param {number} fromId
+   * @param {number} toId
+   */
+  transferPlayerLink(fromId, toId) {
+    if (fromId == null || toId == null || fromId === toId) return;
+    if (this._targetId === fromId) this._targetId = toId;
+    this._previousTargetIds = this._previousTargetIds.map(id => (id === fromId ? toId : id));
+  }
+
   /** Serialize for storage */
   toJSON() {
     return {

@@ -317,6 +317,7 @@ describe('V6 — Jack vote immunity', () => {
       godfather: { actorId: p.GF.id, targetId: p.C1.id },
       jack: { actorId: p.Jack.id, targetId: p.C2.id },
     });
+
   });
 
   it('Jack survives vote elimination', () => {
@@ -400,6 +401,9 @@ describe('V8 — Curse chain on vote', () => {
       godfather: { actorId: p.GF.id, targetId: p.C1.id },
       jack: { actorId: p.Jack.id, targetId: p.C2.id },
     });
+
+    // Disable Last Action flow to assert immediate eliminateByVote curse resolution.
+    game.lastActionManager.cards.forEach(c => { c.used = true; });
   });
 
   it('voting out cursed player triggers Jack death', () => {
@@ -414,6 +418,55 @@ describe('V8 — Curse chain on vote', () => {
     expect(p.C3.isAlive).toBe(false);
     expect(p.Jack.isAlive).toBe(true);
     expect(result.jackCurseTriggered).toBeUndefined();
+  });
+});
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   V10 — Face Off after vote: curse target and roles must move
+   ═══════════════════════════════════════════════════════════════════ */
+describe('V10 — Face Off keeps Jack curse linkage on swapped player', () => {
+  let game, p;
+
+  beforeEach(() => {
+    ({ game, p } = setup({
+      GF: 'godfather',
+      Jack: 'jack',
+      C1: 'simpleCitizen',
+      C2: 'detective',
+      C3: 'simpleCitizen',
+      C4: 'simpleCitizen',
+      C5: 'simpleCitizen',
+      C6: 'simpleCitizen',
+      C7: 'simpleCitizen',
+      C8: 'simpleCitizen',
+    }));
+
+    nightRound(game, {
+      godfather: { actorId: p.GF.id, targetId: p.C1.id },
+      jack: { actorId: p.Jack.id, targetId: p.C2.id },
+    });
+  });
+
+  it('cursed voted victim can Face Off and move curse trigger to chosen player', () => {
+    const first = game.eliminateByVote(p.C2.id);
+    expect(first.jackCurseTriggered).toBeUndefined();
+    expect(p.Jack.isAlive).toBe(true);
+    expect(p.C2.isAlive).toBe(false);
+
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FACE_OFF) c.used = true; });
+    game.drawLastActionFor(p.C2.id);
+    const faceOff = game.applyLastActionCard(CARD.FACE_OFF, p.C2.id, p.C3.id);
+
+    expect(faceOff.success).toBe(true);
+    expect(p.C3.roleId).toBe('detective');
+    expect(p.C2.roleId).toBe('simpleCitizen');
+
+    // No last action now; curse should resolve immediately on vote.
+    game.lastActionManager.cards.forEach(c => { c.used = true; });
+    const second = game.eliminateByVote(p.C3.id);
+    expect(second.jackCurseTriggered).toBe(true);
+    expect(p.Jack.isAlive).toBe(false);
   });
 });
 

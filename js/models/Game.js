@@ -7,6 +7,7 @@ import { Player } from './Player.js';
 import { Roles } from './Roles.js';
 import { Bomb } from './Bomb.js';
 import { Curse } from './Curse.js';
+import { Shield } from './Shield.js';
 import { Framason } from './Framason.js';
 import { BulletManager } from './BulletManager.js';
 import { LastActionManager, CARD } from './LastActionManager.js';
@@ -40,6 +41,8 @@ export class Game {
     this.lastActionManager = new LastActionManager();
     this.lastActionSkipNight = false; // when true, the upcoming night is skipped
     this.lastActionBlockMafiaShoot = false; // when true, mafia loses regular shoot this night
+    this.pendingVoteCurseCheckId = null; // voted-out player id awaiting post-last-action Jack curse check
+    this.lastFaceOffEvent = null; // { round, victimId, chosenId }
     this.gunnerBlankMax = 2;
     this.gunnerLiveMax = 2;
     this.jackMorningShotImmune = false;
@@ -1077,18 +1080,23 @@ export class Game {
     }
 
     const extra = {};
-
-    // Jack curse chain — if voted-out player was Jack's curse target
-    const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
-    if (jackPlayer && jackPlayer.curse.isTriggeredBy(playerId)) {
-      jackPlayer.kill(this.round, 'curse');
-      extra.jackCurseTriggered = true;
-      this._addHistory('death', t(tr.history.execution_with_curse).replace('%s', player.name));
+    const hasLastAction = !!(this.lastActionManager && this.lastActionManager.hasRemaining());
+    if (hasLastAction) {
+      extra.lastActionAvailable = true;
     }
 
-    // If last-action deck has remaining cards, signal UI to offer last-action
-    if (this.lastActionManager && this.lastActionManager.hasRemaining()) {
-      extra.lastActionAvailable = true;
+    // Jack curse chain after vote:
+    // If Last Action will be played, defer this check until card resolution is complete.
+    // Face Off may move the curse linkage to another alive player.
+    const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
+    if (jackPlayer && jackPlayer.curse.isTriggeredBy(playerId)) {
+      if (hasLastAction) {
+        this.pendingVoteCurseCheckId = playerId;
+      } else {
+        this.pendingVoteCurseCheckId = playerId;
+        const curseResult = this._resolvePendingVoteCurse(playerId);
+        if (curseResult.jackCurseTriggered) extra.jackCurseTriggered = true;
+      }
     }
 
     // Return bullet to gunner pool when eliminated player was holding one
@@ -1618,7 +1626,10 @@ export class Game {
             .replace('%s', Roles.get(victim.roleId)?.getLocalizedName?.() ?? victim.roleId));
       }
     }
-    return { card };
+    const extra = LastActionManager.needsTarget(card.id)
+      ? {}
+      : this._resolvePendingVoteCurse(victimId);
+    return { card, ...extra };
   }
 
   /**
@@ -1629,12 +1640,44 @@ export class Game {
    * @returns {{ success: boolean, reason?: string }}
    */
   applyLastActionCard(cardId, victimId, targetId) {
+    let result;
     switch (cardId) {
-      case CARD.FINAL_SHOOT:  return this._applyFinalShoot(targetId);
-      case CARD.BEAUTIFUL_MIND: return this._applyBeautifulMind(victimId, targetId);
-      case CARD.FACE_OFF:     return this._applyFaceOff(victimId, targetId);
-      default: return { success: false, reason: 'no_action_needed' };
+      case CARD.FINAL_SHOOT:
+        result = this._applyFinalShoot(targetId);
+        break;
+      case CARD.BEAUTIFUL_MIND:
+        result = this._applyBeautifulMind(victimId, targetId);
+        break;
+      case CARD.FACE_OFF:
+        result = this._applyFaceOff(victimId, targetId);
+        break;
+      default:
+        return { success: false, reason: 'no_action_needed' };
     }
+
+    return { ...result, ...this._resolvePendingVoteCurse(victimId) };
+  }
+
+  _resolvePendingVoteCurse(victimId) {
+    if (this.pendingVoteCurseCheckId !== victimId) return {};
+    this.pendingVoteCurseCheckId = null;
+
+    const victim = this.getPlayer(victimId);
+    const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
+    if (!jackPlayer || !jackPlayer.curse.isTriggeredBy(victimId)) return {};
+
+    jackPlayer.kill(this.round, 'curse');
+    this._addHistory('death', t(tr.history.execution_with_curse).replace('%s', victim?.name || '—'));
+
+    if (this.bulletManager.isActive) {
+      const jackBullet = this.bulletManager.getPlayerBullet(jackPlayer.id);
+      if (jackBullet) {
+        this.bulletManager.returnBullet(jackBullet.type);
+        this.bulletManager.removeBullet(jackPlayer.id);
+      }
+    }
+
+    return { jackCurseTriggered: true };
   }
 
   /* ── Card 1: Final Shoot ─────────────────────────────────── */
@@ -1694,22 +1737,36 @@ export class Game {
     if (!victim || !chosen) return { success: false, reason: 'invalid' };
 
     const victimRole = victim.roleId;
+    const chosenRole = chosen.roleId;
+
+    // Face Off is a role exchange: chosen gets victim's role, victim keeps chosen's role as final shown role.
     chosen.roleId = victimRole;
-    chosen.initShield(Roles.get(victimRole));
+    victim.roleId = chosenRole;
+
+    // Transfer victim's shield state to chosen (do not reinitialize from role defaults).
+    chosen.shield = Shield.fromJSON(victim.shield.toJSON());
 
     // Transfer Jack's curse state (target, history, lock) to new player
     if (victimRole === 'jack') {
       chosen.curse = Curse.fromJSON(victim.curse.toJSON());
     }
 
+    // If victim was Jack's cursed target, the curse link moves to the chosen player.
+    const aliveJack = this.players.find(p => p.isAlive && p.roleId === 'jack');
+    if (aliveJack?.curse?.isTriggeredBy(victimId)) {
+      aliveJack.curse.transferPlayerLink(victimId, chosenId);
+    }
+
     victim.isRevivable = false;
+    this.lastFaceOffEvent = { round: this.round, victimId, chosenId };
 
     this._addHistory('last_action',
       t(tr.history.lastActionFaceOffApplied)
         .replace('%s', victim.name)
         .replace('%s', chosen.name)
-        .replace('%s', Roles.get(victimRole)?.getLocalizedName?.() ?? victimRole));
-    return { success: true, swappedRole: victimRole };
+        .replace('%s', Roles.get(victimRole)?.getLocalizedName?.() ?? victimRole)
+        .replace('%s', Roles.get(chosenRole)?.getLocalizedName?.() ?? chosenRole));
+    return { success: true, swappedRole: victimRole, victimNewRole: chosenRole };
   }
 
   // ──────────────────────────────────
@@ -1755,6 +1812,8 @@ export class Game {
       lastActionManager: this.lastActionManager?.toJSON(),
       lastActionSkipNight: this.lastActionSkipNight,
       lastActionBlockMafiaShoot: this.lastActionBlockMafiaShoot,
+      pendingVoteCurseCheckId: this.pendingVoteCurseCheckId,
+      lastFaceOffEvent: this.lastFaceOffEvent,
       handshakeState: this.handshakeState,
     };
   }
@@ -1799,6 +1858,8 @@ export class Game {
     this.lastActionManager = LastActionManager.fromJSON(data.lastActionManager);
     this.lastActionSkipNight = data.lastActionSkipNight || false;
     this.lastActionBlockMafiaShoot = data.lastActionBlockMafiaShoot || false;
+    this.pendingVoteCurseCheckId = data.pendingVoteCurseCheckId ?? null;
+    this.lastFaceOffEvent = data.lastFaceOffEvent || null;
     this.handshakeState = data.handshakeState || null;
 
     // Restore Player ID counter

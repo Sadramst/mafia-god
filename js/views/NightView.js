@@ -104,11 +104,15 @@ export class NightView extends BaseView {
           ${game.players.map(p => {
             const role = Roles.get(p.roleId);
             const team = role?.team || 'citizen';
+            const faceOffIcon = game.lastFaceOffEvent && (game.lastFaceOffEvent.victimId === p.id || game.lastFaceOffEvent.chosenId === p.id)
+              ? '<span class="god-player__event" title="Face Off happened">🎭</span>'
+              : '';
             return `
               <div class="god-player god-player--${team} ${!p.isAlive ? 'god-player--dead' : ''}">
                 <span class="dot ${p.isAlive ? 'dot--alive' : 'dot--dead'}"></span>
                 <span class="god-player__name">${p.name}</span>
                 <span class="god-player__role">${role?.icon || ''} ${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedName() || ''}</span>` : (role?.getLocalizedName() || '')}</span>
+                ${faceOffIcon}
               </div>
             `;
           }).join('')}

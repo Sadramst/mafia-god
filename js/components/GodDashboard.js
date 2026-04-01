@@ -27,11 +27,15 @@ export class GodDashboard extends Component {
             const name = Settings.getLanguage() === Language.ENGLISH
               ? `<span class="ltr-inline">${role?.getLocalizedName() || ''}</span>`
               : (role?.getLocalizedName() || '');
+            const faceOffIcon = this.props.faceOffEvent && (this.props.faceOffEvent.victimId === p.id || this.props.faceOffEvent.chosenId === p.id)
+              ? '<span class="god-player__event" title="Face Off happened">🎭</span>'
+              : '';
             return `
               <div class="god-player god-player--${team} ${!p.isAlive ? 'god-player--dead' : ''}">
                 <span class="dot ${p.isAlive ? 'dot--alive' : 'dot--dead'}"></span>
                 <span class="god-player__name">${p.name}</span>
                 <span class="god-player__role">${role?.icon || ''} ${name}</span>
+                ${faceOffIcon}
               </div>
             `;
           }).join('')}

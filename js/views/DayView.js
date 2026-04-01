@@ -477,11 +477,15 @@ export class DayView extends BaseView {
           ${game.players.map(p => {
             const role = Roles.get(p.roleId);
             const team = role?.team || 'citizen';
+            const faceOffIcon = game.lastFaceOffEvent && (game.lastFaceOffEvent.victimId === p.id || game.lastFaceOffEvent.chosenId === p.id)
+              ? '<span class="god-player__event" title="Face Off happened">🎭</span>'
+              : '';
             return `
               <div class="god-player god-player--${team} ${!p.isAlive ? 'god-player--dead' : ''}">
                 <span class="dot ${p.isAlive ? 'dot--alive' : 'dot--dead'}"></span>
                 <span class="god-player__name">${p.name}</span>
                 <span class="god-player__role">${role?.icon || ''} ${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedName() || ''}</span>` : (role?.getLocalizedName() || '')}</span>
+                ${faceOffIcon}
               </div>
             `;
           }).join('')}
@@ -844,13 +848,13 @@ export class DayView extends BaseView {
         this.app.saveGame();
         const card = res?.card;
         if (!card) { finish(); return; }
-        this._showCardReveal(card, victim, ICONS, makeOverlay, finish);
+        this._showCardReveal(card, victim, ICONS, makeOverlay, finish, res);
       });
     });
   }
 
   /** Step 2: animated card reveal + description, then step 3 if target needed */
-  _showCardReveal(card, victim, ICONS, makeOverlay, finish) {
+  _showCardReveal(card, victim, ICONS, makeOverlay, finish, drawResult = {}) {
     const game = this.game;
     const cardName = t(tr.lastAction?.cards?.[card.id]?.name ?? { fa: card.name, en: card.name });
     const cardDesc = t(tr.lastAction?.cards?.[card.id]?.desc ?? { fa: '', en: '' });
@@ -880,6 +884,9 @@ export class DayView extends BaseView {
           this.app.showToast(`${cardName}: ${victim.name} — ${roleName}`, 'info');
         } else if (card.id === CARD.SKIP_NIGHT) {
           this.app.showToast(t(tr.history.lastActionSkipNight), 'info');
+        }
+        if (drawResult?.jackCurseTriggered) {
+          this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
         }
         finish();
         return;
@@ -925,8 +932,16 @@ export class DayView extends BaseView {
           if (res.success) this.app.showToast(t(tr.history.lastActionGuessSuccess).replace('%s', targetName), 'info');
           else this.app.showToast(t(tr.history.lastActionGuessFail).replace('%s', targetName), 'error');
         } else if (card.id === CARD.FACE_OFF) {
-          this.app.showToast(t(tr.history.lastActionFaceOffApplied).replace('%s', victim.name).replace('%s', targetName).replace('%s', Roles.get(victim.roleId)?.getLocalizedName?.() ?? ''), 'info');
+          this.app.showToast(
+            t(tr.history.lastActionFaceOffApplied)
+              .replace('%s', victim.name)
+              .replace('%s', targetName)
+              .replace('%s', Roles.get(res?.swappedRole)?.getLocalizedName?.() ?? '')
+              .replace('%s', Roles.get(res?.victimNewRole)?.getLocalizedName?.() ?? ''),
+            'info'
+          );
         }
+        if (res?.jackCurseTriggered) this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
         finish();
       });
     });

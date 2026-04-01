@@ -785,6 +785,7 @@ html[dir="ltr"] .input { direction:ltr; text-align:left; }
 }
 .god-player__name { font-weight:600; flex:1; }
 .god-player__role { font-weight:500; }
+.god-player__event { font-size: var(--text-sm); opacity: 0.9; }
 .god-player--mafia .god-player__role { color:var(--mafia); }
 .god-player--citizen .god-player__role { color:var(--citizen); }
 .god-player--independent .god-player__role { color:var(--independent); }

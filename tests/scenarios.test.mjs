@@ -1000,6 +1000,7 @@ describe('S13 — Jack Curse Multi-Trigger', () => {
     // Jack curses P2
     p.P3.curse.place(p.P2.id);
     game.round = 1; game.phase = 'day';
+    game.lastActionManager.cards.forEach(c => { c.used = true; });
 
     const result = game.eliminateByVote(p.P2.id);
     expect(dead(p.P2)).toBe(true);
@@ -1123,6 +1124,7 @@ describe('S17 — Jack Curse Chain → Jack Dies Before Mafia Collapse', () => {
 
     p.P4.kill(1, 'mafia'); // Watson dies N1
     game.round = 1; game.startDay();
+    game.lastActionManager.cards.forEach(c => { c.used = true; });
 
     // Day 1: Vote P6 → Jack curse triggers
     game.eliminateByVote(p.P6.id);
@@ -1225,6 +1227,7 @@ describe('S20 — Bomb + Curse → Jack Dies → Citizens Win', () => {
     // N1: Kill some players
     p.P8.kill(1, 'mafia');
     game.round = 1; game.startDay();
+    game.lastActionManager.cards.forEach(c => { c.used = true; });
 
     // Vote: P7 out → Jack curse triggers, Jack dies
     game.eliminateByVote(p.P7.id);
@@ -1571,7 +1574,7 @@ describe('S27 — Last Action Card 4: Beautiful Mind', () => {
    S28 — Card 5: Face Off
    ═══════════════════════════════════════════════════════════════════ */
 describe('S28 — Last Action Card 5: Face Off', () => {
-  it('Face Off transfers role from victim to chosen player', () => {
+  it('Face Off exchanges roles between victim and chosen player', () => {
     const { game, p } = setup({
       P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
       P4: 'detective', P5: 'simpleCitizen', P6: 'simpleCitizen',
@@ -1587,15 +1590,16 @@ describe('S28 — Last Action Card 5: Face Off', () => {
     game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FACE_OFF) c.used = true; });
     game.drawLastActionFor(p.P4.id);
 
-    // Face Off: transfer detective role to P5 (simpleCitizen)
+    // Face Off: exchange roles between P4 and P5
     const res = game.applyLastActionCard(CARD.FACE_OFF, p.P4.id, p.P5.id);
     expect(res.success).toBe(true);
     expect(res.swappedRole).toBe('detective');
-    expect(p.P5.roleId).toBe('detective');     // P5 is now detective
+    expect(p.P5.roleId).toBe('detective');
+    expect(p.P4.roleId).toBe('simpleCitizen');
     expect(p.P4.isRevivable).toBe(false);      // Victim can't be revived
   });
 
-  it('Face Off transfers shield to chosen player', () => {
+  it('Face Off transfers victim shield state to chosen player', () => {
     const { game, p } = setup({
       P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
       P4: 'simpleCitizen', P5: 'simpleCitizen', P6: 'simpleCitizen',
@@ -1610,12 +1614,13 @@ describe('S28 — Last Action Card 5: Face Off', () => {
     game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FACE_OFF) c.used = true; });
     game.drawLastActionFor(p.P1.id);
 
-    // Face Off: transfer godfather role to P5
+    // Face Off: exchange godfather role with P5
     const res = game.applyLastActionCard(CARD.FACE_OFF, p.P1.id, p.P5.id);
     expect(res.success).toBe(true);
     expect(p.P5.roleId).toBe('godfather');
-    // Shield reinited from godfather definition
     expect(p.P5.shield).toBeDefined();
+    expect(p.P5.shield.isActive).toBe(p.P1.shield.isActive);
+    expect(p.P1.roleId).toBe('simpleCitizen');
   });
 
   it('Face Off transfers Jack curse state to chosen player', () => {
@@ -1648,7 +1653,29 @@ describe('S28 — Last Action Card 5: Face Off', () => {
     expect(p.P5.curse.isActive).toBe(true);
   });
 
-  it('Face Off does NOT transfer curse for non-Jack roles', () => {
+  it('Face Off moves Jack curse target link when cursed victim swaps', () => {
+    const { game, p } = setup({
+      P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
+      P4: 'jack', P5: 'simpleCitizen', P6: 'detective',
+      P7: 'simpleCitizen', P8: 'simpleCitizen',
+    });
+    game.round = 1; game.phase = 'day';
+
+    // Jack curses P6 (non-Jack victim)
+    p.P4.curse.place(p.P6.id);
+    expect(p.P4.curse.targetId).toBe(p.P6.id);
+
+    // P6 is voted out then uses Face Off on P5
+    game.eliminateByVote(p.P6.id);
+    game.lastActionManager.cards.forEach(c => { if (c.id !== CARD.FACE_OFF) c.used = true; });
+    game.drawLastActionFor(p.P6.id);
+
+    const res = game.applyLastActionCard(CARD.FACE_OFF, p.P6.id, p.P5.id);
+    expect(res.success).toBe(true);
+    expect(p.P4.curse.targetId).toBe(p.P5.id);
+  });
+
+  it('Face Off does NOT copy Jack curse object for non-Jack role swaps', () => {
     const { game, p } = setup({
       P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
       P4: 'detective', P5: 'simpleCitizen', P6: 'simpleCitizen',
