@@ -484,6 +484,8 @@ export const translations = {
     loading: { fa: 'در حال بارگذاری...', en: 'Loading...' },
     modalConfirm: { fa: 'تأیید', en: 'Confirm' },
     modalCancel: { fa: 'انصراف', en: 'Cancel' },
+    killed: { fa: 'کشته شد', en: 'killed' },
+    revived: { fa: 'احیا شد', en: 'revived' },
   },
 
   // Navigation & Headers
@@ -585,9 +587,18 @@ export const translations = {
     jack_vote_curse_locked: { fa: '🗳️ جک هدف رأی قرار گرفت — جک باقی ماند اما طلسم از این پس ثابت شد!', en: '🗳️ Jack was vote-targeted — Jack stays alive but curse is now permanently locked!' },
     sniper_citizen_kill: { fa: '🎯 اسنایپر به شهروند شلیک کرد — %s (اسنایپر) خودش حذف شد!', en: '🎯 Sniper shot a citizen — %s (sniper) eliminated as penalty!' },
     lastActionFaceOffApplied: { fa: '🃏 تغییر چهره: %s و %s نقش عوض کردند — %s به %s رسید.', en: '🃏 Face Off: %s and %s exchanged roles — %s moved to %s.' },
+    godKill: { fa: '⚠️ خدا %s را از بازی خارج کرد (تصحیح خدای بازی).', en: '⚠️ God eliminated %s (admin correction).' },
+    godRevive: { fa: '⚠️ خدا %s را احیا کرد (تصحیح خدای بازی).', en: '⚠️ God revived %s (admin correction).' },
   },
 
-  // Rulebook
+  // God Dashboard / Admin Controls
+  godDashboard: {
+    killPlayer: { fa: '❌ کشتن', en: '❌ Kill' },
+    revivePlayer: { fa: '✅ احیا', en: '✅ Revive' },
+    confirmKill: { fa: 'آیا می‌خواهید %s را کشل کنید؟', en: 'Kill %s?' },
+    confirmRevive: { fa: 'آیا می‌خواهید %s را احیا کنید؟', en: 'Revive %s?' },
+    longClickHint: { fa: '💡 برای تصحیح اشتباهات، روی کارت بازیکن فشار نگه دارید', en: '💡 Long-press on a player card to correct mistakes' },
+  },
   rulebook: {
     title: { fa: '📖 کتاب قوانین', en: '📖 Rulebook' },
     btnLabel: { fa: '📖 کتاب قوانین بازی', en: '📖 Game Rulebook' },

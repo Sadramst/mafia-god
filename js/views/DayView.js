@@ -4,6 +4,7 @@
 import { BaseView } from './BaseView.js';
 import { Roles } from '../models/Roles.js';
 import { CARD, LastActionManager } from '../models/LastActionManager.js';
+import { GodDashboard } from '../components/GodDashboard.js';
 import { Timer } from '../utils/Timer.js';
 import { t, translations as tr } from '../utils/i18n.js';
 import { Settings, Language } from '../utils/Settings.js';
@@ -469,29 +470,49 @@ export class DayView extends BaseView {
 
   _renderGodTools(container) {
     const game = this.game;
-    // Render a read-only God dashboard (same style as NightView dashboard)
-    container.innerHTML = `
-      <div class="god-dashboard">
-        <div class="god-dashboard__title">داشبورد خدا — فقط شما می‌بینید</div>
-        <div class="god-dashboard__grid">
-          ${game.players.map(p => {
-            const role = Roles.get(p.roleId);
-            const team = role?.team || 'citizen';
-            const faceOffIcon = game.lastFaceOffEvent && (game.lastFaceOffEvent.victimId === p.id || game.lastFaceOffEvent.chosenId === p.id)
-              ? '<span class="god-player__event" title="Face Off happened">🎭</span>'
-              : '';
-            return `
-              <div class="god-player god-player--${team} ${!p.isAlive ? 'god-player--dead' : ''}">
-                <span class="dot ${p.isAlive ? 'dot--alive' : 'dot--dead'}"></span>
-                <span class="god-player__name">${p.name}</span>
-                <span class="god-player__role">${role?.icon || ''} ${Settings.getLanguage() === Language.ENGLISH ? `<span class="ltr-inline">${role?.getLocalizedName() || ''}</span>` : (role?.getLocalizedName() || '')}</span>
-                ${faceOffIcon}
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `;
+    
+    // Use the GodDashboard component with god correction callback
+    const dashboard = new GodDashboard({
+      players: game.players,
+      title: t(tr.godDashboard?.longClickHint ?? { fa: '👁️ داشبورد خدا', en: '👁️ God Dashboard' }),
+      faceOffEvent: game.lastFaceOffEvent,
+      onPlayerAction: ({ playerId, action }) => {
+        const player = game.getPlayer(playerId);
+        if (!player) return;
+        
+        if (action === 'kill') {
+          this.confirm(
+            t(tr.common?.confirm ?? { fa: 'تأیید', en: 'Confirm' }),
+            t(tr.godDashboard?.confirmKill ?? { fa: 'آیا می‌خواهید %s را کشتل کنید؟', en: 'Kill %s?' }).replace('%s', player.name),
+            () => {
+              const result = game.godKill(playerId);
+              if (result.success) {
+                this.toast(`✓ ${player.name} ${t(tr.common.killed || { fa: 'کشته شد', en: 'killed' })}`, 'success');
+                this.render();
+              } else {
+                this.toast(`✗ ${result.reason}`, 'error');
+              }
+            }
+          );
+        } else if (action === 'revive') {
+          this.confirm(
+            t(tr.common?.confirm ?? { fa: 'تأیید', en: 'Confirm' }),
+            t(tr.godDashboard?.confirmRevive ?? { fa: 'آیا می‌خواهید %s را احیا کنید؟', en: 'Revive %s?' }).replace('%s', player.name),
+            () => {
+              const result = game.godRevive(playerId);
+              if (result.success) {
+                this.toast(`✓ ${player.name} ${t(tr.common.revived || { fa: 'احیا شد', en: 'revived' })}`, 'success');
+                this.render();
+              } else {
+                this.toast(`✗ ${result.reason}`, 'error');
+              }
+            }
+          );
+        }
+      }
+    });
+    
+    dashboard.mount(container);
   }
 
   // ─── Discussion with Timer ───

@@ -1565,6 +1565,53 @@ export class Game {
     return true;
   }
 
+  // ──────────────────────────────────
+  //  GOD CORRECTION (خدای بازی)
+  // ──────────────────────────────────
+
+  /**
+   * God kills a living player immediately. Called by game admin to correct mistakes.
+   * @param {number} playerId — Player to eliminate
+   * @returns {{ success: boolean, reason?: string, playerName?: string }}
+   */
+  godKill(playerId) {
+    const player = this.getPlayer(playerId);
+    if (!player) return { success: false, reason: 'not_found' };
+    if (!player.isAlive) return { success: false, reason: 'already_dead' };
+
+    // Kill the player (not revivable by Constantine, marked as admin correction)
+    player.kill(this.round, 'god_correction', false);
+    this._addHistory('god_correction', t(tr.history.godKill).replace('%s', player.name));
+
+    // If this player was in bullet pool, return bullet
+    if (this.bulletManager.isActive) {
+      const bullet = this.bulletManager.getPlayerBullet(playerId);
+      if (bullet) {
+        this.bulletManager.returnBullet(bullet.type);
+        this.bulletManager.removeBullet(playerId);
+      }
+    }
+
+    return { success: true, playerName: player.name };
+  }
+
+  /**
+   * God revives a dead player with full restoration. Called by game admin to correct mistakes.
+   * @param {number} playerId — Player to revive
+   * @returns {{ success: boolean, reason?: string, playerName?: string }}
+   */
+  godRevive(playerId) {
+    const player = this.getPlayer(playerId);
+    if (!player) return { success: false, reason: 'not_found' };
+    if (player.isAlive) return { success: false, reason: 'already_alive' };
+
+    // Restore player to alive state
+    player.revive();
+    this._addHistory('god_correction', t(tr.history.godRevive).replace('%s', player.name));
+
+    return { success: true, playerName: player.name };
+  }
+
   /** Add a history entry */
   _addHistory(type, text) {
     this.history.push({
