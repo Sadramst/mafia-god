@@ -1751,10 +1751,13 @@ export class Game {
       chosen.curse = Curse.fromJSON(victim.curse.toJSON());
     }
 
-    // If victim was Jack's cursed target, the curse link moves to the chosen player.
+    // New rule: if victim was Jack's cursed target, Jack dies immediately on Face Off.
     const aliveJack = this.players.find(p => p.isAlive && p.roleId === 'jack');
+    let jackCurseTriggered = false;
     if (aliveJack?.curse?.isTriggeredBy(victimId)) {
-      aliveJack.curse.transferPlayerLink(victimId, chosenId);
+      aliveJack.kill(this.round, 'curse');
+      jackCurseTriggered = true;
+      this._addHistory('death', t(tr.history.execution_with_curse).replace('%s', victim.name));
     }
 
     victim.isRevivable = false;
@@ -1766,7 +1769,7 @@ export class Game {
         .replace('%s', chosen.name)
         .replace('%s', Roles.get(victimRole)?.getLocalizedName?.() ?? victimRole)
         .replace('%s', Roles.get(chosenRole)?.getLocalizedName?.() ?? chosenRole));
-    return { success: true, swappedRole: victimRole, victimNewRole: chosenRole };
+    return { success: true, swappedRole: victimRole, victimNewRole: chosenRole, jackCurseTriggered };
   }
 
   // ──────────────────────────────────

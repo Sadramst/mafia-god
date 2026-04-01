@@ -1653,7 +1653,7 @@ describe('S28 — Last Action Card 5: Face Off', () => {
     expect(p.P5.curse.isActive).toBe(true);
   });
 
-  it('Face Off moves Jack curse target link when cursed victim swaps', () => {
+  it('Face Off by cursed victim kills Jack immediately', () => {
     const { game, p } = setup({
       P1: 'godfather', P2: 'simpleMafia', P3: 'drWatson',
       P4: 'jack', P5: 'simpleCitizen', P6: 'detective',
@@ -1672,7 +1672,8 @@ describe('S28 — Last Action Card 5: Face Off', () => {
 
     const res = game.applyLastActionCard(CARD.FACE_OFF, p.P6.id, p.P5.id);
     expect(res.success).toBe(true);
-    expect(p.P4.curse.targetId).toBe(p.P5.id);
+    expect(res.jackCurseTriggered).toBe(true);
+    expect(p.P4.isAlive).toBe(false);
   });
 
   it('Face Off does NOT copy Jack curse object for non-Jack role swaps', () => {

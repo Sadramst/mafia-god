@@ -448,7 +448,7 @@ describe('V10 — Face Off keeps Jack curse linkage on swapped player', () => {
     });
   });
 
-  it('cursed voted victim can Face Off and move curse trigger to chosen player', () => {
+  it('cursed voted victim Face Off kills Jack immediately', () => {
     const first = game.eliminateByVote(p.C2.id);
     expect(first.jackCurseTriggered).toBeUndefined();
     expect(p.Jack.isAlive).toBe(true);
@@ -461,12 +461,13 @@ describe('V10 — Face Off keeps Jack curse linkage on swapped player', () => {
     expect(faceOff.success).toBe(true);
     expect(p.C3.roleId).toBe('detective');
     expect(p.C2.roleId).toBe('simpleCitizen');
+    expect(faceOff.jackCurseTriggered).toBe(true);
+    expect(p.Jack.isAlive).toBe(false);
 
-    // No last action now; curse should resolve immediately on vote.
+    // Jack already died during Face Off; no further curse trigger.
     game.lastActionManager.cards.forEach(c => { c.used = true; });
     const second = game.eliminateByVote(p.C3.id);
-    expect(second.jackCurseTriggered).toBe(true);
-    expect(p.Jack.isAlive).toBe(false);
+    expect(second.jackCurseTriggered).toBeUndefined();
   });
 });
 
