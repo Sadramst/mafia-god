@@ -209,7 +209,7 @@ describe('K3 — Kane targets citizen — no reveal, ability consumed', () => {
     expect(game._kanePendingDeath).toBe(false);
   });
 
-  it('Kane is skipped in night steps after ability used on citizen', () => {
+  it('Kane still appears in night steps after ability used on citizen (fake wake)', () => {
     // Night 1: Kane uses ability on citizen
     nightRound(game, {
       godfather: { actorIds: [p.Godfather.id], targetId: p.Citizen2.id, actionType: 'shoot', mode: 'shoot' },
@@ -218,10 +218,10 @@ describe('K3 — Kane targets citizen — no reveal, ability consumed', () => {
 
     expect(game._kaneUsed).toBe(true);
 
-    // Night 2: Kane should not appear in night steps
+    // Night 2: Kane should STILL appear in night steps (fake wake to avoid info leak)
     game.startNight();
     const kaneStep = game.nightSteps.find(s => s.roleId === 'kane');
-    expect(kaneStep).toBeUndefined();
+    expect(kaneStep).toBeDefined();
   });
 });
 
@@ -495,7 +495,7 @@ describe('K8 — Kane skipped in night steps after ability used', () => {
     expect(kaneStep).toBeDefined();
   });
 
-  it('Kane NOT in night steps after successful reveal', () => {
+  it('Kane NOT in night steps after successful reveal (pending death)', () => {
     // Night 1: successful reveal
     nightRound(game, {
       godfather: { actorIds: [p.Godfather.id], targetId: p.Citizen1.id, actionType: 'shoot', mode: 'shoot' },
@@ -504,13 +504,13 @@ describe('K8 — Kane skipped in night steps after ability used', () => {
 
     expect(game._kaneUsed).toBe(true);
 
-    // Night 2: Kane should not appear (ability used + pending death)
+    // Night 2: Kane should not appear (pending death = public knowledge)
     game.startNight();
     const kaneStep = game.nightSteps.find(s => s.roleId === 'kane');
     expect(kaneStep).toBeUndefined();
   });
 
-  it('Kane NOT in night steps after failed reveal (citizen target)', () => {
+  it('Kane still appears after failed reveal on citizen (fake wake)', () => {
     nightRound(game, {
       godfather: { actorIds: [p.Godfather.id], targetId: p.Citizen1.id, actionType: 'shoot', mode: 'shoot' },
       kane: { actorIds: [p.Kane.id], targetId: p.Watson.id, actionType: 'kaneReveal' },
@@ -518,9 +518,10 @@ describe('K8 — Kane skipped in night steps after ability used', () => {
 
     expect(game._kaneUsed).toBe(true);
 
+    // Kane should STILL appear (fake wake — no one knows he used ability)
     game.startNight();
     const kaneStep = game.nightSteps.find(s => s.roleId === 'kane');
-    expect(kaneStep).toBeUndefined();
+    expect(kaneStep).toBeDefined();
   });
 
   it('Kane appears again after ability returned (target died same night)', () => {

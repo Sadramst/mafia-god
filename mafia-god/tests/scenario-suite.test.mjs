@@ -761,8 +761,9 @@ describe('Framason — Specific Rules', () => {
     // Leader died from mafia shot
     expect(dead(p.P4)).toBe(true);
 
-    // Alliance is now inactive for future nights
-    expect(game.framason.isActive).toBe(false);
+    // Alliance stays active (members still wake up) but can't recruit
+    expect(game.framason.isActive).toBe(true);
+    expect(game.framason.canRecruit).toBe(false);
   });
 
   it('Leader death deactivates alliance — no more recruiting', () => {
@@ -777,7 +778,8 @@ describe('Framason — Specific Rules', () => {
     game.round = 1; game.phase = 'day';
     game.eliminateByVote(p.P4.id);
     expect(dead(p.P4)).toBe(true);
-    expect(game.framason.isActive).toBe(false);
+    // Alliance stays active (surviving members still wake) but can't recruit
+    expect(game.framason.isActive).toBe(true);
     expect(game.framason.canRecruit).toBe(false);
   });
 });

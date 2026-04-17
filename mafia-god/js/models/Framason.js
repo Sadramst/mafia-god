@@ -34,6 +34,9 @@ export class Framason {
 
     /** @type {boolean} Whether the framason feature is active this game */
     this._active = false;
+
+    /** @type {boolean} Whether the framason leader has died */
+    this._leaderDead = false;
   }
 
   // ── Getters ──
@@ -44,7 +47,7 @@ export class Framason {
   get maxMembers()    { return this._maxMembers; }
   get memberCount()   { return this._members.length; }
   get isContaminated(){ return this._contaminated !== null; }
-  get canRecruit()    { return this._active && !this._contaminated && this._members.length < this._maxMembers; }
+  get canRecruit()    { return this._active && !this._leaderDead && !this._contaminated && this._members.length < this._maxMembers; }
 
   /**
    * Get all alliance player IDs (leader + members).
@@ -68,6 +71,7 @@ export class Framason {
     this._members = [];
     this._contaminated = null;
     this._active = true;
+    this._leaderDead = false;
   }
 
   /** Set max members (from settings, before game starts) */
@@ -120,10 +124,11 @@ export class Framason {
 
   /**
    * Handle framason leader death (from other causes).
-   * Alliance becomes inactive — no more recruiting.
+   * Alliance stays active — surviving members still wake up at night.
+   * Only contamination deactivates the alliance entirely.
    */
   onLeaderDeath() {
-    this._active = false;
+    this._leaderDead = true;
   }
 
   // ── Serialization ──
@@ -135,6 +140,7 @@ export class Framason {
       maxMembers: this._maxMembers,
       contaminated: this._contaminated,
       active: this._active,
+      leaderDead: this._leaderDead,
     };
   }
 
@@ -146,6 +152,7 @@ export class Framason {
     f._maxMembers = data.maxMembers ?? 2;
     f._contaminated = data.contaminated ?? null;
     f._active = data.active ?? false;
+    f._leaderDead = data.leaderDead ?? false;
     return f;
   }
 }

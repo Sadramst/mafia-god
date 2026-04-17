@@ -236,6 +236,12 @@ export class Game {
       this.bulletManager.init(this.gunnerBlankMax, this.gunnerLiveMax);
     }
 
+    // Discard Beautiful Mind if no Jack (or no vulnerable independent) in game
+    const hasJack = this.players.some(p => p.roleId === 'jack');
+    if (!hasJack) {
+      this._discardBeautifulMind();
+    }
+
     this.phase = 'roleReveal';
   }
 
@@ -388,6 +394,17 @@ export class Game {
           actors = mafiaPlayers;
         }
       }
+
+      // If freemason leader is dead but alliance members alive, use them as actors
+      if (actors.length === 0 && role.id === 'freemason' && this.framason.isActive && !this.framason.isContaminated) {
+        const aliveAlliance = this.framason.allianceIds
+          .map(id => this.getPlayer(id))
+          .filter(p => p?.isAlive);
+        if (aliveAlliance.length > 0) {
+          actors = aliveAlliance;
+        }
+      }
+
       if (actors.length === 0) continue;
 
       // Special: skip constantine if already used or no one to revive
@@ -405,8 +422,9 @@ export class Game {
       // Special: skip sniper if no shots remaining
       if (role.id === 'sniper' && this._sniperShotCount >= this.sniperMaxShots) continue;
 
-      // Special: skip kane if already used his one-time ability
-      if (role.id === 'kane' && this._kaneUsed) continue;
+      // Special: skip kane only if pending death (successful reveal — public knowledge)
+      // If Kane used ability on citizen (no announcement), keep waking him up (fake) to avoid info leak
+      if (role.id === 'kane' && this._kanePendingDeath) continue;
 
       // Special: skip jack if curse is locked (can't change curse anymore)
       if (role.id === 'jack') {
@@ -414,8 +432,10 @@ export class Game {
         if (jp?.curse?.isLocked) continue;
       }
 
-      // Special: skip freemason if can't recruit (dead, max reached, or contaminated)
-      if (role.id === 'freemason' && !this.framason.canRecruit) continue;
+      // Special: freemason — skip only if contaminated or all alliance members dead
+      if (role.id === 'freemason') {
+        if (!this.framason.isActive || this.framason.isContaminated) continue;
+      }
 
       steps.push({
         roleId: role.id,
@@ -773,11 +793,11 @@ export class Game {
       }
     }
 
-    // 12. Constantine revives (only players who died last night with revivable death)
+    // 12. Constantine revives (any dead revivable player)
     if (actions.constantine?.targetId) {
       const target = this.getPlayer(actions.constantine.targetId);
-      // Allow reviving players who died before the current night (any previous round)
-      if (target && !target.isAlive && typeof target.deathRound === 'number' && target.deathRound < this.round && target.isRevivable) {
+      // Allow reviving any dead revivable player (selected from UI before night resolved)
+      if (target && !target.isAlive && typeof target.deathRound === 'number' && target.isRevivable) {
         target.revive();
         results.revived = actions.constantine.targetId;
         this.constantineUsed = true;
@@ -822,7 +842,8 @@ export class Game {
     }
 
     // 15. Kane reveal — check if target survived night
-    if (actions.kane?.targetId) {
+    // Skip if Kane already used ability (fake wake — no action)
+    if (actions.kane?.targetId && !this._kaneUsed) {
       const kaneTargetId = actions.kane.targetId;
       const kaneTarget = this.getPlayer(kaneTargetId);
       if (kaneTarget && results.killed.includes(kaneTargetId)) {
@@ -847,6 +868,7 @@ export class Game {
           // If Kane revealed Jack, permanently lock Jack's curse
           if (kaneTarget.roleId === 'jack') {
             kaneTarget.curse.lock();
+            this._discardBeautifulMind();
             this._addHistory('info', t(tr.history.kane_jack_curse_locked).replace('%s', kaneTarget.name));
           }
         } else {
@@ -944,6 +966,7 @@ export class Game {
       target.curse.lock();
       jackCurseLocked = true;
       side = 'jack';
+      this._discardBeautifulMind();
       this._addHistory('cowboy', t(tr.history.cowboy_jack).replace('%s', cowboy.name).replace('%s', target.name));
     } else if (target.roleId === 'zodiac') {
       // Zodiac is eliminated
@@ -1204,6 +1227,7 @@ export class Game {
       // Jack always immune to day shoot, but curse becomes permanently locked
       const jackPlayer = target;
       jackPlayer.curse.lock();
+      this._discardBeautifulMind();
       this._addHistory('morning_shot', t(tr.history.morning_shot_jack_curse_locked).replace('%s', target.name));
       return result;
     }
@@ -1499,15 +1523,14 @@ export class Game {
     return this.players.filter(p => !p.isAlive);
   }
 
-  /** Get revivable players (died last night, not salakhi/kane_sacrifice) */
+  /** Get revivable players — all dead players marked revivable (not salakhi) */
   getRevivablePlayers() {
-    // Revivable players are those who died before the current night
-    // (i.e. deathRound < this.round) and are marked revivable.
-    // This includes any death from game start up to the previous round.
+    // All dead players who are marked revivable, regardless of when they died.
+    // Constantine can target anyone who died in any previous round or the current day.
+    // The UI prevents selecting players killed during the current night's resolution.
     return this.players.filter(p =>
       !p.isAlive &&
       typeof p.deathRound === 'number' &&
-      p.deathRound < this.round &&
       p.isRevivable
     );
   }
@@ -1629,6 +1652,12 @@ export class Game {
       text,
       timestamp: Date.now(),
     });
+  }
+
+  /** Discard Beautiful Mind card (when Jack is revealed/locked or no vulnerable independent exists) */
+  _discardBeautifulMind() {
+    const bm = this.lastActionManager?.cards?.find(c => c.id === CARD.BEAUTIFUL_MIND && !c.used);
+    if (bm) bm.used = true;
   }
 
   /** Get history for a specific round */
