@@ -871,6 +871,8 @@ describe('S13 — Jack Curse Multi-Trigger', () => {
 
     p.P3.curse.place(p.P2.id);
     game.round = 1; game.phase = 'day';
+    // Exhaust all last-action cards so curse resolves immediately
+    game.lastActionManager.cards.forEach(c => c.used = true);
 
     const result = game.eliminateByVote(p.P2.id);
     expect(dead(p.P2)).toBe(true);

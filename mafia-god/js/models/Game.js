@@ -335,6 +335,8 @@ export class Game {
   _clearJackCurse() {
     const jackPlayer = this.players.find(p => p.isAlive && p.roleId === 'jack');
     if (jackPlayer) {
+      // If curse is already permanently locked (by vote/shoot/cowboy/kane reveal), preserve it
+      if (jackPlayer.curse.isLocked) return;
       // If Jadoogar blocked Jack last night, Jack cannot change his curse — preserve and lock it
       if (this._jadoogarLastBlockedId && this._jadoogarLastBlockedId === jackPlayer.id) {
         jackPlayer.curse.lock();
@@ -841,6 +843,12 @@ export class Game {
           };
           this._kanePendingDeath = true;
           this._addHistory('kane', t(tr.history.kane_reveal_success).replace('%s', kaneTarget.name).replace('%s', targetRole?.getLocalizedName?.() || targetRole?.name || '—'));
+
+          // If Kane revealed Jack, permanently lock Jack's curse
+          if (kaneTarget.roleId === 'jack') {
+            kaneTarget.curse.lock();
+            this._addHistory('info', t(tr.history.kane_jack_curse_locked).replace('%s', kaneTarget.name));
+          }
         } else {
           // Target is citizen → nothing happens, act is consumed
           results.kaneReveal = null;

@@ -56,8 +56,10 @@ export class Curse {
   /**
    * Clear the curse (called at the start of each night).
    * Adds the current target to the previous-targets list.
+   * Does nothing if the curse is locked (permanently fixed).
    */
   clear() {
+    if (this._locked) return;
     if (this._targetId !== null && !this._previousTargetIds.includes(this._targetId)) {
       this._previousTargetIds.push(this._targetId);
     }

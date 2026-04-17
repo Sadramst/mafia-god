@@ -125,6 +125,8 @@ describe('R1 — Jack only dies from curse chain', () => {
     });
     p.Jack.curse.place(p.SC1.id);
     game.round = 1; game.phase = 'day';
+    // Exhaust all last-action cards so curse resolves immediately
+    game.lastActionManager.cards.forEach(c => c.used = true);
     const result = game.eliminateByVote(p.SC1.id);
     expect(dead(p.SC1)).toBe(true);
     expect(result.jackCurseTriggered).toBe(true);
@@ -361,6 +363,8 @@ describe('R3 — Day shoot / vote locks Jack curse', () => {
     p.Jack.curse.place(p.SC1.id);
     p.Jack.curse.lock();
     game.round = 1; game.phase = 'day';
+    // Exhaust all last-action cards so curse resolves immediately
+    game.lastActionManager.cards.forEach(c => c.used = true);
 
     const result = game.eliminateByVote(p.SC1.id);
     expect(dead(p.SC1)).toBe(true);

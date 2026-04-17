@@ -218,7 +218,8 @@ describe('M2 â€” Jack vote immunity', () => {
     });
         // Jack curses SC1
     p.Jack.curse.place(p.SC1.id);
-
+    // Exhaust all last-action cards so curse resolves immediately
+    game.lastActionManager.cards.forEach(c => c.used = true);
     // Vote out SC1 â€” should trigger Jack's curse
     const result = game.eliminateByVote(p.SC1.id);
     expect(dead(p.SC1)).toBe(true);
