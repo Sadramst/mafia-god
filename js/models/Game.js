@@ -615,6 +615,7 @@ export class Game {
         if (targetRole?.shootImmune) {
           this._addHistory('immune', t(tr.history.immune).replace('%s', target.name));
         } else if (target.healed) {
+          target.healed = false; // Heal is consumed once
           results.saved.push(targetId);
           this._addHistory('save', t(tr.history.saveByDoctor).replace('%s', target.name));
         } else {
@@ -661,6 +662,7 @@ export class Game {
           results.killed.push(zodiacId);
           this._addHistory('death', t(tr.history.zodiacBodyguard));
         } else if (target.healed) {
+          target.healed = false; // Heal is consumed once
           results.saved.push(targetId);
         } else {
           const died = target.tryKill(this.round, 'zodiac');
@@ -693,6 +695,7 @@ export class Game {
         } else if (targetTeam === 'mafia') {
           // Use tryKill so shield semantics apply (shield absorbs first lethal shot and is consumed).
           if (target.healed) {
+            target.healed = false; // Heal is consumed once
             // Healed by Dr Lecter → bullet wasted, nothing happens
             this._addHistory('sniper', t(tr.history.sniper_healed).replace('%s', target.name));
           } else {
@@ -1215,7 +1218,7 @@ export class Game {
 
     const targetRole = Roles.get(target.roleId);
     const targetTeam = targetRole?.team || 'citizen';
-    const result = { type: bulletType, killed: false, targetTeam, targetName: target.name };
+    const result = { type: bulletType, killed: false, targetTeam, targetName: target.name, stoppedBy: null };
 
     if (bulletType === 'blank') {
       // Blank bullet — always harmless
@@ -1223,11 +1226,13 @@ export class Game {
       return result;
     }
 
-    // Jangi bullet — check protections
+    // Jangi (live/war) bullet — check protections
     const shooter = this.getPlayer(shooterId);
 
-    // Check if target was healed (heal stays until morning)
+    // Check if target was healed (heal stays until morning) — consume the heal
     if (target.healed) {
+      target.healed = false; // Heal is consumed
+      result.stoppedBy = 'healed';
       this._addHistory('morning_shot', t(tr.history.morning_shot_healed).replace('%s', target.name));
       return result;
     }
@@ -1236,6 +1241,7 @@ export class Game {
     if (target.shield?.isActive) {
       const absorbed = target.shield.absorb('morning_shot');
       if (absorbed) {
+        result.stoppedBy = 'shield';
         this._addHistory('morning_shot', t(tr.history.morning_shot_shield).replace('%s', target.name));
         return result;
       }
@@ -1247,6 +1253,7 @@ export class Game {
       const jackPlayer = target;
       jackPlayer.curse.lock();
       this._discardBeautifulMind();
+      result.stoppedBy = 'jack';
       this._addHistory('morning_shot', t(tr.history.morning_shot_jack_curse_locked).replace('%s', target.name));
       return result;
     }

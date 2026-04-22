@@ -15,7 +15,7 @@
  *   4. Target gives وصیت (last words)
  *   5. God resolves:
  *      - Blank → "تیر مشقی بود" — target lives
- *      - Live + saved (healed/shield/blocked) → "تیر مشقی بود"
+ *      - Live + saved (healed/shield/blocked) → "تیر جنگی بود" — target lives, reason shown
  *      - Live + not saved → "تیر جنگی بود" — target dies, side revealed
  *
  * Expiration: unused live bullets explode at voting start → holder dies

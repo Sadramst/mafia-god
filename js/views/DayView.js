@@ -77,7 +77,18 @@ export class DayView extends BaseView {
     this.container?.addEventListener('click', this._onContainerClick);
   }
 
+  /** Save scroll position before re-render, restore after */
+  _saveScroll() {
+    this._savedScrollY = window.scrollY || window.pageYOffset || 0;
+  }
+  _restoreScroll() {
+    if (typeof this._savedScrollY === 'number') {
+      window.scrollTo(0, this._savedScrollY);
+    }
+  }
+
   render() {
+    this._saveScroll();
     const game = this.game;
     const counts = game.getTeamCounts();
     const isBlindDay = game.phase === 'blindDay';
@@ -170,6 +181,8 @@ export class DayView extends BaseView {
     else if (this.subView === 'discussion') this._renderDiscussion(subviewEl);
     else if (this.subView === 'siesta') this._renderSiesta(subviewEl);
     else if (this.subView === 'voting') this._renderVoting(subviewEl);
+
+    this._restoreScroll();
   }
 
   // ─── Blind Day (1 minute, no challenges) ───
@@ -437,6 +450,48 @@ export class DayView extends BaseView {
           </button>
         ` : ''}
 
+        <!-- Cowboy Day Action (also on results tab so user doesn't miss it) -->
+        ${(() => {
+          if (!game.canCowboyAct()) return '';
+          if (this.cowboyResult) return '';
+          return `
+            <div class="card mt-md" style="border-color: rgb(234,179,8);">
+              <div class="font-bold mb-sm">🤠 ${t(tr.day.cowboyTitle)}</div>
+              <p class="text-secondary mb-sm" style="font-size: var(--text-xs);">
+                ${t(tr.day.cowboyDesc)}
+              </p>
+              <button class="btn btn--warning btn--block" id="btn-cowboy-declare">
+                ${t(tr.day.cowboyDeclare)}
+              </button>
+            </div>
+          `;
+        })()}
+
+        ${this.cowboyActive ? this._renderCowboyPanel() : ''}
+
+        ${this.cowboyResult ? this._renderCowboyResult() : ''}
+
+        <!-- Morning shooting (also on results tab) -->
+        ${(() => {
+          const bullets = game.getActiveBullets();
+          if (bullets.length === 0) return '';
+          return `
+            <div class="card mt-md" style="border-color: var(--warning);">
+              <div class="font-bold mb-sm">🔫 تیر صبحگاهی</div>
+              <div class="target-grid">
+                ${bullets.filter(b => game.getPlayer(b.holderId)?.isAlive).map(b => `
+                  <button class="target-btn" data-morning-shooter="${b.holderId}">
+                    ${b.holderName} اعلام کرد 🔫
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        })()}
+
+        ${this.morningShootActive ? this._renderMorningShootPanel() : ''}
+        ${this.morningShootResult ? this._renderMorningShootResult() : ''}
+
         <button class="btn btn--primary btn--block mt-lg" id="btn-go-discussion">
           ${t(tr.day.startDiscussion)}
         </button>
@@ -448,7 +503,8 @@ export class DayView extends BaseView {
       this.render();
     });
 
-    
+    this._setupCowboy(container);
+    this._setupMorningShooting(container);
 
     // Resolve framason contamination (button handler)
     container.querySelector('#btn-resolve-framason')?.addEventListener('click', () => {
@@ -1296,7 +1352,7 @@ export class DayView extends BaseView {
         <div class="font-bold mb-sm">🤠 ${t(tr.day.cowboyChoose)}</div>
         <div class="target-grid">
           ${targets.map(p => `
-            <button class="target-btn ${this.cowboyTargetId === p.id ? 'target-btn--selected' : ''}"
+            <button class="target-btn ${this.cowboyTargetId === p.id ? 'selected' : ''}"
                     data-cowboy-target="${p.id}">
               ${p.name}
             </button>
@@ -1383,6 +1439,7 @@ export class DayView extends BaseView {
     const teamName = teamNames[result.targetTeam] || result.targetTeam;
 
     if (result.killed) {
+      // Live bullet killed the target
       return `
         <div class="card mt-md" style="border-color: var(--danger);">
           <div style="font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-sm);">💥</div>
@@ -1400,7 +1457,8 @@ export class DayView extends BaseView {
           <button class="btn btn--ghost btn--block btn--sm mt-md" id="btn-morning-result-dismiss">متوجه شدم</button>
         </div>
       `;
-    } else {
+    } else if (result.type === 'blank') {
+      // Blank bullet — always harmless
       return `
         <div class="card mt-md" style="border-color: var(--success);">
           <div style="font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-sm);">🟡</div>
@@ -1408,6 +1466,24 @@ export class DayView extends BaseView {
             تیر مشقی بود!
           </div>
           <p class="text-center text-secondary mt-sm">${result.targetName} زنده ماند.</p>
+          <button class="btn btn--ghost btn--block btn--sm mt-md" id="btn-morning-result-dismiss">متوجه شدم</button>
+        </div>
+      `;
+    } else {
+      // Live bullet but target survived (healed / shield / jack)
+      let reason = '';
+      if (result.stoppedBy === 'healed') reason = 'دکتر نجاتش داد!';
+      else if (result.stoppedBy === 'shield') reason = 'سپر جذب کرد!';
+      else if (result.stoppedBy === 'jack') reason = 'جک زنده ماند ولی طلسمش قفل شد!';
+      else reason = 'نجات پیدا کرد!';
+
+      return `
+        <div class="card mt-md" style="border-color: var(--warning);">
+          <div style="font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-sm);">🔴</div>
+          <div class="font-bold text-center" style="color: var(--warning); font-size: var(--text-lg);">
+            تیر جنگی بود!
+          </div>
+          <p class="text-center text-secondary mt-sm">${result.targetName} زنده ماند — ${reason}</p>
           <button class="btn btn--ghost btn--block btn--sm mt-md" id="btn-morning-result-dismiss">متوجه شدم</button>
         </div>
       `;
