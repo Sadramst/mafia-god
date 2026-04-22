@@ -99,8 +99,9 @@ export class DayView extends BaseView {
       return;
     }
 
+    // Skip viewEnter animation on re-renders to prevent blink
     this.container.innerHTML = `
-      <div class="view">
+      <div class="view" ${this._hasRendered ? 'style="animation:none"' : ''}>
         <!-- Phase Bar -->
         <div class="phase-bar phase-bar--day">
           <span class="phase-bar__icon">☀️</span>
@@ -183,6 +184,7 @@ export class DayView extends BaseView {
     else if (this.subView === 'voting') this._renderVoting(subviewEl);
 
     this._restoreScroll();
+    this._hasRendered = true;
   }
 
   // ─── Blind Day (1 minute, no challenges) ───
@@ -1469,12 +1471,22 @@ export class DayView extends BaseView {
           <button class="btn btn--ghost btn--block btn--sm mt-md" id="btn-morning-result-dismiss">متوجه شدم</button>
         </div>
       `;
+    } else if (result.stoppedBy === 'healed' || result.stoppedBy === 'shield') {
+      // Live bullet absorbed by heal or shield — show as blank to protect identity
+      return `
+        <div class="card mt-md" style="border-color: var(--success);">
+          <div style="font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-sm);">🟡</div>
+          <div class="font-bold text-center" style="color: var(--success); font-size: var(--text-lg);">
+            تیر مشقی بود!
+          </div>
+          <p class="text-center text-secondary mt-sm">${result.targetName} زنده ماند.</p>
+          <button class="btn btn--ghost btn--block btn--sm mt-md" id="btn-morning-result-dismiss">متوجه شدم</button>
+        </div>
+      `;
     } else {
-      // Live bullet but target survived (healed / shield / jack)
+      // Live bullet but target survived (jack or other)
       let reason = '';
-      if (result.stoppedBy === 'healed') reason = 'دکتر نجاتش داد!';
-      else if (result.stoppedBy === 'shield') reason = 'سپر جذب کرد!';
-      else if (result.stoppedBy === 'jack') reason = 'جک زنده ماند ولی طلسمش قفل شد!';
+      if (result.stoppedBy === 'jack') reason = 'جک زنده ماند ولی طلسمش قفل شد!';
       else reason = 'نجات پیدا کرد!';
 
       return `

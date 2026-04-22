@@ -3,8 +3,8 @@
  *
  * MS1: Morning shot blank → always harmless, shows "مشقی"
  * MS2: Morning shot live → kills target, shows "جنگی"
- * MS3: Morning shot live → healed target survives, shows "جنگی" (not مشقی), heal consumed
- * MS4: Morning shot live → shielded target survives, shows "جنگی", shield consumed
+ * MS3: Morning shot live → healed target survives, UI shows "مشقی" (conceals live), heal consumed
+ * MS4: Morning shot live → shielded target survives, UI shows "مشقی" (conceals live), shield consumed
  * MS5: Morning shot live → Jack survives, curse locked, shows "جنگی"
  * MS6: Morning shot live healed → second shot same morning kills
  * MS7: Morning shot live shielded → second shot same morning kills
@@ -146,9 +146,9 @@ describe('MS2 — Morning shot live kills unprotected target', () => {
 });
 
 /* ═══════════════════════════════════════════════════════════════════
-   MS3 — Morning shot live + healed → survives, heal consumed, shows "جنگی"
+   MS3 — Morning shot live + healed → survives, heal consumed, UI shows "مشقی"
    ═══════════════════════════════════════════════════════════════════ */
-describe('MS3 — Morning shot live on healed target: survives, type=live, heal consumed', () => {
+describe('MS3 — Morning shot live on healed target: survives, type=live (UI shows مشقی), heal consumed', () => {
   let game, p;
 
   beforeEach(() => {
