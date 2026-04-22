@@ -960,28 +960,35 @@ export class Game {
     let side = '';
     let killed = false;
     let jackCurseLocked = false;
+    let cowboyDied = true; // Cowboy always dies when using ability
+    let targetRoleName = null; // Only set for Jack (role announced)
+
+    // Cowboy is eliminated (NOT revivable by Constantine)
+    cowboy.kill(this.round, 'cowboy_self', false);
+    this._addHistory('death', t(tr.history.cowboy_self_eliminated).replace('%s', cowboy.name));
 
     if (target.roleId === 'jack') {
-      // Jack survives but curse is permanently locked
+      // Jack survives but curse is permanently locked; announce Jack's ROLE
       target.curse.lock();
       jackCurseLocked = true;
       side = 'jack';
+      targetRoleName = targetRole?.getLocalizedName?.() || targetRole?.name || 'Jack';
       this._discardBeautifulMind();
       this._addHistory('cowboy', t(tr.history.cowboy_jack).replace('%s', cowboy.name).replace('%s', target.name));
     } else if (target.roleId === 'zodiac') {
-      // Zodiac is eliminated
-      target.kill(this.round, 'cowboy');
+      // Zodiac is eliminated (revivable by Constantine)
+      target.kill(this.round, 'cowboy', true);
       killed = true;
       side = 'zodiac';
       this._addHistory('death', t(tr.history.cowboy_kill).replace('%s', cowboy.name).replace('%s', target.name));
     } else if (targetTeam === 'mafia') {
-      // Mafia is eliminated
-      target.kill(this.round, 'cowboy');
+      // Mafia is eliminated (revivable by Constantine)
+      target.kill(this.round, 'cowboy', true);
       killed = true;
       side = 'mafia';
       this._addHistory('death', t(tr.history.cowboy_kill).replace('%s', cowboy.name).replace('%s', target.name));
     } else {
-      // Citizen is eliminated but revivable
+      // Citizen is eliminated (revivable by Constantine)
       target.kill(this.round, 'cowboy', true);
       killed = true;
       side = 'citizen';
@@ -999,12 +1006,24 @@ export class Game {
       }
     }
 
+    // Check Jack curse chain for cowboy's own death
+    if (!jackCurseTriggered) {
+      const jackPlayer2 = this.players.find(p => p.isAlive && p.roleId === 'jack');
+      if (jackPlayer2 && jackPlayer2.curse.isTriggeredBy(cowboy.id)) {
+        jackPlayer2.kill(this.round, 'curse');
+        jackCurseTriggered = true;
+        this._addHistory('death', t(tr.history.jack_curse_activated));
+      }
+    }
+
     return {
       success: true,
       targetId,
       targetName: target.name,
       side,
       killed,
+      cowboyDied,
+      targetRoleName,
       jackCurseLocked,
       jackCurseTriggered,
     };

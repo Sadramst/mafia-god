@@ -1329,8 +1329,10 @@ export class DayView extends BaseView {
         <div style="font-size: var(--text-lg); font-weight: 700; margin-bottom: 8px;">
           ${this.cowboyResult.targetName}: ${sideText}
         </div>
+        ${this.cowboyResult.targetRoleName ? `<div style="font-size: var(--text-md); font-weight: 600; color: rgb(139,92,246);">${t(tr.day.cowboyJackRole).replace('%s', this.cowboyResult.targetRoleName)}</div>` : ''}
         ${this.cowboyResult.jackCurseLocked ? `<div class="text-muted" style="font-size: var(--text-sm);">${t(tr.day.cowboyJackSurvived)}</div>` : ''}
         ${this.cowboyResult.killed ? `<div class="text-secondary" style="font-size: var(--text-sm);">${this.cowboyResult.targetName} ${t(tr.day.cowboyEliminated)}</div>` : ''}
+        ${this.cowboyResult.cowboyDied ? `<div style="color: rgb(239,68,68); font-weight: 600; font-size: var(--text-sm);">${t(tr.day.cowboySelfEliminated)}</div>` : ''}
         ${this.cowboyResult.jackCurseTriggered ? `<div style="color: rgb(139,92,246); font-weight: 600;">${t(tr.day.jackCurseTriggered)}</div>` : ''}
         <button class="btn btn--ghost btn--sm mt-md" id="btn-cowboy-result-dismiss">${t(tr.day.dismiss)}</button>
       </div>
