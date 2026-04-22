@@ -417,6 +417,19 @@ export class NightView extends BaseView {
       return this._renderReporterStep(idx);
     }
 
+    // ── Kane: if ability already used, show wake-up only (no target selection) ──
+    if (step.roleId === 'kane' && game._kaneUsed) {
+      return `
+        <div class="card mb-sm" style="background: rgba(234,179,8,0.06); border-color: rgba(234,179,8,0.3); text-align: center;">
+          <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎖️</div>
+          <div class="font-bold mb-sm">${t(tr.night.kaneAlreadyUsed)}</div>
+          <div class="mt-md">
+            <button class="btn btn--ghost btn--sm" data-action="skip-step" data-step="${idx}">${t(tr.night.confirmButton)}</button>
+          </div>
+        </div>
+      `;
+    }
+
     // ── Standard step UI ──
       return `
       <div class="target-grid">

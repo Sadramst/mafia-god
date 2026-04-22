@@ -221,6 +221,7 @@ export const translations = {
     skipAction: { fa: 'رد شدن', en: 'Skip' },
     jadoogarBlocked: { fa: '✊ رد شدن — امشب نمی‌توانید اقدام کنید.', en: '✊ Blocked — you cannot act tonight.' },
     jadoogarBlockedBtn: { fa: 'رد شدن', en: 'Blocked' },
+    kaneAlreadyUsed: { fa: '🎖️ همشهری کین بیدار می‌شود ولی توانایی‌اش قبلاً استفاده شده است.', en: '🎖️ Citizen Kane wakes up but his ability has already been used.' },
     godfatherShoot: { fa: '🔫 شلیک', en: '🔫 Shoot' },
     godfatherSalakhi: { fa: '🗡️ سلاخی', en: '🗡️ Salakhi' },
     godfatherNegotiate: { fa: '🤝 مذاکره', en: '🤝 Negotiate' },

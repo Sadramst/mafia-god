@@ -87,6 +87,21 @@ export class DayView extends BaseView {
     }
   }
 
+  /** Re-render only the current subview (discussion/results/etc.) without rebuilding the entire view */
+  _rerenderSubview() {
+    const subviewEl = this.container.querySelector('#day-subview');
+    if (!subviewEl) {
+      this.render();
+      return;
+    }
+    this._saveScroll();
+    if (this.subView === 'results') this._renderResults(subviewEl);
+    else if (this.subView === 'discussion') this._renderDiscussion(subviewEl);
+    else if (this.subView === 'siesta') this._renderSiesta(subviewEl);
+    else if (this.subView === 'voting') this._renderVoting(subviewEl);
+    this._restoreScroll();
+  }
+
   render() {
     this._saveScroll();
     const game = this.game;
@@ -1252,7 +1267,7 @@ export class DayView extends BaseView {
         this.morningShootActive = true;
         this.morningShootTargetId = null;
         this.morningShootResult = null;
-        this.render();
+        this._rerenderSubview();
       });
     });
 
@@ -1260,7 +1275,7 @@ export class DayView extends BaseView {
     container.querySelectorAll('[data-morning-target]').forEach(btn => {
       btn.addEventListener('click', () => {
         this.morningShootTargetId = Number(btn.dataset.morningTarget);
-        this.render();
+        this._rerenderSubview();
       });
     });
 
@@ -1269,7 +1284,7 @@ export class DayView extends BaseView {
       this.morningShootActive = false;
       this.morningShooterId = null;
       this.morningShootTargetId = null;
-      this.render();
+      this._rerenderSubview();
     });
 
     // Confirm shoot
@@ -1287,13 +1302,13 @@ export class DayView extends BaseView {
         this.navigate('summary');
         return;
       }
-      this.render();
+      this._rerenderSubview();
     });
 
     // Dismiss result
     container.querySelector('#btn-morning-result-dismiss')?.addEventListener('click', () => {
       this.morningShootResult = null;
-      this.render();
+      this._rerenderSubview();
     });
   }
 
@@ -1302,14 +1317,14 @@ export class DayView extends BaseView {
     container.querySelector('#btn-cowboy-declare')?.addEventListener('click', () => {
       this.cowboyActive = true;
       this.cowboyTargetId = null;
-      this.render();
+      this._rerenderSubview();
     });
 
     // Target selection
     container.querySelectorAll('[data-cowboy-target]').forEach(btn => {
       btn.addEventListener('click', () => {
         this.cowboyTargetId = Number(btn.dataset.cowboyTarget);
-        this.render();
+        this._rerenderSubview();
       });
     });
 
@@ -1317,7 +1332,7 @@ export class DayView extends BaseView {
     container.querySelector('#btn-cowboy-cancel')?.addEventListener('click', () => {
       this.cowboyActive = false;
       this.cowboyTargetId = null;
-      this.render();
+      this._rerenderSubview();
     });
 
     // Confirm
@@ -1332,13 +1347,13 @@ export class DayView extends BaseView {
         this.navigate('summary');
         return;
       }
-      this.render();
+      this._rerenderSubview();
     });
 
     // Dismiss result
     container.querySelector('#btn-cowboy-result-dismiss')?.addEventListener('click', () => {
       this.cowboyResult = null;
-      this.render();
+      this._rerenderSubview();
     });
   }
 
