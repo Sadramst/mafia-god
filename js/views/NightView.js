@@ -360,6 +360,12 @@ export class NightView extends BaseView {
           else if (target?.roleId === 'godfather') thumbsUp = false;
           else if (targetTeam === 'mafia') thumbsUp = true;
 
+          // Joker reversal: if joker targeted the same player, flip the result
+          const jokerTargetId = game.nightActions?.joker?.targetId;
+          if (jokerTargetId === selectedTarget) {
+            thumbsUp = !thumbsUp;
+          }
+
           resultCard = `
             <div class="chip" style="margin-top:8px">${thumbsUp ? '👍' : '👎'} ${t(tr.night.investigationResultText) || ''}</div>
           `;
