@@ -502,9 +502,11 @@ export class SetupView extends BaseView {
         const isSelected = count > 0;
         // Disable reporter unless negotiator is selected
         const reporterDisabled = (role.id === 'reporter' && !game.selectedRoles['negotiator']);
+        // Disable bodyguard unless zodiac or bomber is selected
+        const bodyguardDisabled = (role.id === 'bodyguard' && !game.selectedRoles['zodiac'] && !game.selectedRoles['bomber']);
 
         html += `
-          <div class="role-card role-card--${team} ${isSelected ? 'selected' : ''} ${reporterDisabled ? 'role-card--disabled' : ''}" data-role="${role.id}" ${reporterDisabled ? 'data-disabled="1"' : ''}>
+          <div class="role-card role-card--${team} ${isSelected ? 'selected' : ''} ${reporterDisabled || bodyguardDisabled ? 'role-card--disabled' : ''}" data-role="${role.id}" ${reporterDisabled || bodyguardDisabled ? 'data-disabled="1"' : ''}>
             <button class="role-card__info" data-info="${role.id}" title="${t(tr.setup.roleInfoTooltip)}">i</button>
             <div class="role-card__icon">${role.icon}</div>
             <div class="role-card__name">${role.getLocalizedName()}</div>
@@ -646,11 +648,15 @@ export class SetupView extends BaseView {
         const roleId = card.dataset.role;
         const role = Roles.get(roleId);
         if (!role) return;
-        // Prevent interaction if this card is disabled (e.g., reporter requires negotiator)
+        // Prevent interaction if this card is disabled (e.g., reporter requires negotiator, bodyguard requires zodiac/bomber)
         if (card.dataset.disabled) {
           // If it's disabled but selected (edge-case), allow deselect via count buttons; otherwise notify
           if (!game.selectedRoles[roleId]) {
-            this.toast(t(tr.setupExtras.negotiatorRequiredForReporter), 'error');
+            if (roleId === 'bodyguard') {
+              this.toast(t(tr.setup.bodyguardRequiresZodiacOrBomber), 'error');
+            } else {
+              this.toast(t(tr.setupExtras.negotiatorRequiredForReporter), 'error');
+            }
             return;
           }
         }
@@ -682,17 +688,30 @@ export class SetupView extends BaseView {
           if (role.unique) game.selectedRoles[roleId] = 1;
           else game.selectedRoles[roleId] = (game.selectedRoles[roleId] || 0) + 1;
         } else {
-          // Prevent removing Bodyguard while Zodiac is selected
-          if (roleId === 'bodyguard' && game.selectedRoles && game.selectedRoles['zodiac']) {
+          // Prevent removing Bodyguard while Zodiac or Bomber is selected
+          if (roleId === 'bodyguard' && game.selectedRoles && (game.selectedRoles['zodiac'] || game.selectedRoles['bomber'])) {
             this.toast(t(tr.setup.cannotRemoveBodyguardWhenZodiac), 'error');
             return;
           }
           // deselect: remove entirely
           delete game.selectedRoles[roleId];
+
+          // If zodiac or bomber deselected and the other isn't present, auto-remove bodyguard
+          if ((roleId === 'zodiac' || roleId === 'bomber') && game.selectedRoles['bodyguard'] && !game.selectedRoles['zodiac'] && !game.selectedRoles['bomber']) {
+            delete game.selectedRoles['bodyguard'];
+            const bgCard = this.container.querySelector('.role-card[data-role="bodyguard"]');
+            if (bgCard) {
+              bgCard.classList.remove('selected');
+              bgCard.classList.add('role-card--disabled');
+              bgCard.dataset.disabled = '1';
+              const val = bgCard.querySelector('.role-card__count-value');
+              if (val) val.textContent = 0;
+            }
+          }
         }
 
-        // Special rule: if Zodiac is selected, ensure Bodyguard (محافظ) is present
-        if (selecting && roleId === 'zodiac') {
+        // Special rule: if Zodiac or Bomber is selected, ensure Bodyguard (محافظ) is present
+        if (selecting && (roleId === 'zodiac' || roleId === 'bomber')) {
           // if bodyguard not already selected, auto-add it
           if (!game.selectedRoles['bodyguard']) {
             game.selectedRoles['bodyguard'] = 1;
@@ -700,6 +719,8 @@ export class SetupView extends BaseView {
             const bgCard = this.container.querySelector('.role-card[data-role="bodyguard"]');
             if (bgCard) {
               bgCard.classList.add('selected');
+              bgCard.classList.remove('role-card--disabled');
+              delete bgCard.dataset.disabled;
               const val = bgCard.querySelector('.role-card__count-value');
               if (val) val.textContent = 1;
             }
