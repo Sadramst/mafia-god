@@ -15,6 +15,7 @@ import { t, translations as tr } from '../utils/i18n.js';
 
 export class Game {
 
+  //#region Constructor & Reset
   constructor() {
     this.reset();
   }
@@ -69,7 +70,9 @@ export class Game {
     this.desiredMafia = 0;
     this.desiredCitizen = 0;
   }
+  //#endregion
 
+  //#region Setup Phase
   // ──────────────────────────────────
   //  SETUP PHASE
   // ──────────────────────────────────
@@ -245,6 +248,9 @@ export class Game {
     this.phase = 'roleReveal';
   }
 
+  //#endregion
+
+  //#region Blind Phase
   // ──────────────────────────────────
   //  BLIND PHASE (روز و شب کور)
   // ──────────────────────────────────
@@ -306,6 +312,9 @@ export class Game {
     return steps;
   }
 
+  //#endregion
+
+  //#region Night Phase
   // ──────────────────────────────────
   //  NIGHT PHASE
   // ──────────────────────────────────
@@ -917,6 +926,9 @@ export class Game {
     return results;
   }
 
+  //#endregion
+
+  //#region Day Phase
   // ──────────────────────────────────
   //  DAY PHASE
   // ──────────────────────────────────
@@ -934,6 +946,9 @@ export class Game {
     this._addHistory('day_start', t(tr.history.day_start).replace('%d', String(this.round)));
   }
 
+  //#endregion
+
+  //#region Cowboy
   // ──────────────────────────────────
   //  COWBOY (کابوی)
   // ──────────────────────────────────
@@ -1032,6 +1047,9 @@ export class Game {
     };
   }
 
+  //#endregion
+
+  //#region Framason & Voting & Morning Shots
   // ──────────────────────────────────
   //  FRAMASON (فراماسون)
   // ──────────────────────────────────
@@ -1328,6 +1346,9 @@ export class Game {
     return explosions;
   }
 
+  //#endregion
+
+  //#region Bomb Determination
   // ──────────────────────────────────
   //  BOMB DETERMINATION (خواب نیم‌روزی)
   // ──────────────────────────────────
@@ -1399,6 +1420,9 @@ export class Game {
     return { result, targetId };
   }
 
+  //#endregion
+
+  //#region Win Condition
   // ──────────────────────────────────
   //  WIN CONDITION
   // ──────────────────────────────────
@@ -1530,6 +1554,9 @@ export class Game {
     return true;
   }
 
+  //#endregion
+
+  //#region Helpers
   // ──────────────────────────────────
   //  HELPERS
   // ──────────────────────────────────
@@ -1622,6 +1649,9 @@ export class Game {
     return true;
   }
 
+  //#endregion
+
+  //#region God Correction
   // ──────────────────────────────────
   //  GOD CORRECTION (خدای بازی)
   // ──────────────────────────────────
@@ -1882,6 +1912,9 @@ export class Game {
     return { success: true, swappedRole: victimRole, victimNewRole: chosenRole, jackCurseTriggered };
   }
 
+  //#endregion
+
+  //#region Serialization
   // ──────────────────────────────────
   //  SERIALIZATION
   // ──────────────────────────────────
@@ -1979,4 +2012,5 @@ export class Game {
     const maxId = Math.max(0, ...this.players.map(p => p.id));
     Player._nextId = maxId + 1;
   }
+  //#endregion
 }

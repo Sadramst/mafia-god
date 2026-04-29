@@ -11,6 +11,7 @@ import { Settings, Language } from '../utils/Settings.js';
 
 export class DayView extends BaseView {
 
+  //#region Constructor
   constructor(container, app) {
     super(container, app);
     this.showGodTools = false;
@@ -76,7 +77,9 @@ export class DayView extends BaseView {
     };
     this.container?.addEventListener('click', this._onContainerClick);
   }
+  //#endregion
 
+  //#region Scroll & Render Helpers
   /** Save scroll position before re-render, restore after */
   _saveScroll() {
     this._savedScrollY = window.scrollY || window.pageYOffset || 0;
@@ -101,7 +104,9 @@ export class DayView extends BaseView {
     else if (this.subView === 'voting') this._renderVoting(subviewEl);
     this._restoreScroll();
   }
+  //#endregion
 
+  //#region render
   render() {
     this._saveScroll();
     const game = this.game;
@@ -201,7 +206,9 @@ export class DayView extends BaseView {
     this._restoreScroll();
     this._hasRendered = true;
   }
+  //#endregion
 
+  //#region Blind Day
   // ─── Blind Day (1 minute, no challenges) ───
   _renderBlindDay(counts) {
     const game = this.game;
@@ -291,6 +298,9 @@ export class DayView extends BaseView {
     });
   }
 
+  //#endregion
+
+  //#region Night Results
   // ─── Night Results ───
   _renderResults(container) {
     const results = this.app._nightResults;
@@ -588,6 +598,9 @@ export class DayView extends BaseView {
     dashboard.mount(container);
   }
 
+  //#endregion
+
+  //#region Discussion with Timer
   // ─── Discussion with Timer ───
   _renderDiscussion(container) {
     const game = this.game;
@@ -716,6 +729,9 @@ export class DayView extends BaseView {
     });
   }
 
+  //#endregion
+
+  //#region Voting
   // ─── Voting ───
   _renderVoting(container) {
     const game = this.game;
@@ -903,6 +919,9 @@ export class DayView extends BaseView {
     });
   }
 
+  //#endregion
+
+  //#region Last Action Flow
   /** Handle Last Action UI flow after a player is eliminated by vote.
    *  Flow: Step 1 — pick a number  →  Step 2 — reveal card  →  Step 3 — target (if needed)  →  done
    */
@@ -1048,6 +1067,9 @@ export class DayView extends BaseView {
     return false;
   }
 
+  //#endregion
+
+  //#region Elimination & Runoff Flow
   /** Encapsulate elimination flow (eliminate + handle last-action/jack/skip/win) */
   _eliminateAndHandleExtra(targetId) {
     const game = this.game;
@@ -1221,6 +1243,9 @@ export class DayView extends BaseView {
     this.navigate('day');
   }
 
+  //#endregion
+
+  //#region Event Handlers Setup
   _setupTimer(container) {
     const display = container.querySelector('#timer-display');
     const bar = container.querySelector('#timer-bar');
@@ -1357,6 +1382,9 @@ export class DayView extends BaseView {
     });
   }
 
+  //#endregion
+
+  //#region Morning Shoot & Cowboy Panels
   _renderCowboyPanel() {
     const game = this.game;
     const cowboy = game.players.find(p => p.isAlive && p.roleId === 'cowboy');
@@ -1517,6 +1545,9 @@ export class DayView extends BaseView {
     }
   }
 
+  //#endregion
+
+  //#region Bomb Siesta
   // ─── Bomb Siesta (خواب نیم‌روزی) ───
   _renderSiesta(container) {
     const game = this.game;

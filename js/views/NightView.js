@@ -9,6 +9,7 @@ import { Settings, Language } from '../utils/Settings.js';
 
 export class NightView extends BaseView {
 
+  //#region Constructor
   constructor(container, app) {
     super(container, app);
     this.selectedTargets = {}; // stepIndex → playerId
@@ -18,7 +19,9 @@ export class NightView extends BaseView {
     this.gunnerAssignments = []; // Array of { holderId, type } for multi-bullet
     this.gunnerCurrentType = null; // 'blank' | 'live' — type being assigned
   }
+  //#endregion
 
+  //#region render
   render() {
     const game = this.game;
 
@@ -148,6 +151,9 @@ export class NightView extends BaseView {
     dashboard.mount(container);
   }
 
+  //#endregion
+
+  //#region Step Rendering
   _renderSteps() {
     const game = this.game;
     const steps = game.nightSteps;
@@ -232,6 +238,9 @@ export class NightView extends BaseView {
     }).join('');
   }
 
+  //#endregion
+
+  //#region Active Step UI
   /**
    * Render the active step body.
    * For godfather: shows mode selection (shoot vs salakhi) + target + optional role guess.
@@ -453,6 +462,9 @@ export class NightView extends BaseView {
     `;
   }
 
+  //#endregion
+
+  //#region Special Step Renderers
   /**
    * Render Godfather's special step: choose between shoot and salakhi,
    * then target selection, and role guess (salakhi only).
@@ -797,6 +809,9 @@ export class NightView extends BaseView {
     `;
   }
 
+  //#endregion
+
+  //#region Helpers & Negotiate Overlay
   /**
    * Show a full-screen announcement overlay for the God to read aloud
    * when mafia is negotiating (buying a player).
@@ -829,6 +844,9 @@ export class NightView extends BaseView {
     return t(tr.night.selectTarget);
   }
 
+  //#endregion
+
+  //#region Event Handlers
   _attachEvents() {
     const game = this.game;
 
@@ -1029,6 +1047,8 @@ export class NightView extends BaseView {
       }
     });
   }
+
+  //#endregion
 
   destroy() {
     super.destroy();

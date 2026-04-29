@@ -9,6 +9,7 @@ import { Settings } from '../utils/Settings.js';
 
 export class SetupView extends BaseView {
 
+  //#region Constructor & Helpers
   constructor(container, app) {
     super(container, app);
     this.activeTab = 'players'; // players | roles | assign
@@ -139,6 +140,9 @@ export class SetupView extends BaseView {
     else if (this.activeTab === 'assign') this._renderAssignTab(content);
   }
 
+  //#endregion
+
+  //#region Players Tab
   // ─── Players Tab ───
   _renderPlayersTab(container) {
     const game = this.app.game;
@@ -452,6 +456,9 @@ export class SetupView extends BaseView {
 
 
 
+  //#endregion
+
+  //#region Roles Tab
   // ─── Roles Tab ───
   _renderRolesTab(container) {
     const game = this.app.game;
@@ -962,6 +969,9 @@ export class SetupView extends BaseView {
     });
   }
 
+  //#endregion
+
+  //#region Assign Tab
   // ─── Assign Tab ───
   _renderAssignTab(container) {
     const game = this.app.game;
