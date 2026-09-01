@@ -143,6 +143,8 @@ export const translations = {
     gunnerSettings: { fa: 'تنظیمات تفنگدار:', en: 'Gunner Settings:' },
     morningShotImmunity: { fa: 'مصونیت از تیر صبحگاهی:', en: 'Morning Shot Immunity:' },
     randomAssignAndStart: { fa: 'تخصیص تصادفی و شروع', en: 'Random Assign & Start' },
+    manualAssignAndStart: { fa: 'انتخاب دستی و شروع', en: 'Manual Pick & Start' },
+    orDivider: { fa: 'یا', en: 'or' },
     backHome: { fa: 'بازگشت به خانه', en: 'Back to Home' },
     startGame: { fa: 'شروع بازی', en: 'Start Game' },
     mafia: { fa: 'مافیا', en: 'Mafia' },
@@ -193,6 +195,19 @@ export const translations = {
     startNight: { fa: 'شب اول شروع شود', en: 'Start Night 1' },
     warning: { fa: 'قبل از شب', en: 'Before Night' },
     hidePhone: { fa: 'گوشی را مخفی کنید تا بعد از شمارش شب اول را شروع کنید!', en: 'Hide phone and start night 1 after countdown!' },
+  },
+
+  // Manual Role Assignment (each player privately picks their own role)
+  manualAssign: {
+    pickPrompt: { fa: 'یک نقش از میان نقش‌های باقی‌مانده انتخاب کنید', en: 'Choose a role from what\'s left' },
+    blindPickPrompt: { fa: 'یک کارت انتخاب کنید — نقش پس از انتخاب مشخص می‌شود', en: 'Pick a card — your role is revealed after you choose' },
+    confirmPrompt: { fa: 'این نقش شماست — تأیید کنید', en: 'This is your role — confirm it' },
+    confirmAndContinue: { fa: '✓ تأیید و ادامه', en: '✓ Confirm & Continue' },
+    pickDifferent: { fa: '← انتخاب نقش دیگر', en: '← Pick a Different Role' },
+    mysteryCard: { fa: 'کارت %d', en: 'Card %d' },
+    visibilityLabel: { fa: 'نمایش نقش‌ها هنگام انتخاب:', en: 'Show roles while picking:' },
+    visibilityOn: { fa: '👁️ آشکار', en: '👁️ Visible' },
+    visibilityOff: { fa: '🙈 مخفی (تصادفی)', en: '🙈 Hidden (Blind)' },
   },
 
   // Night Phase
@@ -505,6 +520,7 @@ export const translations = {
     home: { fa: 'خدای مافیا', en: 'Mafia God' },
     setup: { fa: 'تنظیمات بازی', en: 'Game Setup' },
     roleReveal: { fa: 'نمایش نقش‌ها', en: 'Role Reveal' },
+    manualAssign: { fa: 'انتخاب دستی نقش', en: 'Manual Role Pick' },
     nightRound: { fa: 'شب %d', en: 'Night %d' },
     dayRound: { fa: 'روز %d', en: 'Day %d' },
     blindNight: { fa: 'شب آشنایی', en: 'Acquaintance Night' },

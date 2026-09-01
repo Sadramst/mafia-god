@@ -9,6 +9,11 @@ import { Settings, Language } from '../utils/Settings.js';
 
 export class SummaryView extends BaseView {
 
+  destroy() {
+    super.destroy();
+    this._historyRecorded = false;
+  }
+
   render() {
     // If a history preview is set (from Home history), render that snapshot instead of the active game
     const preview = this.app._historyPreview;
@@ -150,16 +155,21 @@ export class SummaryView extends BaseView {
     };
     const w = winnerData[game.winner] || winnerData.citizen;
 
-    // Save full game snapshot to history (include timeline + players)
-    Storage.addToHistory({
-      date: Date.now(),
-      winner: game.winner,
-      rounds: game.round,
-      playerCount: game.players.length,
-      history: game.history.slice(),
-      players: game.players.map(p => ({ id: p.id, name: p.name, roleId: p.roleId, isAlive: p.isAlive })),
-    });
-    Storage.deleteSave();
+    // Save full game snapshot to history exactly once per finished game — render() can run
+    // again for the same win (language toggle, re-navigating to 'summary'), which must not
+    // re-add a duplicate entry.
+    if (!this._historyRecorded) {
+      this._historyRecorded = true;
+      Storage.addToHistory({
+        date: Date.now(),
+        winner: game.winner,
+        rounds: game.round,
+        playerCount: game.players.length,
+        history: game.history.slice(),
+        players: game.players.map(p => ({ id: p.id, name: p.name, roleId: p.roleId, isAlive: p.isAlive })),
+      });
+      Storage.deleteSave();
+    }
 
     this.container.innerHTML = `
       <div class="view">

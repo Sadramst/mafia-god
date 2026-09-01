@@ -960,7 +960,11 @@ export class DayView extends BaseView {
         const res = game.drawLastActionFor(victimId);
         this.app.saveGame();
         const card = res?.card;
-        if (!card) { finish(); return; }
+        if (!card) {
+          if (res?.jackCurseTriggered) this.app.showToast(t(tr.day.jackCurseTriggered), 'info');
+          finish();
+          return;
+        }
         this._showCardReveal(card, victim, ICONS, makeOverlay, finish, res);
       });
     });
@@ -1793,5 +1797,8 @@ export class DayView extends BaseView {
     this.morningShooterId = null;
     this.morningShootTargetId = null;
     this.morningShootResult = null;
+    this.cowboyActive = false;
+    this.cowboyTargetId = null;
+    this.cowboyResult = null;
   }
 }

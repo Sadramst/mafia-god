@@ -13,6 +13,7 @@ import { Router } from './engine/Router.js';
 import { HomeView } from './views/HomeView.js';
 import { SetupView } from './views/SetupView.js';
 import { RoleRevealView } from './views/RoleRevealView.js';
+import { ManualAssignView } from './views/ManualAssignView.js';
 import { NightView } from './views/NightView.js';
 import { DayView } from './views/DayView.js';
 import { SummaryView } from './views/SummaryView.js';
@@ -50,6 +51,7 @@ export class App {
       home:       new HomeView(this.mainEl, this),
       setup:      new SetupView(this.mainEl, this),
       roleReveal: new RoleRevealView(this.mainEl, this),
+      manualAssign: new ManualAssignView(this.mainEl, this),
       night:      new NightView(this.mainEl, this),
       day:        new DayView(this.mainEl, this),
       summary:    new SummaryView(this.mainEl, this),
@@ -254,6 +256,7 @@ export class App {
       home:       t(tr.header.home),
       setup:      t(tr.header.setup),
       roleReveal: t(tr.header.roleReveal),
+      manualAssign: t(tr.header.manualAssign),
       night:      isBlindNight ? t(tr.header.blindNight) : t(tr.header.nightRound).replace('%d', toEn(game.round)),
       day:        isBlindDay ? t(tr.header.blindDay) : t(tr.header.dayRound).replace('%d', toEn(game.round)),
       summary:    t(tr.header.summary),

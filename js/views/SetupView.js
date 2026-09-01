@@ -1077,6 +1077,18 @@ export class SetupView extends BaseView {
         <button class="btn btn--primary btn--lg btn--block mb-md" id="btn-random-assign" ${errors.length > 0 ? 'disabled' : ''}>
           🎲 ${t(tr.setup.randomAssignAndStart)}
         </button>
+        <div class="text-center text-muted mb-md" style="font-size: var(--text-xs);">— ${t(tr.setup.orDivider)} —</div>
+
+        <!-- Manual pick role-visibility toggle -->
+        <div class="flex gap-sm items-center justify-center mb-sm" style="flex-wrap: wrap;">
+          <span class="text-muted" style="font-size: var(--text-sm);">${t(tr.manualAssign.visibilityLabel)}</span>
+          <button class="btn btn--sm ${game.manualPickShowRoles ? 'btn--primary' : 'btn--ghost'}" id="btn-manual-visibility-on">${t(tr.manualAssign.visibilityOn)}</button>
+          <button class="btn btn--sm ${!game.manualPickShowRoles ? 'btn--primary' : 'btn--ghost'}" id="btn-manual-visibility-off">${t(tr.manualAssign.visibilityOff)}</button>
+        </div>
+
+        <button class="btn btn--accent btn--lg btn--block mb-md" id="btn-manual-assign" ${errors.length > 0 ? 'disabled' : ''}>
+          🖐️ ${t(tr.setup.manualAssignAndStart)}
+        </button>
         <button class="btn btn--ghost btn--block" id="btn-back-home-setup">
           ← ${t(tr.setup.backHome)}
         </button>
@@ -1086,6 +1098,27 @@ export class SetupView extends BaseView {
     this.listen('#btn-random-assign', 'click', () => {
       game.assignRolesRandomly();
       this.navigate('roleReveal');
+    });
+
+    this.listen('#btn-manual-assign', 'click', () => {
+      game.startManualAssignment();
+      this.navigate('manualAssign');
+    });
+
+    // Manual-pick visibility toggle — update button states in-place
+    const updateVisibilityButtons = () => {
+      const onBtn = this.container.querySelector('#btn-manual-visibility-on');
+      const offBtn = this.container.querySelector('#btn-manual-visibility-off');
+      if (onBtn) { onBtn.classList.toggle('btn--primary', game.manualPickShowRoles); onBtn.classList.toggle('btn--ghost', !game.manualPickShowRoles); }
+      if (offBtn) { offBtn.classList.toggle('btn--primary', !game.manualPickShowRoles); offBtn.classList.toggle('btn--ghost', game.manualPickShowRoles); }
+    };
+    this.listen('#btn-manual-visibility-on', 'click', () => {
+      game.manualPickShowRoles = true;
+      updateVisibilityButtons();
+    });
+    this.listen('#btn-manual-visibility-off', 'click', () => {
+      game.manualPickShowRoles = false;
+      updateVisibilityButtons();
     });
 
     this.listen('#btn-back-home-setup', 'click', () => {

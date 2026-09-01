@@ -69,6 +69,10 @@ export class Game {
     // Desired team counts (computed from players and independents)
     this.desiredMafia = 0;
     this.desiredCitizen = 0;
+    // Manual assignment state (see startManualAssignment())
+    this._manualPool = null;
+    this._manualAssignIndex = 0;
+    this.manualPickShowRoles = true; // false = "blind pick": tiles hide role identity until revealed
   }
   //#endregion
 
@@ -84,12 +88,16 @@ export class Game {
     if (typeof nameOrObj === 'string' && !nameOrObj.trim()) return null;
     const player = new Player(nameOrObj);
     this.players.push(player);
+    // Roster changed mid-manual-assignment — the pool/turn index would desync against the
+    // new players array, so cancel the in-progress pick and send the God back to Setup.
+    if (this.phase === 'manualAssign') this._cancelManualAssignment();
     return player;
   }
 
   /** Remove a player by ID */
   removePlayer(playerId) {
     this.players = this.players.filter(p => p.id !== playerId);
+    if (this.phase === 'manualAssign') this._cancelManualAssignment();
   }
 
   /** Set the selected roles with counts: { godfather: 1, simpleMafia: 2, ... } */
@@ -227,6 +235,11 @@ export class Game {
       player.initShield(roleDef);
     });
 
+    this._finalizeRoleAssignment();
+  }
+
+  /** Shared post-assignment setup, used by both random and manual assignment */
+  _finalizeRoleAssignment() {
     // Initialize framason if present
     const framasonPlayer = this.players.find(p => p.roleId === 'freemason');
     if (framasonPlayer) {
@@ -246,6 +259,89 @@ export class Game {
     }
 
     this.phase = 'roleReveal';
+  }
+
+  /**
+   * Start manual role assignment — instead of a random deal, each player
+   * privately picks their own role from what's left in the pool, one at a time,
+   * in player order. Call assignManualRole() once per player until
+   * isManualAssignmentComplete() is true.
+   */
+  startManualAssignment() {
+    this._manualPool = {};
+    for (const [roleId, count] of Object.entries(this.selectedRoles)) {
+      if (count > 0) this._manualPool[roleId] = count;
+    }
+    this._manualAssignIndex = 0;
+    this.phase = 'manualAssign';
+  }
+
+  /** Roles still available to pick: [{ roleId, count }] (count > 0 only) */
+  getManualRemainingRoles() {
+    if (!this._manualPool) return [];
+    return Object.entries(this._manualPool)
+      .filter(([, count]) => count > 0)
+      .map(([roleId, count]) => ({ roleId, count }));
+  }
+
+  /**
+   * "Blind pick" support: choose a roleId at random from the remaining pool, weighted by
+   * how many copies are left, WITHOUT assigning it yet. Used when manualPickShowRoles is
+   * off, so the picker can show an anonymous card, then reveal + confirm this exact result
+   * (call assignManualRole with the returned roleId once the God/player confirms).
+   * @returns {string|null}
+   */
+  peekManualRandomRole() {
+    const remaining = this.getManualRemainingRoles();
+    if (!remaining.length) return null;
+    const totalCount = remaining.reduce((s, r) => s + r.count, 0);
+    let idx = Math.floor(Math.random() * totalCount);
+    for (const r of remaining) {
+      if (idx < r.count) return r.roleId;
+      idx -= r.count;
+    }
+    return remaining[remaining.length - 1].roleId;
+  }
+
+  /** The player whose turn it is to pick a role, or null if assignment is complete */
+  getManualCurrentPlayer() {
+    return this.players[this._manualAssignIndex] || null;
+  }
+
+  /** Whether every player has picked a role */
+  isManualAssignmentComplete() {
+    return !!this._manualPool && this._manualAssignIndex >= this.players.length;
+  }
+
+  /**
+   * Assign a role the current player picked from the remaining pool.
+   * @param {string} roleId
+   * @returns {boolean} success — false if roleId isn't available or no player is waiting
+   */
+  assignManualRole(roleId) {
+    if (!this._manualPool || !this._manualPool[roleId]) return false;
+    const player = this.getManualCurrentPlayer();
+    if (!player) return false;
+
+    player.roleId = roleId;
+    player.initShield(Roles.get(roleId));
+
+    this._manualPool[roleId]--;
+    if (this._manualPool[roleId] <= 0) delete this._manualPool[roleId];
+    this._manualAssignIndex++;
+
+    if (this.isManualAssignmentComplete()) {
+      this._finalizeRoleAssignment();
+    }
+    return true;
+  }
+
+  /** Abort an in-progress manual assignment (e.g. the roster changed mid-flow) and
+   *  send the God back to Setup — safer than letting the pool/turn index desync. */
+  _cancelManualAssignment() {
+    this._manualPool = null;
+    this._manualAssignIndex = 0;
+    this.phase = 'setup';
   }
 
   //#endregion
@@ -1021,6 +1117,7 @@ export class Game {
         jackPlayer.kill(this.round, 'curse');
         jackCurseTriggered = true;
         this._addHistory('death', t(tr.history.jack_curse_activated));
+        this._returnPlayerBullet(jackPlayer.id);
       }
     }
 
@@ -1031,6 +1128,7 @@ export class Game {
         jackPlayer2.kill(this.round, 'curse');
         jackCurseTriggered = true;
         this._addHistory('death', t(tr.history.jack_curse_activated));
+        this._returnPlayerBullet(jackPlayer2.id);
       }
     }
 
@@ -1298,6 +1396,7 @@ export class Game {
       jackPlayer.kill(this.round, 'curse');
       this._addHistory('death', t(tr.history.jack_curse_activated));
       result.jackCurseTriggered = true;
+      this._returnPlayerBullet(jackPlayer.id);
     }
 
     // Track framason leader death
@@ -1331,6 +1430,7 @@ export class Game {
           jackPlayer.kill(this.round, 'curse');
           this._addHistory('death', t(tr.history.jack_curse_activated));
           explosions.push({ holderId: jackPlayer.id, holderName: jackPlayer.name, curseChain: true });
+          this._returnPlayerBullet(jackPlayer.id);
         }
 
         // Track framason leader death
@@ -1666,18 +1766,16 @@ export class Game {
     if (!player) return { success: false, reason: 'not_found' };
     if (!player.isAlive) return { success: false, reason: 'already_dead' };
 
-    // Kill the player (not revivable by Constantine, marked as admin correction)
-    player.kill(this.round, 'god_correction', false);
+    // Kill the player directly (not revivable by Constantine, marked as admin correction).
+    // Deliberately bypasses Player.kill()'s role-based immunity (Jack/Zodiac normally survive
+    // most kill causes) — this is an explicit admin override meant to correct mistakes, so it
+    // must always succeed rather than silently no-op for immune roles.
+    player.isAlive = false;
+    player.deathRound = this.round;
+    player.deathCause = 'god_correction';
+    player.isRevivable = false;
     this._addHistory('god_correction', t(tr.history.godKill).replace('%s', player.name));
-
-    // If this player was in bullet pool, return bullet
-    if (this.bulletManager.isActive) {
-      const bullet = this.bulletManager.getPlayerBullet(playerId);
-      if (bullet) {
-        this.bulletManager.returnBullet(bullet.type);
-        this.bulletManager.removeBullet(playerId);
-      }
-    }
+    this._returnPlayerBullet(playerId);
 
     return { success: true, playerName: player.name };
   }
@@ -1716,6 +1814,17 @@ export class Game {
     if (bm) bm.used = true;
   }
 
+  /** Return a player's active gunner bullet (if any) to the pool — call whenever a bullet
+   *  holder dies through a path that doesn't already do this itself. */
+  _returnPlayerBullet(playerId) {
+    if (!this.bulletManager.isActive) return;
+    const bullet = this.bulletManager.getPlayerBullet(playerId);
+    if (bullet) {
+      this.bulletManager.returnBullet(bullet.type);
+      this.bulletManager.removeBullet(playerId);
+    }
+  }
+
   /** Get history for a specific round */
   getHistoryForRound(round) {
     return this.history.filter(h => h.round === round);
@@ -1734,7 +1843,12 @@ export class Game {
     if (!hasVulnerableIndependent) {
       const bm = this.lastActionManager.cards.find(c => c.id === CARD.BEAUTIFUL_MIND && !c.used);
       if (bm) bm.used = true;
-      if (!this.lastActionManager.hasRemaining()) return null;
+      if (!this.lastActionManager.hasRemaining()) {
+        // Even with no card to draw, a curse check deferred by eliminateByVote() (because
+        // a last-action card was still available at the time) must still be resolved now.
+        const curseResult = this._resolvePendingVoteCurse(victimId);
+        return curseResult.jackCurseTriggered ? { card: null, ...curseResult } : null;
+      }
     }
 
     // Auto-discard Beautiful Mind when mafia is voted out
@@ -1743,7 +1857,10 @@ export class Game {
     if (victimRole?.team === 'mafia') {
       const bm = this.lastActionManager.cards.find(c => c.id === CARD.BEAUTIFUL_MIND && !c.used);
       if (bm) bm.used = true;
-      if (!this.lastActionManager.hasRemaining()) return null;
+      if (!this.lastActionManager.hasRemaining()) {
+        const curseResult = this._resolvePendingVoteCurse(victimId);
+        return curseResult.jackCurseTriggered ? { card: null, ...curseResult } : null;
+      }
     }
 
     const card = this.lastActionManager.drawRandom();
@@ -1808,14 +1925,7 @@ export class Game {
 
     jackPlayer.kill(this.round, 'curse');
     this._addHistory('death', t(tr.history.execution_with_curse).replace('%s', victim?.name || '—'));
-
-    if (this.bulletManager.isActive) {
-      const jackBullet = this.bulletManager.getPlayerBullet(jackPlayer.id);
-      if (jackBullet) {
-        this.bulletManager.returnBullet(jackBullet.type);
-        this.bulletManager.removeBullet(jackPlayer.id);
-      }
-    }
+    this._returnPlayerBullet(jackPlayer.id);
 
     return { jackCurseTriggered: true };
   }
@@ -1838,6 +1948,7 @@ export class Game {
     const died = target.tryKill(this.round, 'lastaction_shoot');
     if (died) {
       this._addHistory('death', t(tr.history.lastActionFinalShootKill).replace('%s', target.name));
+      this._returnPlayerBullet(target.id);
     } else {
       this._addHistory('shield', t(tr.history.lastActionFinalShootShielded || tr.history.shielded).replace('%s', target.name));
     }
@@ -1886,9 +1997,13 @@ export class Game {
     // Transfer victim's shield state to chosen (do not reinitialize from role defaults).
     chosen.shield = Shield.fromJSON(victim.shield.toJSON());
 
-    // Transfer Jack's curse state (target, history, lock) to new player
+    // Transfer Jack's curse state (target, history, lock) to whichever player becomes the
+    // new Jack — this can be either direction: the victim was Jack (chosen becomes Jack), or
+    // the chosen swap target was Jack (victim becomes Jack).
     if (victimRole === 'jack') {
       chosen.curse = Curse.fromJSON(victim.curse.toJSON());
+    } else if (chosenRole === 'jack') {
+      victim.curse = Curse.fromJSON(chosen.curse.toJSON());
     }
 
     // New rule: if victim was Jack's cursed target, Jack dies immediately on Face Off.
@@ -1898,6 +2013,7 @@ export class Game {
       aliveJack.kill(this.round, 'curse');
       jackCurseTriggered = true;
       this._addHistory('death', t(tr.history.execution_with_curse).replace('%s', victim.name));
+      this._returnPlayerBullet(aliveJack.id);
     }
 
     victim.isRevivable = false;
@@ -1928,6 +2044,14 @@ export class Game {
       winner: this.winner,
       history: this.history,
       selectedRoles: this.selectedRoles,
+      desiredMafia: this.desiredMafia,
+      desiredCitizen: this.desiredCitizen,
+      manualPickShowRoles: this.manualPickShowRoles,
+      _manualPool: this._manualPool,
+      _manualAssignIndex: this._manualAssignIndex,
+      nightActions: this.nightActions,
+      currentNightStep: this.currentNightStep,
+      nightSteps: this.nightSteps,
       constantineUsed: this.constantineUsed,
       bulletManager: this.bulletManager.toJSON(),
       gunnerBlankMax: this.gunnerBlankMax,
@@ -1972,6 +2096,14 @@ export class Game {
     this.winner = data.winner;
     this.history = data.history || [];
     this.selectedRoles = data.selectedRoles || {};
+    this.desiredMafia = data.desiredMafia ?? 0;
+    this.desiredCitizen = data.desiredCitizen ?? 0;
+    this.manualPickShowRoles = data.manualPickShowRoles ?? true;
+    this._manualPool = data._manualPool ?? null;
+    this._manualAssignIndex = data._manualAssignIndex ?? 0;
+    this.nightActions = data.nightActions || {};
+    this.currentNightStep = data.currentNightStep ?? 0;
+    this.nightSteps = data.nightSteps || [];
     this.constantineUsed = data.constantineUsed || false;
     this.bulletManager = BulletManager.fromJSON(data.bulletManager ?? data.tofangdar);
     this.gunnerBlankMax = data.gunnerBlankMax ?? data.tofangdarMashghiMax ?? 2;

@@ -1,7 +1,7 @@
 /**
  * Service Worker — Offline caching for PWA
  */
-const CACHE_NAME = 'mafia-god-v40';
+const CACHE_NAME = 'mafia-god-v41';
 const ASSETS = [
   './',
   './index.html',
@@ -32,6 +32,7 @@ const ASSETS = [
   './js/views/BaseView.js',
   './js/views/HomeView.js',
   './js/views/SetupView.js',
+  './js/views/ManualAssignView.js',
   './js/views/RoleRevealView.js',
   './js/views/NightView.js',
   './js/views/DayView.js',
@@ -67,16 +68,22 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch — cache first, then network
+// Fetch — network first (so local edits/deploys are always picked up), cache as offline fallback
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request)
-      .then(cached => cached || fetch(event.request))
-      .catch(() => {
-        // Offline fallback for navigation
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
+    fetch(event.request)
+      .then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        return response;
       })
+      .catch(() =>
+        caches.match(event.request).then(cached => {
+          if (cached) return cached;
+          // Offline fallback for navigation
+          if (event.request.mode === 'navigate') return caches.match('./index.html');
+        })
+      )
   );
 });

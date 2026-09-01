@@ -108,6 +108,11 @@ export class NightView extends BaseView {
     const container = this.container.querySelector('#night-dashboard-container');
     if (!container) return;
 
+    // A fresh GodDashboard instance is created on every render; without destroying the
+    // previous one first, its document-level click listener (registered in onMount) would
+    // leak and keep firing against detached DOM on every subsequent render.
+    this._dashboard?.destroy();
+
     const dashboard = new GodDashboard({
       players: game.players,
       title: t(tr.godDashboard?.longClickHint ?? { fa: '👁️ داشبورد خدا', en: '👁️ God Dashboard' }),
@@ -149,6 +154,7 @@ export class NightView extends BaseView {
     });
     
     dashboard.mount(container);
+    this._dashboard = dashboard;
   }
 
   //#endregion
@@ -365,7 +371,14 @@ export class NightView extends BaseView {
           const role = Roles.get(target?.roleId);
           const targetTeam = role?.team;
           let thumbsUp = false;
-          if (target?.roleId === 'suspect') thumbsUp = true;
+          // Negotiator recruits before the detective's result resolves — if the negotiator
+          // targeted this same player tonight and the recruit would succeed (matches the
+          // isRecruitable check in resolveNight), the detective should see them as mafia.
+          const negotiatorTargetId = game.nightActions?.negotiator?.targetId;
+          const wasNegotiatedThisNight = negotiatorTargetId === selectedTarget &&
+            (target?.roleId === 'simpleCitizen' || target?.roleId === 'suspect');
+          if (wasNegotiatedThisNight) thumbsUp = true;
+          else if (target?.roleId === 'suspect') thumbsUp = true;
           else if (target?.roleId === 'godfather') thumbsUp = false;
           else if (targetTeam === 'mafia') thumbsUp = true;
 
@@ -1052,6 +1065,8 @@ export class NightView extends BaseView {
 
   destroy() {
     super.destroy();
+    this._dashboard?.destroy();
+    this._dashboard = null;
     this.selectedTargets = {};
     this.showDashboard = true;
     this.godfatherMode = null;
