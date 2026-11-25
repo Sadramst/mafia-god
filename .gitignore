@@ -2,7 +2,6 @@
 node_modules/
 www/
 dist/
-android/
 ios/
 .gradle/
 *.apk
@@ -11,15 +10,22 @@ ios/
 *.app
 build/
 .idea/
+*.iml
 *.xcworkspace
 *.xcuserdata
 Pods/
-resources/
+
+# Android Gradle project (android/ itself IS tracked — this only excludes
+# machine-local/generated files inside it; build/ and .gradle/ above already
+# match android/**/build/ and android/.gradle/)
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/.cxx/
+android/captures/
+android/.kotlin/
 build.js
-capacitor.config.json
-package.json
-package-lock.json
-BUILD_NATIVE.md
 playwright-report/
 test-results/
 e2e-run.log
