@@ -1,11 +1,12 @@
 /**
  * Service Worker — Offline caching for PWA
  */
-const CACHE_NAME = 'mafia-god-v42';
+const CACHE_NAME = 'mafia-god-v43';
 const ASSETS = [
   './',
   './index.html',
   './css/styles.css',
+  './css/noir.css',
   './js/app.js',
   './js/native.js',
   './js/engine/Component.js',
