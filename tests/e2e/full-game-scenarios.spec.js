@@ -509,11 +509,11 @@ test.describe('Full Game E2E Scenarios', () => {
       if (!game) return { error: 'no game' };
       const out = {};
 
-      // ── Night 1: Framason recruits P11, Kane on citizen, Jack curses P10 ──
+      // ── Night 1: Framason recruits P11, Kane on citizen, Jack curses P9 ──
       game.startNight();
       Object.assign(game.nightActions, {
         godfather: { actorIds: [game.players[0].id], targetId: game.players[11].id, actionType: 'shoot', mode: 'shoot' },
-        jack: { actorIds: [game.players[12].id], targetId: game.players[9].id, actionType: 'curse' },
+        jack: { actorIds: [game.players[12].id], targetId: game.players[8].id, actionType: 'curse' },
         kane: { actorIds: [game.players[4].id], targetId: game.players[6].id, actionType: 'kaneReveal' },
         freemason: { actorIds: [game.players[5].id], targetId: game.players[10].id, actionType: 'recruit' },
       });
@@ -528,7 +528,7 @@ test.describe('Full Game E2E Scenarios', () => {
       // ── Day 1: No elimination ──
       game.startDay();
 
-      // ── Night 2: Kane fake wake appears, Framason recruits P7, Mafia kills framason leader ──
+      // ── Night 2: Kane fake wake appears, Framason recruits P7, Mafia kills framason leader, Jack curses P10 ──
       game.startNight();
       out.night2 = {
         kaneStep: game.nightSteps.some(s => s.roleId === 'kane'),
@@ -537,6 +537,7 @@ test.describe('Full Game E2E Scenarios', () => {
       Object.assign(game.nightActions, {
         godfather: { actorIds: [game.players[0].id], targetId: game.players[5].id, actionType: 'shoot', mode: 'shoot' },
         freemason: { actorIds: [game.players[5].id], targetId: game.players[7].id, actionType: 'recruit' },
+        jack: { actorIds: [game.players[12].id], targetId: game.players[9].id, actionType: 'curse' },
       });
       game.resolveNight();
       out.night2.framasonLeaderDead = !game.players[5].isAlive;

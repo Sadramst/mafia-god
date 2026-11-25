@@ -25,10 +25,16 @@ export class RoleRevealView extends BaseView {
     const role = Roles.get(player.roleId);
     const teamClass = role?.team || 'citizen';
 
+    const totalPlayers = this.game.players.length;
+    const progressPct = totalPlayers > 0 ? Math.round(((this.currentIndex + 1) / totalPlayers) * 100) : 0;
+
     this.container.innerHTML = `
       <div class="view">
         <div class="text-center mb-lg">
-          <span class="chip">${t(tr.roleReveal.playerOfTotal).replace('%d', this.currentIndex + 1).replace('%d', this.game.players.length)}</span>
+          <span class="chip">${t(tr.roleReveal.playerOfTotal).replace('%d', this.currentIndex + 1).replace('%d', totalPlayers)}</span>
+          <div class="reveal-progress" aria-hidden="true">
+            <div class="reveal-progress__bar" style="width: ${progressPct}%"></div>
+          </div>
         </div>
 
         <div class="reveal-container">
@@ -54,16 +60,20 @@ export class RoleRevealView extends BaseView {
             </div>
           </div>
 
-          ${this.isFlipped ? `
-            <button class="btn btn--accent btn--lg" id="btn-next-reveal">
-              ${this.currentIndex < this.game.players.length - 1 ? t(tr.roleReveal.nextPlayer) : t(tr.roleReveal.startGame)}
-            </button>
-          ` : `
+          ${!this.isFlipped ? `
             <div class="text-muted" style="font-size: var(--text-xs);">
               ${t(tr.roleReveal.onlyPlayerShouldSee).replace('%s', player.name)}
             </div>
-          `}
+          ` : ''}
         </div>
+
+        ${this.isFlipped ? `
+          <div class="sticky-cta">
+            <button class="btn btn--accent btn--lg btn--block" id="btn-next-reveal">
+              ${this.currentIndex < this.game.players.length - 1 ? t(tr.roleReveal.nextPlayer) : t(tr.roleReveal.startGame)}
+            </button>
+          </div>
+        ` : ''}
       </div>
     `;
 
@@ -90,7 +100,9 @@ export class RoleRevealView extends BaseView {
             ${t(tr.roleReveal.allRevealed)}
           </h2>
           <p class="text-secondary">${t(tr.roleReveal.readyForBlindDay)}</p>
-          <button class="btn btn--accent btn--lg" id="btn-start-blind-day">
+        </div>
+        <div class="sticky-cta">
+          <button class="btn btn--accent btn--lg btn--block" id="btn-start-blind-day">
             ${t(tr.roleReveal.startBlindDay)}
           </button>
         </div>

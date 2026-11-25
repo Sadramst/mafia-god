@@ -20,9 +20,9 @@
   --bg-glass-strong: rgba(255,255,255,0.09);
 
   /* Text */
-  --text-primary: #eeeef5;
-  --text-secondary: #8b8ba3;
-  --text-muted: #4a4a5e;
+  --text-primary: #f1f2f9;
+  --text-secondary: #a1a4bd;
+  --text-muted: #6b6b85;
   --text-inverse: #060611;
 
   /* Teams — More vivid with stronger glows */
@@ -481,11 +481,44 @@ body::after {
 }
 
 .btn--block { width:100%; }
-.btn--lg { padding:16px 32px; font-size:var(--text-lg); min-height:56px; border-radius:var(--radius-lg); }
+.btn--lg { padding:16px 32px; font-size:var(--text-lg); min-height:52px; border-radius:var(--radius-lg); }
 .btn--sm { padding:8px 16px; font-size:var(--text-sm); min-height:36px; }
-.btn--xs { padding:4px 10px; font-size:var(--text-xs); min-height:28px; }
+.btn--xs { padding:6px 12px; font-size:var(--text-xs); min-height:36px; }
 .btn--icon { width:44px; height:44px; padding:0; border-radius:var(--radius-full); }
-.btn:disabled { opacity:0.35; pointer-events:none; filter:grayscale(0.3); }
+.btn:disabled { opacity:0.45; pointer-events:none; filter:grayscale(0.3); }
+
+/* Sticky bottom CTA bar (stays reachable above bottom nav on mobile) */
+.sticky-cta {
+  position:sticky;
+  bottom:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+  z-index:50;
+  padding:var(--space-sm) var(--space-md);
+  margin:var(--space-md) calc(var(--space-md) * -1) 0;
+  background:rgba(6, 6, 17, 0.9);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-top:1px solid var(--border-strong);
+  box-shadow:0 -8px 24px rgba(0, 0, 0, 0.45);
+}
+
+/* Role reveal progress bar */
+.reveal-progress {
+  width:100%;
+  max-width:260px;
+  height:6px;
+  margin:var(--space-sm) auto 0;
+  background:var(--bg-glass-strong);
+  border-radius:var(--radius-full);
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+.reveal-progress__bar {
+  height:100%;
+  background:linear-gradient(90deg, var(--accent), #f97316);
+  border-radius:var(--radius-full);
+  transition:width var(--duration-slow) var(--ease-out);
+  box-shadow:0 0 10px var(--accent-glow);
+}
 
 /* ═══════ Inputs — Glowing focus ═══════ */
 .input-group { display:flex; gap:var(--space-sm); margin-bottom:var(--space-md); }
@@ -493,7 +526,7 @@ body::after {
   flex:1;
   padding:12px 16px;
   background:var(--bg-glass);
-  border:1px solid var(--border);
+  border:1px solid var(--border-strong);
   border-radius:var(--radius-md);
   color:var(--text-primary);
   font-size:var(--text-base);
@@ -770,13 +803,13 @@ html[dir="rtl"] .player-item:hover { transform:translateX(2px); }
 .role-card__count-btn,
 .role-card__dec,
 .role-card__inc {
-  width:30px; height:30px;
+  width:36px; height:36px;
   border-radius:var(--radius-full);
   background:var(--bg-glass-strong);
   display:flex; align-items:center; justify-content:center;
-  font-size:var(--text-sm); font-weight:700;
+  font-size:var(--text-base); font-weight:700;
   transition:all var(--duration) var(--ease);
-  border:1px solid var(--border);
+  border:1px solid var(--border-strong);
 }
 .role-card__count-btn:hover,
 .role-card__dec:hover,
@@ -1365,13 +1398,13 @@ html[dir="rtl"] .player-item:hover { transform:translateX(2px); }
 .hero__subtitle {
   font-size:var(--text-base); color:var(--text-secondary);
   max-width:300px; line-height:1.8;
-  animation:fadeIn 0.8s var(--ease) 0.3s both;
+  animation:fadeIn 0.35s var(--ease) 0.1s both;
 }
 .hero__actions {
   display:flex; flex-direction:column; gap:var(--space-sm);
   width:100%; max-width:280px;
   margin-top:var(--space-md);
-  animation:fadeIn 0.8s var(--ease) 0.5s both;
+  animation:fadeIn 0.35s var(--ease) 0.15s both;
 }
 
 /* ═══════ Tabs — Pill-style selection ═══════ */
@@ -1387,7 +1420,7 @@ html[dir="rtl"] .player-item:hover { transform:translateX(2px); }
   flex:1; padding:10px; text-align:center;
   border-radius:var(--radius-sm);
   font-size:var(--text-sm); font-weight:600;
-  color:var(--text-muted);
+  color:var(--text-secondary);
   transition:all var(--duration) var(--ease);
   position:relative;
 }

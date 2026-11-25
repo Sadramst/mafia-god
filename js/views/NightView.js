@@ -82,13 +82,13 @@ export class NightView extends BaseView {
         </div>
 
         <!-- Resolve / Continue -->
-        <div class="mt-lg">
+        <div class="sticky-cta">
           ${game.isNightComplete() ? `
             <button class="btn btn--accent btn--lg btn--block" id="btn-resolve-night">
               ${isBlind ? t(tr.night.endBlindNight) : t(tr.night.resolveNightGoToDay)}
             </button>
           ` : `
-            <div class="text-center text-muted" style="font-size: var(--text-sm);">
+            <div class="text-center text-secondary" style="font-size: var(--text-sm);">
               ${t(tr.night.completeSteps)}
             </div>
           `}

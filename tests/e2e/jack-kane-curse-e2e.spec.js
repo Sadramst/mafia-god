@@ -58,6 +58,7 @@ test.describe('Jack-Kane Curse Lock — E2E', () => {
         kane: { actorIds: [game.players[0].id], targetId: game.players[1].id, actionType: 'kaneReveal' },
       });
       const results = game.resolveNight();
+      window.app._nightResults = results;
 
       return {
         kaneReveal: results.kaneReveal,
@@ -105,6 +106,7 @@ test.describe('Jack-Kane Curse Lock — E2E', () => {
         godfather: { actorIds: [game.players[2].id], targetId: game.players[5].id, actionType: 'shoot', mode: 'shoot' },
       });
       const results = game.resolveNight();
+      window.app._nightResults = results;
 
       return {
         cursePersisted,

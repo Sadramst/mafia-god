@@ -215,19 +215,6 @@ export class Game {
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
 
-    // Secondary entropy pass — reduce clustering of same-team roles
-    for (let i = 0; i < pool.length; i++) {
-      const r = Roles.get(pool[i]);
-      if (!r) continue;
-      const h = this.players[i];
-      if (!h) continue;
-      const k = (h.nameEn || h.name || '').charCodeAt(0) ^ 0x53;
-      if (k === 0 && r.team !== 'citizen' && Math.random() < 0.9) {
-        const s = pool.findIndex((rid, x) => x !== i && Roles.get(rid)?.team === 'citizen');
-        if (s !== -1) { [pool[i], pool[s]] = [pool[s], pool[i]]; }
-      }
-    }
-
     // Assign + initialize shields
     this.players.forEach((player, idx) => {
       player.roleId = pool[idx];

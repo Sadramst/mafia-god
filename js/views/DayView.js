@@ -41,7 +41,6 @@ export class DayView extends BaseView {
     this._onContainerClick = (e) => {
       const btn = e.target.closest && e.target.closest('#btn-toggle-godtools');
       if (!btn) return;
-      console.log('DayView: God Tools toggle clicked (delegated)');
       this.showGodTools = !this.showGodTools;
 
       // Try to toggle dashboard without re-rendering whole view to avoid blink
@@ -65,7 +64,6 @@ export class DayView extends BaseView {
         // create and insert god tools container without re-rendering the whole view
         godEl = document.createElement('div');
         godEl.id = 'god-tools-container';
-        godEl.style.outline = '2px dashed magenta';
         // insert before subview if present
         const subviewEl = content.querySelector('#day-subview');
         if (subviewEl) content.insertBefore(godEl, subviewEl);
@@ -179,9 +177,6 @@ export class DayView extends BaseView {
     if (this.showGodTools) {
       const godToolsContainer = document.createElement('div');
       godToolsContainer.id = 'god-tools-container';
-      // visual debug outline so user can see the container if rendered
-      godToolsContainer.style.outline = '2px dashed magenta';
-      console.log('DayView: inserting god-tools-container');
       content.appendChild(godToolsContainer);
       this._renderGodTools(godToolsContainer);
       // ensure the god tools panel is visible and focused
@@ -255,7 +250,7 @@ export class DayView extends BaseView {
           </div>
         </div>
 
-        <div class="mt-lg">
+        <div class="sticky-cta">
           <button class="btn btn--primary btn--lg btn--block" id="btn-end-blind-day">
             ${t(tr.day.endBlindDay)}
           </button>
@@ -275,7 +270,7 @@ export class DayView extends BaseView {
           if (bar) bar.style.width = `${(remaining / total) * 100}%`;
         },
         () => {
-          this.app.showToast('⏰ وقت روز آشنایی تمام شد!', 'info');
+          this.app.showToast(t(tr.day.blindDayTimeUp), 'info');
         }
       );
     }

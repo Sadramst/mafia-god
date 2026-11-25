@@ -255,8 +255,8 @@ export class SummaryView extends BaseView {
     `;
 
     this.listen('#btn-back-game', 'click', () => {
-      if (game.phase === 'night') this.navigate('night');
-      else if (game.phase === 'day') this.navigate('day');
+      if (game.phase === 'night' || game.phase === 'blindNight') this.navigate('night');
+      else if (game.phase === 'day' || game.phase === 'blindDay') this.navigate('day');
       else this.navigate('home');
     });
   }

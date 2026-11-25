@@ -1068,28 +1068,29 @@ export class SetupView extends BaseView {
 
         <!-- Errors -->
         ${errors.length > 0 ? `
-          <div class="card mb-lg" style="border-color: var(--danger);">
-            ${errors.map(e => `<div style="color: var(--danger); font-size: var(--text-sm); margin-bottom: 4px;">⚠️ ${e}</div>`).join('')}
+          <div class="card card--danger mb-md" id="setup-errors">
+            ${errors.map(e => `<div style="color: var(--danger); font-size: var(--text-sm); font-weight: 600; margin-bottom: 4px;">⚠️ ${e}</div>`).join('')}
           </div>
         ` : ''}
 
-        <!-- Actions -->
-        <button class="btn btn--primary btn--lg btn--block mb-md" id="btn-random-assign" ${errors.length > 0 ? 'disabled' : ''}>
-          🎲 ${t(tr.setup.randomAssignAndStart)}
-        </button>
-        <div class="text-center text-muted mb-md" style="font-size: var(--text-xs);">— ${t(tr.setup.orDivider)} —</div>
-
         <!-- Manual pick role-visibility toggle -->
-        <div class="flex gap-sm items-center justify-center mb-sm" style="flex-wrap: wrap;">
-          <span class="text-muted" style="font-size: var(--text-sm);">${t(tr.manualAssign.visibilityLabel)}</span>
+        <div class="flex gap-sm items-center justify-center mb-md" style="flex-wrap: wrap;">
+          <span class="text-secondary" style="font-size: var(--text-sm);">${t(tr.manualAssign.visibilityLabel)}</span>
           <button class="btn btn--sm ${game.manualPickShowRoles ? 'btn--primary' : 'btn--ghost'}" id="btn-manual-visibility-on">${t(tr.manualAssign.visibilityOn)}</button>
           <button class="btn btn--sm ${!game.manualPickShowRoles ? 'btn--primary' : 'btn--ghost'}" id="btn-manual-visibility-off">${t(tr.manualAssign.visibilityOff)}</button>
         </div>
 
-        <button class="btn btn--accent btn--lg btn--block mb-md" id="btn-manual-assign" ${errors.length > 0 ? 'disabled' : ''}>
-          🖐️ ${t(tr.setup.manualAssignAndStart)}
-        </button>
-        <button class="btn btn--ghost btn--block" id="btn-back-home-setup">
+        <!-- Sticky Primary Actions -->
+        <div class="sticky-cta flex flex-col gap-sm">
+          <button class="btn btn--primary btn--lg btn--block" id="btn-random-assign" ${errors.length > 0 ? 'disabled' : ''}>
+            🎲 ${t(tr.setup.randomAssignAndStart)}
+          </button>
+          <button class="btn btn--accent btn--lg btn--block" id="btn-manual-assign" ${errors.length > 0 ? 'disabled' : ''}>
+            🖐️ ${t(tr.setup.manualAssignAndStart)}
+          </button>
+        </div>
+
+        <button class="btn btn--ghost btn--block mt-md" id="btn-back-home-setup">
           ← ${t(tr.setup.backHome)}
         </button>
       </div>

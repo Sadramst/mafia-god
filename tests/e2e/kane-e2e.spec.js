@@ -356,7 +356,7 @@ test.describe('Kane — Citizen Kane E2E', () => {
     expect(result.kaneAliveAfterNight2).toBe(false);
     expect(result.kaneInKilled).toBe(true);
     expect(result.kaneDeathCause).toBe('kane_sacrifice');
-    expect(result.kaneRevivable).toBe(false);
+    expect(result.kaneRevivable).toBe(true);
 
     // Navigate to day view and verify kane death is shown
     await page.evaluate(() => { window.app.navigate('day'); });

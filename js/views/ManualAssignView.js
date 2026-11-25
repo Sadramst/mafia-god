@@ -18,16 +18,16 @@ export class ManualAssignView extends BaseView {
   render() {
     const game = this.game;
 
+    if (game.isManualAssignmentComplete()) {
+      this._renderComplete();
+      return;
+    }
+
     // The roster can change while this view isn't active (God navigates back to Setup and
     // edits players) — Game cancels the in-progress pick in that case by leaving 'manualAssign'.
     // Bail back to Setup rather than rendering against a stale/desynced pool.
     if (game.phase !== 'manualAssign') {
       this.navigate('setup');
-      return;
-    }
-
-    if (game.isManualAssignmentComplete()) {
-      this._renderComplete();
       return;
     }
 
@@ -58,10 +58,15 @@ export class ManualAssignView extends BaseView {
       .filter(r => r.role)
       .sort((a, b) => teamOrder.indexOf(a.role.team) - teamOrder.indexOf(b.role.team));
 
+    const progressPct = game.players.length > 0 ? Math.round(((playerIndex + 1) / game.players.length) * 100) : 0;
+
     this.container.innerHTML = `
       <div class="view">
         <div class="text-center mb-lg">
           <span class="chip">${t(tr.roleReveal.playerOfTotal).replace('%d', playerIndex + 1).replace('%d', game.players.length)}</span>
+          <div class="reveal-progress" aria-hidden="true">
+            <div class="reveal-progress__bar" style="width: ${progressPct}%"></div>
+          </div>
         </div>
 
         <div class="reveal-container">
@@ -103,10 +108,15 @@ export class ManualAssignView extends BaseView {
     const totalRemaining = game.getManualRemainingRoles().reduce((s, r) => s + r.count, 0);
     const cardCount = Math.max(0, totalRemaining);
 
+    const progressPct = game.players.length > 0 ? Math.round(((playerIndex + 1) / game.players.length) * 100) : 0;
+
     this.container.innerHTML = `
       <div class="view">
         <div class="text-center mb-lg">
           <span class="chip">${t(tr.roleReveal.playerOfTotal).replace('%d', playerIndex + 1).replace('%d', game.players.length)}</span>
+          <div class="reveal-progress" aria-hidden="true">
+            <div class="reveal-progress__bar" style="width: ${progressPct}%"></div>
+          </div>
         </div>
 
         <div class="reveal-container">
@@ -145,10 +155,15 @@ export class ManualAssignView extends BaseView {
     const teamClass = role?.team || 'citizen';
     const isEnglish = Settings.getLanguage() === Language.ENGLISH;
 
+    const progressPct = game.players.length > 0 ? Math.round(((playerIndex + 1) / game.players.length) * 100) : 0;
+
     this.container.innerHTML = `
       <div class="view">
         <div class="text-center mb-lg">
           <span class="chip">${t(tr.roleReveal.playerOfTotal).replace('%d', playerIndex + 1).replace('%d', game.players.length)}</span>
+          <div class="reveal-progress" aria-hidden="true">
+            <div class="reveal-progress__bar" style="width: ${progressPct}%"></div>
+          </div>
         </div>
 
         <div class="reveal-container">
@@ -169,12 +184,14 @@ export class ManualAssignView extends BaseView {
               </div>
             </div>
           </div>
+        </div>
 
-          <button class="btn btn--accent btn--lg" id="btn-confirm-manual-role">
+        <div class="sticky-cta flex flex-col gap-sm">
+          <button class="btn btn--accent btn--lg btn--block" id="btn-confirm-manual-role">
             ${t(tr.manualAssign.confirmAndContinue)}
           </button>
           ${!this.isBlindPick ? `
-            <button class="btn btn--ghost" id="btn-change-manual-role">
+            <button class="btn btn--ghost btn--block" id="btn-change-manual-role">
               ${t(tr.manualAssign.pickDifferent)}
             </button>
           ` : ''}
@@ -209,7 +226,9 @@ export class ManualAssignView extends BaseView {
             ${t(tr.roleReveal.allRevealed)}
           </h2>
           <p class="text-secondary">${t(tr.roleReveal.readyForBlindDay)}</p>
-          <button class="btn btn--accent btn--lg" id="btn-start-blind-day">
+        </div>
+        <div class="sticky-cta">
+          <button class="btn btn--accent btn--lg btn--block" id="btn-start-blind-day">
             ${t(tr.roleReveal.startBlindDay)}
           </button>
         </div>

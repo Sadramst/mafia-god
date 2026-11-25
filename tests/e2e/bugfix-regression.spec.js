@@ -66,9 +66,11 @@ test.describe('Bugfix E2E — Regression Tests', () => {
       const game = window.app?.game;
       if (!game) return;
       const roleMap = ['godfather', 'negotiator', 'detective', 'gunner', 'simpleCitizen', 'simpleCitizen', 'simpleCitizen', 'suspect'];
+      const RolesCls = window.__modules?.Roles?.Roles;
       game.players.forEach((p, i) => {
         p.roleId = roleMap[i];
-        const roleDef = window.Roles?.get?.(roleMap[i]);
+        const roleDef = RolesCls?.get?.(roleMap[i]);
+        p.initShield(roleDef);
       });
       game.bulletManager.init(2, 2);
     });
@@ -291,13 +293,15 @@ test.describe('Bugfix E2E — Regression Tests', () => {
       await page.locator('#btn-add-player').click();
     }
 
-    const bulletResult = await page.evaluate(() => {
+    const bulletResult = await page.evaluate((names) => {
       const { Game } = window.__modules?.Game || {};
       const { Roles } = window.__modules?.Roles || {};
-      const game = window.__app?.game || new (window.__modules?.Game?.Game || Game)();
+      const GameCtor = window.__modules?.Game?.Game || Game;
+      const game = window.__app?.game || new GameCtor();
 
       // Direct engine setup
-      const g = new (window.__modules?.Game?.Game || game.constructor)();
+      const DirectGameCtor = window.__modules?.Game?.Game || game.constructor;
+      const g = new DirectGameCtor();
       const roles = ['godfather', 'simpleMafia', 'drWatson', 'detective', 'gunner', 'simpleCitizen', 'simpleCitizen', 'simpleCitizen'];
       const players = [];
       for (let i = 0; i < 8; i++) {
@@ -330,7 +334,7 @@ test.describe('Bugfix E2E — Regression Tests', () => {
       const p5Bullet = g.bulletManager.getPlayerBullet(players[5].id);
 
       return { liveBefore, blankBefore, liveAfter, blankAfter, p5Dead, hasBullet: !!p5Bullet };
-    });
+    }, names);
 
     // B9: live bullets must be 2 (not 3), blank must be 2
     expect(bulletResult.liveBefore).toBe(2);
@@ -362,7 +366,8 @@ test.describe('Bugfix E2E — Regression Tests', () => {
     }
 
     const constResult = await page.evaluate(() => {
-      const g = new (window.__modules?.Game?.Game)();
+      const GameCtor = window.__modules?.Game?.Game;
+      const g = new GameCtor();
       const roles = ['godfather', 'simpleMafia', 'constantine', 'detective', 'simpleCitizen', 'simpleCitizen', 'simpleCitizen', 'simpleCitizen'];
       const players = [];
       for (let i = 0; i < 8; i++) {

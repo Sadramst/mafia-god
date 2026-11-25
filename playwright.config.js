@@ -17,7 +17,7 @@ export default defineConfig({
     serviceWorkers: 'block',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'off',
   },
   webServer: {
     command: 'npm run serve',
@@ -30,8 +30,9 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        channel: 'chrome',
         headless: true,
-        slowMo: 500,
+        slowMo: 0,
       },
     },
   ],

@@ -7,6 +7,7 @@
  *   - Layered views using Component base
  */
 import { Game } from './models/Game.js';
+import { Roles } from './models/Roles.js';
 import { Storage } from './utils/Storage.js';
 import { EventBus } from './engine/EventBus.js';
 import { Router } from './engine/Router.js';
@@ -25,8 +26,11 @@ export class App {
   constructor() {
     // ─── Core State ───
     this.game = new Game();
+    this.Roles = Roles;
     this._nightResults = null;
     this._historyPreview = null;
+    window.__app = this;
+    window.__modules = { Game: { Game }, Roles: { Roles } };
 
     // ─── Restore Saved Data ───
     this._restoreSavedState();
@@ -107,8 +111,8 @@ export class App {
       this.currentView.render();
     }
 
-    // Auto-save on game phases
-    if (['night', 'day'].includes(route)) {
+    // Auto-save on active game phases
+    if (['roleReveal', 'manualAssign', 'night', 'day', 'summary'].includes(route) && this.game.players.length > 0) {
       this.saveGame();
     }
 

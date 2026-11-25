@@ -77,9 +77,11 @@ export class HomeView extends BaseView {
     if (!saved) return;
     this.game.loadFromJSON(saved);
     const phase = this.game.phase;
-    if (phase === 'night') this.navigate('night');
-    else if (phase === 'day') this.navigate('day');
-    else if (phase === 'ended') this.navigate('summary');
+    if (phase === 'night' || phase === 'blindNight') this.navigate('night');
+    else if (phase === 'day' || phase === 'blindDay') this.navigate('day');
+    else if (phase === 'roleReveal') this.navigate('roleReveal');
+    else if (phase === 'manualAssign') this.navigate('manualAssign');
+    else if (phase === 'ended' || phase === 'handshake') this.navigate('summary');
     else this.navigate('setup');
   }
 
